@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.godot/
+.tasks/
+.tools/
+exports/
+test-results/
+playwright-report/
+.playwright-mcp/
+*.log
+.env
+.env.*

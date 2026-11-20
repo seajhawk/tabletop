@@ -1,0 +1,197 @@
+import { Application, Assets, type Texture } from 'pixi.js';
+import { SoundEngine } from './audio';
+import { loadData } from './data';
+import { Game } from './sim/game';
+import { FixedStepper } from './sim/stepper';
+import { InputController } from './input';
+import { attachPointerInput } from './inputDom';
+import { LAYOUTS, Viewport, type ButtonId } from './layout';
+import { Renderer } from './render';
+import { ScoreBook, browserStorage } from './scores';
+import { createBrowserPwa, canApplyGameUpdate } from './pwa';
+import { getTheater } from './theme';
+import { DIFFICULTIES, type MapTheme } from './types';
+
+async function main(): Promise<void> {
+  const data = loadData();
+  // Created before the first await so an early beforeinstallprompt is captured.
+  let updateSafe = () => true;
+  const pwa = createBrowserPwa(() => updateSafe());
+  const app = new Application();
+  await app.init({
+    background: '#081321', resizeTo: window, antialias: true, autoDensity: true,
+    resolution: Math.min(window.devicePixelRatio || 1, 2.5),
+  });
+  document.body.appendChild(app.canvas);
+  app.canvas.style.touchAction = 'none';
+
+  const phoneIdx = LAYOUTS.findIndex(l => l.id === '2p-phone');
+  let layoutIdx = (phoneIdx >= 0 && window.innerHeight > window.innerWidth * 1.15) ? phoneIdx : 0;
+  let showStats = false;
+  const layout = () => LAYOUTS[layoutIdx];
+  const game = new Game(data, layout().playerCount);
+  const scores = new ScoreBook((data.maps ?? [data.map]).map(m => m.id), browserStorage);
+  updateSafe = () => canApplyGameUpdate(game); // ended, or fresh planning with no placement/economy activity
+  const audio = new SoundEngine();
+  audio.setTheme(game.currentMap.theme ?? 'space');
+  const base = import.meta.env.BASE_URL;
+  const [militaryTex, navalTex, marsTex, medievalTex] = await Promise.all([
+    Assets.load<Texture>(`${base}assets/us-dc-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/naval-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/mars-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/castle-map.jpg`).catch(() => null),
+  ]);
+  const mapTextures: Partial<Record<MapTheme, Texture | null>> = {
+    military: militaryTex,
+    naval: navalTex,
+    mars: marsTex,
+    medieval: medievalTex,
+  };
+  const viewport = new Viewport();
+  const stepper = new FixedStepper();
+
+  let renderer!: Renderer;
+  const wake = { lock: null as { release(): Promise<void>; addEventListener(t: string, f: () => void): void } | null, wanted: false };
+  const acquireWake = async () => { // best effort; needs a user gesture and a supporting browser
+    wake.wanted = true;
+    try {
+      const nav = navigator as unknown as { wakeLock?: { request(t: 'screen'): Promise<NonNullable<typeof wake.lock>> } };
+      if (!nav.wakeLock || wake.lock) return;
+      wake.lock = await nav.wakeLock.request('screen');
+      wake.lock.addEventListener('release', () => { wake.lock = null; });
+    } catch { /* unsupported or denied: ignore */ }
+  };
+
+  const onButton = (id: ButtonId) => {
+    const b = layout().board;
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    switch (id) {
+      case 'wave':
+        if (!game.launchWave()) {
+          renderer.toast('No more waves', cx, cy, false);
+        } else {
+          const w = game.ordinaryWaves[game.waveCursor - 1];
+          const bonus = game.lastEarlyBonus > 0 ? ` (+${game.lastEarlyBonus} cr early bonus!)` : '';
+          const wName = w ? (getTheater(game.currentMap.theme).waveNames[w.index] ?? w.name) : '';
+          if (w) renderer.toast(`Wave ${w.index}: ${wName}${bonus}`, cx, cy, true);
+        }
+        break;
+      case 'pause':
+        game.togglePause();
+        break;
+      case 'fullscreen':
+        if (document.fullscreenElement) void document.exitFullscreen?.();
+        else void document.documentElement.requestFullscreen?.().catch(() => undefined);
+        break;
+      case 'settings':
+        input.toggleSettings();
+        break;
+      case 'close':
+        input.closeSettings();
+        break;
+      case 'speed':
+        game.toggleSpeed();
+        break;
+      case 'difficulty': {
+        const keepOpen = input.settingsOpen;
+        input.cancelAll();
+        input.settingsOpen = keepOpen;
+        const d = game.cycleDifficulty();
+        renderer.toast(`Difficulty: ${DIFFICULTIES[d].label}`, cx, cy, true);
+        break;
+      }
+      case 'auto':
+        game.toggleAutoWave();
+        break;
+      case 'sfx':
+        audio.toggleMute();
+        break;
+      case 'stats':
+        showStats = !showStats;
+        break;
+      case 'reset':
+        input.cancelAll();
+        game.reset();
+        break;
+      case 'layout': {
+        const keepOpen = input.settingsOpen;
+        layoutIdx = (layoutIdx + 1) % LAYOUTS.length;
+        input.cancelAll(); // ownership / active players change: reset match and pointers together
+        input.settingsOpen = keepOpen;
+        game.reset(layout().playerCount);
+        renderer.setLayout(layout());
+        break;
+      }
+      case 'map': {
+        const keepOpen = input.settingsOpen;
+        input.cancelAll();
+        input.settingsOpen = keepOpen;
+        game.setMap(game.mapIndex + 1);
+        audio.setTheme(game.currentMap.theme ?? 'space');
+        renderer.toast(`Theater: ${game.currentMap.name}`, cx, cy, true);
+        break;
+      }
+      case 'install':
+        void pwa.install();
+        break;
+      case 'update':
+        void pwa.update();
+        break;
+      case 'stress':
+        input.cancelAll();
+        game.setupStress();
+        break;
+      case 'play-again':
+        input.cancelAll();
+        game.reset();
+        break;
+      case 'next-map':
+        input.cancelAll();
+        game.setMap(game.mapIndex + 1);
+        audio.setTheme(game.currentMap.theme ?? 'space');
+        renderer.toast(`Theater: ${game.currentMap.name}`, layout().stageW / 2, layout().stageH / 2, true);
+        break;
+    }
+  };
+
+  const input = new InputController(game, layout, {
+    toast: (m, x, y, ok) => renderer.toast(m, x, y, ok),
+    button: onButton,
+    creditFly: (fromPlayer, toPlayer, amount, fromX, fromY, toX, toY) =>
+      renderer.spawnCreditChip(fromPlayer, toPlayer, amount, fromX, fromY, toX, toY),
+    sound: ev => audio.play(ev),
+  });
+  renderer = new Renderer(app, game, input, layout, () => audio.muted, mapTextures, () => showStats,
+    () => scores.result(game), pwa);
+
+  const toWorld = (cx: number, cy: number) => {
+    const r = app.canvas.getBoundingClientRect();
+    const sx = (cx - r.left) * (app.screen.width / Math.max(r.width, 1));
+    const sy = (cy - r.top) * (app.screen.height / Math.max(r.height, 1));
+    return viewport.toWorld(sx, sy);
+  };
+  attachPointerInput({
+    canvas: app.canvas, win: window, doc: document, toWorld, input,
+    onUserAction: () => { audio.unlock(); void acquireWake(); },
+    onFocusLoss: () => game.setPaused(true), // focus loss cancels drags (done by input) and pauses
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && wake.wanted) void acquireWake(); });
+
+  app.ticker.add(ticker => {
+    const l = layout();
+    if (viewport.fit(app.screen.width, app.screen.height, l.stageW, l.stageH)) {
+      renderer.applyViewport(viewport.scale, viewport.ox, viewport.oy);
+    }
+    const dt = ticker.deltaMS / 1000;
+    stepper.advance(dt * game.speed, step => game.step(step));
+    for (const ev of game.drainEvents()) audio.play(ev);
+    scores.observe(game); // idempotent per runId: records a finished normal match once
+    input.refreshAll();
+    renderer.update(dt);
+  });
+
+  (window as unknown as Record<string, unknown>).__ga = { game, input, layout, renderer, scores, pwa }; // debug handle
+  void pwa.start();
+}
+
+void main();

@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "waves": [
+    {
+      "index": 1,
+      "name": "First Contact",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "scout",
+          "count": 10,
+          "interval": 0.7,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "scout",
+          "count": 10,
+          "interval": 0.7,
+          "spawnIndex": 1
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Hive Signal",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "swarmer",
+          "count": 30,
+          "interval": 0.18,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "swarmer",
+          "count": 30,
+          "interval": 0.18,
+          "spawnIndex": 1
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Armored Column",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "cruiser",
+          "count": 8,
+          "interval": 1.1,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "scout",
+          "count": 16,
+          "interval": 0.45,
+          "spawnIndex": 1
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Shield Wall",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "frigate",
+          "count": 6,
+          "interval": 1.0,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "scout",
+          "count": 14,
+          "interval": 0.45,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "frigate",
+          "count": 6,
+          "interval": 1.0,
+          "spawnIndex": 2
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Orbital Raid",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "phase",
+          "count": 10,
+          "interval": 0.65,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "swarmer",
+          "count": 28,
+          "interval": 0.16,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "phase",
+          "count": 8,
+          "interval": 0.75,
+          "spawnIndex": 2
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "name": "Combined Arms",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "cruiser",
+          "count": 10,
+          "interval": 0.95,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "frigate",
+          "count": 10,
+          "interval": 0.85,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "phase",
+          "count": 12,
+          "interval": 0.55,
+          "spawnIndex": 2
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "name": "Swarm Surge",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "swarmer",
+          "count": 40,
+          "interval": 0.13,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "swarmer",
+          "count": 40,
+          "interval": 0.13,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "phase",
+          "count": 12,
+          "interval": 0.55,
+          "spawnIndex": 2
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "name": "Heavy Phalanx",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "cruiser",
+          "count": 12,
+          "interval": 0.85,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "frigate",
+          "count": 12,
+          "interval": 0.8,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "cruiser",
+          "count": 8,
+          "interval": 0.95,
+          "spawnIndex": 2
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "name": "Vanguard Blitz",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "scout",
+          "count": 20,
+          "interval": 0.35,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "swarmer",
+          "count": 32,
+          "interval": 0.15,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "cruiser",
+          "count": 10,
+          "interval": 0.9,
+          "spawnIndex": 2
+        },
+        {
+          "enemyId": "frigate",
+          "count": 10,
+          "interval": 0.8,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "phase",
+          "count": 12,
+          "interval": 0.5,
+          "spawnIndex": 1
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "name": "Dreadnought Assault",
+      "stress": false,
+      "groups": [
+        {
+          "enemyId": "dreadnought",
+          "count": 1,
+          "interval": 1.0,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "cruiser",
+          "count": 8,
+          "interval": 1.05,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "frigate",
+          "count": 8,
+          "interval": 1.0,
+          "spawnIndex": 2
+        },
+        {
+          "enemyId": "phase",
+          "count": 6,
+          "interval": 0.85,
+          "spawnIndex": 1
+        }
+      ]
+    },
+    {
+      "index": 99,
+      "name": "Stress: 150 ships",
+      "stress": true,
+      "groups": [
+        {
+          "enemyId": "swarmer",
+          "count": 75,
+          "interval": 0,
+          "spawnIndex": 0
+        },
+        {
+          "enemyId": "swarmer",
+          "count": 75,
+          "interval": 0,
+          "spawnIndex": 1
+        }
+      ]
+    }
+  ]
+}

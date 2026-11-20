@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "turrets": [
+    {
+      "id": "pulse",
+      "name": "Pulse Laser",
+      "cost": 38,
+      "range": 3.3,
+      "fireRate": 2.2,
+      "damage": 8.5,
+      "projectileSpeed": 0,
+      "splashRadius": 0,
+      "slowFactor": 1,
+      "slowDuration": 0,
+      "targetsAir": true,
+      "armorPierce": false,
+      "pierceCount": 0,
+      "missileCount": 0,
+      "shieldMultiplier": 1.25,
+      "burnDps": 0,
+      "burnDuration": 0,
+      "color": "#4CD9EF",
+      "upgrades": [
+        {
+          "name": "Twin barrels",
+          "cost": 50,
+          "damageMultiplier": 1.55,
+          "rangeBonus": 0.4,
+          "fireRateMultiplier": 1.12
+        },
+        {
+          "name": "Overcharged beam",
+          "cost": 105,
+          "damageMultiplier": 2.25,
+          "rangeBonus": 0.75,
+          "fireRateMultiplier": 1.22,
+          "shieldMultiplier": 1.6
+        }
+      ]
+    },
+    {
+      "id": "plasma",
+      "name": "Plasma Mortar",
+      "cost": 75,
+      "range": 4.3,
+      "fireRate": 0.6,
+      "damage": 21,
+      "projectileSpeed": 7.0,
+      "splashRadius": 1.25,
+      "slowFactor": 1,
+      "slowDuration": 0,
+      "targetsAir": false,
+      "armorPierce": false,
+      "pierceCount": 0,
+      "missileCount": 0,
+      "shieldMultiplier": 1.0,
+      "burnDps": 0,
+      "burnDuration": 0,
+      "color": "#FFC16E",
+      "upgrades": [
+        {
+          "name": "Larger radius",
+          "cost": 85,
+          "damageMultiplier": 1.4,
+          "rangeBonus": 0.45,
+          "splashBonus": 0.45
+        },
+        {
+          "name": "Napalm burn",
+          "cost": 140,
+          "damageMultiplier": 1.8,
+          "rangeBonus": 0.75,
+          "splashBonus": 0.75,
+          "burnDps": 10,
+          "burnDuration": 3.0
+        }
+      ]
+    },
+    {
+      "id": "stasis",
+      "name": "Stasis Projector",
+      "cost": 60,
+      "range": 2.75,
+      "fireRate": 0.95,
+      "damage": 1.5,
+      "projectileSpeed": 0,
+      "splashRadius": 0,
+      "slowFactor": 0.62,
+      "slowDuration": 1.35,
+      "targetsAir": false,
+      "armorPierce": false,
+      "pierceCount": 0,
+      "missileCount": 0,
+      "shieldMultiplier": 1.0,
+      "burnDps": 0,
+      "burnDuration": 0,
+      "color": "#82E3B4",
+      "upgrades": [
+        {
+          "name": "Stronger field",
+          "cost": 70,
+          "damageMultiplier": 1.5,
+          "rangeBonus": 0.55,
+          "slowFactor": 0.48
+        },
+        {
+          "name": "Shield strip",
+          "cost": 115,
+          "damageMultiplier": 2.0,
+          "rangeBonus": 0.9,
+          "slowFactor": 0.42,
+          "shieldStrip": 40
+        }
+      ]
+    },
+    {
+      "id": "railgun",
+      "name": "Railgun",
+      "cost": 105,
+      "range": 5.9,
+      "fireRate": 0.4,
+      "damage": 62,
+      "projectileSpeed": 0,
+      "splashRadius": 0,
+      "slowFactor": 1,
+      "slowDuration": 0,
+      "targetsAir": true,
+      "armorPierce": true,
+      "pierceCount": 2,
+      "missileCount": 0,
+      "shieldMultiplier": 1.0,
+      "burnDps": 0,
+      "burnDuration": 0,
+      "color": "#A89BFF",
+      "upgrades": [
+        {
+          "name": "Faster charge",
+          "cost": 100,
+          "damageMultiplier": 1.35,
+          "rangeBonus": 0.65,
+          "fireRateMultiplier": 1.35
+        },
+        {
+          "name": "Multi-target pierce",
+          "cost": 165,
+          "damageMultiplier": 1.85,
+          "rangeBonus": 1.15,
+          "fireRateMultiplier": 1.5,
+          "pierceCount": 6
+        }
+      ]
+    },
+    {
+      "id": "swarm",
+      "name": "Swarm Pod",
+      "cost": 85,
+      "range": 4.8,
+      "fireRate": 0.9,
+      "damage": 13,
+      "projectileSpeed": 9.2,
+      "splashRadius": 0,
+      "slowFactor": 1,
+      "slowDuration": 0,
+      "targetsAir": true,
+      "armorPierce": false,
+      "pierceCount": 0,
+      "missileCount": 2,
+      "shieldMultiplier": 1.0,
+      "burnDps": 0,
+      "burnDuration": 0,
+      "color": "#FF84C8",
+      "upgrades": [
+        {
+          "name": "More missiles",
+          "cost": 90,
+          "damageMultiplier": 1.2,
+          "rangeBonus": 0.55,
+          "missileBonus": 1
+        },
+        {
+          "name": "Splash warheads",
+          "cost": 150,
+          "damageMultiplier": 1.5,
+          "rangeBonus": 0.9,
+          "missileBonus": 2,
+          "splashBonus": 0.75
+        }
+      ]
+    }
+  ]
+}

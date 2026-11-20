@@ -1,0 +1,81 @@
+{
+  "waves": [
+    {
+      "name": "First contact",
+      "stress": false,
+      "index": 1,
+      "groups": [
+        {
+          "count": 10,
+          "spawnIndex": 0,
+          "enemyId": "scout",
+          "interval": 0.7
+        },
+        {
+          "count": 10,
+          "spawnIndex": 1,
+          "enemyId": "scout",
+          "interval": 0.7
+        }
+      ]
+    },
+    {
+      "name": "Hive signal",
+      "stress": false,
+      "index": 2,
+      "groups": [
+        {
+          "count": 30,
+          "spawnIndex": 0,
+          "enemyId": "swarmer",
+          "interval": 0.18
+        },
+        {
+          "count": 30,
+          "spawnIndex": 1,
+          "enemyId": "swarmer",
+          "interval": 0.18
+        }
+      ]
+    },
+    {
+      "name": "Heavy approach",
+      "stress": false,
+      "index": 3,
+      "groups": [
+        {
+          "count": 8,
+          "spawnIndex": 0,
+          "enemyId": "cruiser",
+          "interval": 1.1
+        },
+        {
+          "count": 16,
+          "spawnIndex": 1,
+          "enemyId": "scout",
+          "interval": 0.45
+        }
+      ]
+    },
+    {
+      "name": "Stress: 150 ships",
+      "stress": true,
+      "index": 99,
+      "groups": [
+        {
+          "count": 75,
+          "spawnIndex": 0,
+          "enemyId": "swarmer",
+          "interval": 0
+        },
+        {
+          "count": 75,
+          "spawnIndex": 1,
+          "enemyId": "swarmer",
+          "interval": 0
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

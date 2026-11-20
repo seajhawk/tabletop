@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Tabletop Defense",
+  "short_name": "TTDefense",
+  "description": "Cooperative multi-touch tabletop tower defense across space, military, naval, Mars, medieval, kitchen, and backyard theaters.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#081321",
+  "theme_color": "#081321",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

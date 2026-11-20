@@ -1,0 +1,22 @@
+{
+  "name": "galactic-alliance-proto-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Prototype A: TypeScript + Vite + PixiJS v8 cooperative tabletop tower defense slice",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build && node scripts/generate-sw.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "pixi.js": "^8.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}
