@@ -24,6 +24,8 @@ const ALL_SOUND_EVENTS: SoundEvent[] = [
   'dragon-breath',
   'knight-charge',
   'knight-clash',
+  'roomba-deploy',
+  'roomba-sweep',
   'kill',
   'boss-phase',
   'leak',
@@ -54,8 +56,8 @@ describe('SoundEngine', () => {
     expect(engine.muted).toBe(false);
   });
 
-  it('defines positive cooldowns for all 33 sound events', () => {
-    expect(ALL_SOUND_EVENTS).toHaveLength(33);
+  it('defines positive cooldowns for all 35 sound events', () => {
+    expect(ALL_SOUND_EVENTS).toHaveLength(35);
     for (const ev of ALL_SOUND_EVENTS) {
       expect(typeof SOUND_COOLDOWNS[ev]).toBe('number');
       expect(SOUND_COOLDOWNS[ev]).toBeGreaterThan(0);
@@ -66,6 +68,8 @@ describe('SoundEngine', () => {
     expect(SOUND_COOLDOWNS['dragon-breath']).toBe(350);
     expect(SOUND_COOLDOWNS['knight-charge']).toBe(250);
     expect(SOUND_COOLDOWNS['knight-clash']).toBe(90);
+    expect(SOUND_COOLDOWNS['roomba-deploy']).toBe(250);
+    expect(SOUND_COOLDOWNS['roomba-sweep']).toBe(90);
   });
 
   describe('with mock AudioContext', () => {
@@ -192,7 +196,7 @@ describe('SoundEngine', () => {
       }
     });
 
-    it.each(THEMES)('synthesizes all 33 SoundEvents cleanly in %s theme', (theme) => {
+    it.each(THEMES)('synthesizes all 35 SoundEvents cleanly in %s theme', (theme) => {
       for (let i = 0; i < ALL_SOUND_EVENTS.length; i++) {
         const ev = ALL_SOUND_EVENTS[i];
         const engine = new SoundEngine(() => mockCtx);

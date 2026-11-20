@@ -68,6 +68,12 @@ describe('buildTheaterTextures', () => {
         expect(set.knight).toBeUndefined();
       }
 
+      if (theme === 'kitchen') {
+        expect(set.roomba).toBe(Texture.EMPTY);
+      } else {
+        expect(set.roomba).toBeUndefined();
+      }
+
       expect(() => set.destroy()).not.toThrow();
     },
   );

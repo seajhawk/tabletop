@@ -157,6 +157,7 @@ export interface Projectile {
 
 export interface Knight {
   active: boolean;
+  kind: 'knight' | 'roomba';
   id: number;
   owner: number;
   towerId: number;
@@ -1514,42 +1515,52 @@ export class Game {
     const isNaval = this.currentMap.mechanic === 'naval-subs-mines';
     const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
     const isMedieval = this.currentMap.mechanic === 'medieval-frenzy';
+    const isKitchen = this.currentMap.mechanic === 'kitchen-rush';
     for (const t of this.towers) {
       if (t.hp <= 0) continue;
-      if (isMedieval && t.def.id === 'swarm') {
-        const baseCd = t.tier === 0 ? 8.0 : t.tier === 1 ? 7.5 : 7.0;
+      if ((isMedieval || isKitchen) && t.def.id === 'swarm') {
+        const baseCd = isKitchen
+          ? (t.tier === 0 ? 7.5 : t.tier === 1 ? 7.0 : 6.5)
+          : (t.tier === 0 ? 8.0 : t.tier === 1 ? 7.5 : 7.0);
         const cd = t.boosted ? baseCd / 1.25 : baseCd;
         t.stableMaxCd = cd;
         t.cooldown -= dt;
         if (t.cooldown > 0) continue;
 
-        const knightCount = t.tier === 0 ? 1 : t.tier === 1 ? 3 : 5;
+        const unitCount = isKitchen
+          ? (t.tier === 0 ? 1 : t.tier === 1 ? 2 : 3)
+          : (t.tier === 0 ? 1 : t.tier === 1 ? 3 : 5);
         let owned = 0;
         for (const k of this.knights) {
           if (k.active && k.towerId === t.id) owned++;
         }
         const tx = t.x + 0.5;
         const ty = t.y + 0.5;
+        const rangeLimit = isKitchen ? 10 : 9.5;
         let hasGroundEnemy = false;
         for (const e of this.enemies) {
           if (e.dead || e.def.flying || e.hp <= 0) continue;
-          if (this.launched || Math.hypot(e.x - tx, e.y - ty) <= 9.5) {
+          if (this.launched || Math.hypot(e.x - tx, e.y - ty) <= rangeLimit) {
             hasGroundEnemy = true;
             break;
           }
         }
-        if (hasGroundEnemy && owned < knightCount * 2) {
-          const maxHp = 75 + t.tier * 25;
-          const damage = 28 + t.tier * 12;
-          for (let i = 0; i < knightCount; i++) {
-            const ox = knightCount === 1 ? 0 : ((i - (knightCount - 1) / 2) / ((knightCount - 1) / 2)) * 0.25;
-            const oy = knightCount === 1 ? 0 : (i % 2 === 0 ? -0.15 : 0.15);
+        if (hasGroundEnemy && owned < unitCount * 2) {
+          const maxHp = isKitchen ? 85 + t.tier * 30 : 75 + t.tier * 25;
+          const damage = isKitchen ? 24 + t.tier * 10 : 28 + t.tier * 12;
+          const speed = isKitchen ? 3.0 + t.tier * 0.35 : 3.2;
+          const life = isKitchen ? 18 : 16;
+          const kind: Knight['kind'] = isKitchen ? 'roomba' : 'knight';
+          for (let i = 0; i < unitCount; i++) {
+            const ox = unitCount === 1 ? 0 : ((i - (unitCount - 1) / 2) / ((unitCount - 1) / 2)) * 0.25;
+            const oy = unitCount === 1 ? 0 : (i % 2 === 0 ? -0.15 : 0.15);
             const k = acquire<Knight>(this.knights, () => ({
-              active: false, id: 0, owner: 0, towerId: 0, x: 0, y: 0, vx: 0, vy: 0,
+              active: false, kind: 'knight', id: 0, owner: 0, towerId: 0, x: 0, y: 0, vx: 0, vy: 0,
               hp: 0, maxHp: 0, damage: 0, attackCd: 0, speed: 0, tier: 0, life: 0,
             }));
             Object.assign(k, {
               active: true,
+              kind,
               id: this.nextKnightId++,
               owner: t.owner,
               towerId: t.id,
@@ -1561,13 +1572,13 @@ export class Game {
               maxHp,
               damage,
               attackCd: 0,
-              speed: 3.2,
+              speed,
               tier: t.tier,
-              life: 16,
+              life,
             });
           }
           t.cooldown = cd;
-          this.emitSound('knight-charge');
+          this.emitSound(isKitchen ? 'roomba-deploy' : 'knight-charge');
         } else {
           t.cooldown = 0;
         }
@@ -2216,7 +2227,35 @@ export class Game {
       }
 
       k.attackCd = Math.max(0, k.attackCd - dt);
-      if (dist <= 0.68 && k.attackCd <= 0) {
+      if (k.kind === 'roomba') {
+        if (dist <= 0.75 && k.attackCd <= 0) {
+          const tower = this.towerById(k.towerId) ?? undefined;
+          const sweepRadius = 0.85 + k.tier * 0.15;
+          const sweepR2 = sweepRadius * sweepRadius;
+          const boostedBurn = Boolean(tower?.boosted && this.currentMap.mechanic === 'kitchen-rush');
+          for (const e of this.enemies) {
+            if (e.dead || e.def.flying || e.hp <= 0) continue;
+            const edx = e.x - k.x;
+            const edy = e.y - k.y;
+            if (edx * edx + edy * edy > sweepR2) continue;
+            this.damageEnemy(e, k.damage, k.owner, {
+              armorPierce: k.tier >= 2,
+              shieldMultiplier: 1,
+              shieldStrip: 0,
+              burnDps: boostedBurn ? 10 : 0,
+              burnDuration: boostedBurn ? 2.5 : 0,
+            }, tower);
+            e.slowT = Math.max(e.slowT, 0.40);
+            e.slowF = Math.min(e.slowF, 0.50);
+          }
+          k.attackCd = 0.60;
+          this.emitSound('roomba-sweep');
+          this.spawnParticles(k.x, k.y, 5, 0x38bdf8, 2.2, 2.0);
+          const counterDmg = enemy.def.boss ? 22 : enemy.def.id === 'cruiser' ? 14 : 9;
+          k.hp = Math.max(0, k.hp - counterDmg);
+          if (k.hp <= 0) k.active = false;
+        }
+      } else if (dist <= 0.68 && k.attackCd <= 0) {
         const tower = this.towerById(k.towerId) ?? undefined;
         this.damageEnemy(enemy, k.damage, k.owner, {
           armorPierce: k.tier >= 2,

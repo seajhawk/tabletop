@@ -25,6 +25,8 @@ export const SOUND_COOLDOWNS: Record<SoundEvent, number> = {
   'dragon-breath': 350,
   'knight-charge': 250,
   'knight-clash': 90,
+  'roomba-deploy': 250,
+  'roomba-sweep': 90,
   'kill': 60,
   'boss-phase': 25,
   'leak': 25,
@@ -753,6 +755,16 @@ export class SoundEngine {
           break;
         }
 
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // space ion surge: low drone sweep (110 -> 80 Hz, 250ms)
           const osc = ctx.createOscillator();
@@ -1180,6 +1192,76 @@ export class SoundEngine {
     this.playNoiseBurst(ctx, destination, t, duration, 3200, 0.35, 'bandpass', 3.0);
 
     setTimeout(releaseVoice, 130);
+  }
+
+  private synthesizeRoombaDeploy(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // iconic cheerful 3-note robotic startup beep (523Hz -> 659Hz -> 784Hz quick sine arpeggio) + soft low electric motor hum (140Hz -> 180Hz over ~0.28s)
+    const notes = [
+      { freq: 523, start: 0, dur: 0.07 },
+      { freq: 659, start: 0.07, dur: 0.07 },
+      { freq: 784, start: 0.14, dur: 0.12 },
+    ];
+
+    for (const note of notes) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note.freq, t + note.start);
+      gain.gain.setValueAtTime(0.28, t + note.start);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + note.start + note.dur);
+      osc.connect(gain);
+      gain.connect(destination);
+      osc.start(t + note.start);
+      osc.stop(t + note.start + note.dur + 0.01);
+    }
+
+    // Soft low electric motor hum (140Hz -> 180Hz over ~0.28s)
+    const motorOsc = ctx.createOscillator();
+    const motorGain = ctx.createGain();
+    motorOsc.type = 'triangle';
+    motorOsc.frequency.setValueAtTime(140, t);
+    motorOsc.frequency.linearRampToValueAtTime(180, t + 0.28);
+    motorGain.gain.setValueAtTime(0.2, t);
+    motorGain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    motorOsc.connect(motorGain);
+    motorGain.connect(destination);
+    motorOsc.start(t);
+    motorOsc.stop(t + 0.29);
+
+    setTimeout(releaseVoice, 290);
+  }
+
+  private synthesizeRoombaSweep(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // brief low-pass vacuum suction whoosh + soft rubber bumper thump (120Hz -> 65Hz, ~0.11s)
+    const duration = 0.11;
+
+    // Vacuum suction whoosh (lowpass noise burst)
+    this.playNoiseBurst(ctx, destination, t, duration, 600, 0.32, 'lowpass');
+
+    // Soft rubber bumper thump (120Hz -> 65Hz)
+    const bumpOsc = ctx.createOscillator();
+    const bumpGain = ctx.createGain();
+    bumpOsc.type = 'sine';
+    bumpOsc.frequency.setValueAtTime(120, t);
+    bumpOsc.frequency.exponentialRampToValueAtTime(65, t + duration);
+    bumpGain.gain.setValueAtTime(0.4, t);
+    bumpGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    bumpOsc.connect(bumpGain);
+    bumpGain.connect(destination);
+    bumpOsc.start(t);
+    bumpOsc.stop(t + duration + 0.01);
+
+    setTimeout(releaseVoice, 120);
   }
 
   private synthesizeMilitary(ev: SoundEvent): void {
@@ -1859,6 +1941,16 @@ export class SoundEngine {
           break;
         }
 
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // desert combat wind gust (100 -> 70 Hz, 240ms)
           const osc = ctx.createOscillator();
@@ -2247,6 +2339,16 @@ export class SoundEngine {
 
         case 'knight-clash': {
           this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -2873,6 +2975,16 @@ export class SoundEngine {
           break;
         }
 
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Sweeping filtered dust-storm wind (howling resonant wind 80 -> 140 -> 65 Hz + sweeping bandpass noise, 350ms)
           const osc = ctx.createOscillator();
@@ -3489,6 +3601,16 @@ export class SoundEngine {
           break;
         }
 
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Howling castle blizzard / dark magic gale (110 -> 80 Hz + wind noise, 300ms)
           const osc = ctx.createOscillator();
@@ -4087,6 +4209,16 @@ export class SoundEngine {
           break;
         }
 
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Range hood exhaust whoosh / stove burner flare (warm rushing air, 260ms)
           const osc = ctx.createOscillator();
@@ -4681,6 +4813,16 @@ export class SoundEngine {
 
         case 'knight-clash': {
           this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-deploy': {
+          this.synthesizeRoombaDeploy(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'roomba-sweep': {
+          this.synthesizeRoombaSweep(ctx, destination, t, releaseVoice);
           break;
         }
 

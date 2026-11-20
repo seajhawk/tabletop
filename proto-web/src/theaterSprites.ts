@@ -7,6 +7,7 @@ export interface TheaterTextureSet extends MilitaryTextureSet {
   base?: Texture;
   moleMound?: Texture;
   knight?: Texture;
+  roomba?: Texture;
 }
 
 export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
@@ -2897,12 +2898,63 @@ function paintKitchenCoreBase(): Texture {
 function paintKitchenBase(key: TurretKey): Texture {
   return paintCanvas(96, (ctx, size) => {
     const c = size / 2;
+
+    if (key === 'swarm') {
+      // Sleek dark-slate charging dock home pad with metallic contacts & cyan floor guide arrows (+X)
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 31, c - 31, 62, 62, 14);
+        ctx.fillStyle = '#0f172a';
+        ctx.fill();
+      });
+
+      const padGrad = ctx.createRadialGradient(c - 8, c - 8, 4, c, c, 36);
+      padGrad.addColorStop(0, '#334155');
+      padGrad.addColorStop(0.65, '#1e293b');
+      padGrad.addColorStop(1, '#0f172a');
+      roundedRectPath(ctx, c - 31, c - 31, 62, 62, 14);
+      ctx.fillStyle = padGrad;
+      ctx.fill();
+      strokeInk(ctx, 1.9);
+
+      // Subtle inner deck border
+      roundedRectPath(ctx, c - 24, c - 24, 48, 48, 10);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.42)';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // Metallic charging contact strips on rear (-X) side
+      for (const oy of [-11, 11]) {
+        roundedRectPath(ctx, c - 20, c + oy - 3.5, 10, 7, 2);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fill();
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+      }
+
+      // Subtle cyan floor guide arrows pointing right (+X)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.78)';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (const ox of [2, 12]) {
+        ctx.beginPath();
+        ctx.moveTo(c + ox - 4, c - 7);
+        ctx.lineTo(c + ox + 4, c);
+        ctx.lineTo(c + ox - 4, c + 7);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
     const palette: Record<TurretKey, [string, string, string]> = {
       pulse: ['#ffffff', '#c7e8f5', '#00bcd4'],
       plasma: ['#7a4d2b', '#472a15', '#ff5722'],
       stasis: ['#fff0b3', '#e09f1f', '#ffb300'],
       railgun: ['#525860', '#2b2f36', '#cfd8dc'],
-      swarm: ['#ffffff', '#e8d5e5', '#e91e63'],
+      swarm: ['#334155', '#0f172a', '#38bdf8'],
     };
     const [light, dark, accent] = palette[key];
 
@@ -3102,31 +3154,198 @@ function paintKitchenTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
       return;
     }
 
-    // swarm: Soap Sprayer (white/magenta nozzle; T1 twin suds; T2 quad dishwasher pod launcher)
-    const nozzles = tier === 0 ? [0] : tier === 1 ? [-9, 9] : [-14, -5, 5, 14];
-    withGroundShadow(ctx, () => {
-      for (const oy of nozzles) {
-        drawGradBarrel(ctx, c + 2, c + oy, c + 30, 6, '#ffffff', '#f48fb1', '#ad1457', 1.5);
-      }
-    });
-    const bodyGrad = ctx.createRadialGradient(c - 5, c - 5, 3, c, c, 18);
-    bodyGrad.addColorStop(0, '#ffffff');
-    bodyGrad.addColorStop(1, '#f06292');
-    ctx.fillStyle = bodyGrad;
-    ctx.beginPath();
-    ctx.arc(c - 2, c, 17, 0, Math.PI * 2);
-    ctx.fill();
-    strokeInk(ctx, 1.85);
+    // swarm: Roomba / Robot Vacuum Charging Dock (T0: Lv1 Dock, T1: Lv2 Turbo Dock, T2: Lv3 Robotic Fleet)
+    if (tier === 0) {
+      // T0: Sleek matte-black & brushed-steel home base dock + glowing cyan power bar + docked mini vacuum silhouette
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 24, c - 20, 26, 40, 6);
+        ctx.fillStyle = '#111827';
+        ctx.fill();
+      });
 
-    if (tier >= 1) {
-      // Soap bubble accents
-      ctx.fillStyle = 'rgba(178, 235, 242, 0.85)';
-      ctx.beginPath();
-      ctx.arc(c - 10, c - 12, 5, 0, Math.PI * 2);
-      ctx.arc(c - 10, c + 12, 4.5, 0, Math.PI * 2);
+      const steelGrad = ctx.createLinearGradient(c - 24, c - 20, c + 2, c + 20);
+      steelGrad.addColorStop(0, '#4b5563');
+      steelGrad.addColorStop(0.5, '#1f2937');
+      steelGrad.addColorStop(1, '#111827');
+      roundedRectPath(ctx, c - 24, c - 20, 26, 40, 6);
+      ctx.fillStyle = steelGrad;
       ctx.fill();
-      strokeInk(ctx, 1.3);
+      strokeInk(ctx, 1.8);
+
+      // Brushed-steel top plate
+      roundedRectPath(ctx, c - 20, c - 15, 16, 30, 4);
+      ctx.fillStyle = '#374151';
+      ctx.fill();
+      strokeInk(ctx, 1.2);
+
+      // Glowing cyan power bar
+      ctx.save();
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 7;
+      roundedRectPath(ctx, c - 16, c - 10, 4, 20, 2);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fill();
+      ctx.restore();
+
+      // Docked mini vacuum silhouette on front (+X) pad
+      withGroundShadow(ctx, () => {
+        ctx.beginPath();
+        ctx.arc(c + 9, c, 12, 0, Math.PI * 2);
+        ctx.fillStyle = '#18181b';
+        ctx.fill();
+      });
+      const miniGrad = ctx.createRadialGradient(c + 7, c - 3, 2, c + 9, c, 12);
+      miniGrad.addColorStop(0, '#3f3f46');
+      miniGrad.addColorStop(1, '#18181b');
+      ctx.beginPath();
+      ctx.arc(c + 9, c, 12, 0, Math.PI * 2);
+      ctx.fillStyle = miniGrad;
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+
+      ctx.beginPath();
+      ctx.arc(c + 9, c, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(c + 9, c, 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#34d399';
+      ctx.fill();
+      return;
     }
+
+    if (tier === 1) {
+      // T1: Wider brushed-chrome turbo dock with twin glowing cyan/mint charge LEDs and brass accent vents
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 26, c - 26, 36, 52, 8);
+        ctx.fillStyle = '#1f2937';
+        ctx.fill();
+      });
+
+      const chromeGrad = ctx.createLinearGradient(c - 26, c - 26, c + 10, c + 26);
+      chromeGrad.addColorStop(0, '#cbd5e1');
+      chromeGrad.addColorStop(0.45, '#64748b');
+      chromeGrad.addColorStop(1, '#334155');
+      roundedRectPath(ctx, c - 26, c - 26, 36, 52, 8);
+      ctx.fillStyle = chromeGrad;
+      ctx.fill();
+      strokeInk(ctx, 1.85);
+
+      // Dark matte turbo core housing
+      roundedRectPath(ctx, c - 21, c - 20, 26, 40, 5);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+      strokeInk(ctx, 1.4);
+
+      // Brass accent vents along left edge
+      for (const oy of [-13, -5, 5, 13]) {
+        roundedRectPath(ctx, c - 18, c + oy - 2, 7, 4, 1.2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+      }
+
+      // Twin glowing cyan/mint charge LEDs + bay pads
+      for (const [idx, oy] of [
+        [0, -11],
+        [1, 11],
+      ] as const) {
+        const ledColor = idx === 0 ? '#38bdf8' : '#34d399';
+        ctx.save();
+        ctx.shadowColor = ledColor;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(c - 3, c + oy, 4.2, 0, Math.PI * 2);
+        ctx.fillStyle = ledColor;
+        ctx.fill();
+        ctx.restore();
+        strokeInk(ctx, 1.2);
+
+        // Front charging contact prongs
+        roundedRectPath(ctx, c + 9, c + oy - 4, 8, 8, 2);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+      }
+      return;
+    }
+
+    // T2: High-tech chrome-and-gold triple-bay command dock with vivid glowing emerald/cyan charge rings and antenna beacon
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, c - 28, c - 29, 44, 58, 9);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+    });
+
+    const fleetGrad = ctx.createLinearGradient(c - 28, c - 29, c + 16, c + 29);
+    fleetGrad.addColorStop(0, '#e2e8f0');
+    fleetGrad.addColorStop(0.5, '#64748b');
+    fleetGrad.addColorStop(1, '#1e293b');
+    roundedRectPath(ctx, c - 28, c - 29, 44, 58, 9);
+    ctx.fillStyle = fleetGrad;
+    ctx.fill();
+    strokeInk(ctx, 1.9);
+
+    // Gold command trim rails
+    for (const oy of [-25, 20]) {
+      roundedRectPath(ctx, c - 24, c + oy, 36, 5, 2);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+    }
+
+    // Dark recessed command deck
+    roundedRectPath(ctx, c - 23, c - 17, 34, 34, 5);
+    ctx.fillStyle = '#0f172a';
+    ctx.fill();
+    strokeInk(ctx, 1.3);
+
+    // Triple glowing emerald/cyan charge rings
+    const ringOffsets = [
+      { ox: 6, oy: -12, color: '#38bdf8' },
+      { ox: 10, oy: 0, color: '#34d399' },
+      { ox: 6, oy: 12, color: '#38bdf8' },
+    ];
+    for (const ring of ringOffsets) {
+      ctx.save();
+      ctx.shadowColor = ring.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(c + ring.ox, c + ring.oy, 5.2, 0, Math.PI * 2);
+      ctx.strokeStyle = ring.color;
+      ctx.lineWidth = 2.3;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(c + ring.ox, c + ring.oy, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fill();
+    }
+
+    // Antenna beacon on rear-left corner
+    ctx.beginPath();
+    ctx.moveTo(c - 16, c);
+    ctx.lineTo(c - 26, c - 10);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.save();
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 9;
+    ctx.beginPath();
+    ctx.arc(c - 26, c - 10, 4.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#34d399';
+    ctx.fill();
+    ctx.restore();
+    strokeInk(ctx, 1.3);
   });
 }
 
@@ -3323,6 +3542,112 @@ function paintKitchenBoost(): Texture {
     'rgba(255, 90, 31, 0)',
     '#ff6d00',
   );
+}
+
+function paintKitchenRoomba(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+
+    // Soft ground shadow under disc
+    withGroundShadow(ctx, () => {
+      ctx.beginPath();
+      ctx.arc(c, c, 21, 0, Math.PI * 2);
+      ctx.fillStyle = '#181c22';
+      ctx.fill();
+    }, 5, -2, 2.5, 0.55);
+
+    // Two tiny spinning 3-spoke yellow/cyan side sweeper brushes near front-left and front-right edges
+    for (const [idx, sy] of [
+      [0, -17],
+      [1, 17],
+    ] as const) {
+      const bx = c + 12;
+      const by = c + sy;
+      ctx.save();
+      for (let s = 0; s < 3; s++) {
+        const ang = (s * Math.PI * 2) / 3 + (idx === 0 ? 0.35 : -0.35);
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + Math.cos(ang) * 7.5, by + Math.sin(ang) * 7.5);
+        ctx.strokeStyle = s % 2 === 0 ? '#fde047' : '#38bdf8';
+        ctx.lineWidth = 2.0;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(bx, by, 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#475569';
+      ctx.fill();
+      strokeInk(ctx, 1.0);
+      ctx.restore();
+    }
+
+    // Sleek round matte charcoal-gunmetal disc chassis
+    const bodyGrad = ctx.createRadialGradient(c - 5, c - 5, 3, c, c, 22);
+    bodyGrad.addColorStop(0, '#4b5563');
+    bodyGrad.addColorStop(0.55, '#272c35');
+    bodyGrad.addColorStop(1, '#15181e');
+    ctx.beginPath();
+    ctx.arc(c, c, 21, 0, Math.PI * 2);
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+    strokeInk(ctx, 1.8);
+
+    // Rear dustbin seam arc (-X side)
+    ctx.beginPath();
+    ctx.arc(c, c, 16.5, Math.PI * 0.62, Math.PI * 1.38);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Curved glossy dark front bumper arc along +X edge
+    ctx.beginPath();
+    ctx.arc(c, c, 19.2, -Math.PI * 0.42, Math.PI * 0.42);
+    ctx.strokeStyle = '#0b0e14';
+    ctx.lineWidth = 4.2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Specular bumper highlight
+    ctx.beginPath();
+    ctx.arc(c, c, 19.6, -Math.PI * 0.28, Math.PI * 0.28);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Tiny infrared sensor window at front-most +X nose
+    roundedRectPath(ctx, c + 16, c - 3, 4.5, 6, 1.5);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fill();
+    strokeInk(ctx, 1.0);
+
+    // Glowing bright cyan-emerald circular LED ring
+    ctx.save();
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 8;
+    const ledGrad = ctx.createLinearGradient(c - 11, c - 11, c + 11, c + 11);
+    ledGrad.addColorStop(0, '#38bdf8');
+    ledGrad.addColorStop(1, '#34d399');
+    ctx.beginPath();
+    ctx.arc(c, c, 10.5, 0, Math.PI * 2);
+    ctx.strokeStyle = ledGrad;
+    ctx.lineWidth = 2.6;
+    ctx.stroke();
+    ctx.restore();
+
+    // Clean center power button
+    ctx.beginPath();
+    ctx.arc(c, c, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b';
+    ctx.fill();
+    strokeInk(ctx, 1.2);
+
+    ctx.beginPath();
+    ctx.arc(c, c, 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = '#34d399';
+    ctx.fill();
+  });
 }
 
 function paintKitchenObstacle(_variant: number): Texture {
@@ -3894,6 +4219,9 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     if (theme === 'medieval') {
       result.knight = Texture.EMPTY;
     }
+    if (theme === 'kitchen') {
+      result.roomba = Texture.EMPTY;
+    }
     return result;
   }
 
@@ -3952,6 +4280,7 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
   } else if (theme === 'kitchen') {
     result.boost = track(paintKitchenBoost());
     result.base = track(paintKitchenCoreBase());
+    result.roomba = track(paintKitchenRoomba());
   } else {
     result.boost = track(paintLawnBoost());
     result.base = track(paintLawnCoreBase());

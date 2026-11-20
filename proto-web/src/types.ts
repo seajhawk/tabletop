@@ -44,6 +44,8 @@ export type SoundEvent =
   | 'dragon-breath'
   | 'knight-charge'
   | 'knight-clash'
+  | 'roomba-deploy'
+  | 'roomba-sweep'
   | 'kill'
   | 'boss-phase'
   | 'leak'

@@ -804,9 +804,11 @@ export class Renderer {
       }
     }
 
-    // Keep Wall battlement mount markers (Medieval Ironhold Keep)
+    // Keep Wall battlement / Kitchen Countertop mount markers
     if (map.wallCells?.length) {
-      const wallCol = 0xf4c86a;
+      const isKitchen = theme.id === 'kitchen';
+      const wallCol = isKitchen ? 0xd8b878 : 0xf4c86a;
+      const wallLabel = theme.wallLabel ?? 'WALL';
       const wallG = new Graphics();
       this.bg.addChild(wallG);
       for (const [wx, wy] of map.wallCells) {
@@ -818,10 +820,13 @@ export class Renderer {
           .moveTo(x1 - pad - arm, y0 + pad).lineTo(x1 - pad, y0 + pad).lineTo(x1 - pad, y0 + pad + arm)
           .moveTo(x1 - pad, y1 - pad - arm).lineTo(x1 - pad, y1 - pad).lineTo(x1 - pad - arm, y1 - pad)
           .moveTo(x0 + pad + arm, y1 - pad).lineTo(x0 + pad, y1 - pad).lineTo(x0 + pad, y1 - pad - arm)
-          .stroke({ width: 1.6, color: wallCol, alpha: 0.55 });
-        if (wx === 21 && (wy === 5 || wy === 6 || wy === 9 || wy === 10)) {
+          .stroke({ width: 1.6, color: wallCol, alpha: isKitchen ? 0.45 : 0.55 });
+        const showTag = isKitchen
+          ? ((wx === 4 || wx === 17) && (wy === 2 || wy === 14))
+          : (wx === 21 && (wy === 5 || wy === 6 || wy === 9 || wy === 10));
+        if (showTag) {
           const cx = x0 + CELL * 0.5, cy = y0 + CELL * 0.5;
-          const tag = mkText('WALL', 7, wallCol, { bold: true });
+          const tag = mkText(wallLabel, 7, wallCol, { bold: true });
           tag.anchor.set(0.5);
           const pw = Math.max(26, Math.ceil(tag.width) + 7);
           const pillG = new Graphics();
@@ -1115,7 +1120,7 @@ export class Renderer {
         cost.anchor.set(0.5, 0); cost.position.set(r.w / 2, 68);
         sc.addChild(nm, cost);
 
-        const canHitAir = def.targetsAir && !(theme.id === 'medieval' && id === 'swarm');
+        const canHitAir = def.targetsAir && !((theme.id === 'medieval' || theme.id === 'kitchen') && id === 'swarm');
         if (canHitAir) {
           const badge = new Graphics();
           const airCol = hasSprites ? 0x8be0ae : C.cyan;
@@ -1806,8 +1811,9 @@ export class Renderer {
   private syncKnights(): void {
     const sprites = this.activeSprites(this.theme().id);
     const knightTex = sprites?.knight;
+    const roombaTex = sprites?.roomba;
     const knights = this.game.knights;
-    if (!knightTex) {
+    if (!knightTex && !roombaTex) {
       for (const item of this.knightPool) {
         if (item.container.visible) item.container.visible = false;
       }
@@ -1817,9 +1823,12 @@ export class Renderer {
     let idx = 0;
     for (const k of knights) {
       if (!k.active) continue;
+      const isRoomba = k.kind === 'roomba';
+      const tex = isRoomba ? roombaTex : knightTex;
+      if (!tex) continue;
       if (idx >= this.knightPool.length) {
         const container = new Container();
-        const sprite = new Sprite(knightTex);
+        const sprite = new Sprite(tex);
         sprite.anchor.set(0.5);
         const hpBar = new Graphics();
         container.addChild(sprite, hpBar);
@@ -1829,8 +1838,8 @@ export class Renderer {
       const item = this.knightPool[idx++];
       item.container.visible = true;
       item.container.position.set(k.x * CELL, k.y * CELL);
-      if (item.sprite.texture !== knightTex) item.sprite.texture = knightTex;
-      const sz = k.tier >= 2 ? 32 : 28;
+      if (item.sprite.texture !== tex) item.sprite.texture = tex;
+      const sz = isRoomba ? (k.tier >= 2 ? 30 : 26) : (k.tier >= 2 ? 32 : 28);
       item.sprite.width = sz;
       item.sprite.height = sz;
       const speedSq = k.vx * k.vx + k.vy * k.vy;
@@ -1841,10 +1850,12 @@ export class Renderer {
       const bw = 20, bh = 3;
       const bx = -bw / 2, by = -18;
       const frac = Math.max(0, Math.min(1, k.hp / Math.max(1, k.maxHp)));
+      const fillCol = isRoomba ? 0x34d399 : 0x38bdf8;
+      const borderCol = isRoomba ? 0x38bdf8 : 0xffd166;
       hb.clear();
       hb.rect(bx, by, bw, bh).fill({ color: 0x0a1420, alpha: 0.78 });
-      if (frac > 0) hb.rect(bx, by, bw * frac, bh).fill({ color: 0x38bdf8 });
-      hb.rect(bx, by, bw, bh).stroke({ width: 0.9, color: 0xffd166, alpha: 0.9 });
+      if (frac > 0) hb.rect(bx, by, bw * frac, bh).fill({ color: fillCol });
+      hb.rect(bx, by, bw, bh).stroke({ width: 0.9, color: borderCol, alpha: 0.9 });
     }
     for (let i = idx; i < this.knightPool.length; i++) {
       if (this.knightPool[i].container.visible) this.knightPool[i].container.visible = false;
@@ -1879,16 +1890,31 @@ export class Renderer {
       g.circle(mx, my, blink ? 2.8 : 1.7).fill({ color: blink ? 0xff4242 : 0x991f1f, alpha: blink ? 0.95 : 0.72 });
     }
 
-    // Medieval Knight Stable slow-recharge bar
-    if (themeId === 'medieval') {
+    // Roomba 360° vacuum-sweep ring
+    for (const k of gm.knights) {
+      if (!k.active || k.kind !== 'roomba' || k.attackCd <= 0.35) continue;
+      const prog = Math.max(0, Math.min(1, (0.60 - k.attackCd) / 0.25));
+      const maxR = (0.85 + k.tier * 0.15) * CELL;
+      const rad = maxR * (0.45 + 0.55 * prog);
+      const alpha = 0.35 * (1 - prog * 0.65);
+      const kx = k.x * CELL, ky = k.y * CELL;
+      glow.circle(kx, ky, rad).fill({ color: 0x38bdf8, alpha: alpha * 0.45 });
+      g.circle(kx, ky, rad).stroke({ width: 1.8, color: 0x38bdf8, alpha });
+    }
+
+    // Medieval Knight Stable / Kitchen Roomba Dock slow-recharge bar
+    if (gm.currentMap.mechanic === 'medieval-frenzy' || gm.currentMap.mechanic === 'kitchen-rush') {
+      const isKitchen = gm.currentMap.mechanic === 'kitchen-rush';
+      const fillCol = isKitchen ? 0x34d399 : 0x3b82f6;
+      const strokeCol = isKitchen ? 0x38bdf8 : 0x93c5fd;
       for (const t of gm.towers) {
         if (t.def.id === 'swarm' && t.hp > 0 && t.stableMaxCd && t.stableMaxCd > 0) {
           const fill = Math.max(0, Math.min(1, 1 - t.cooldown / t.stableMaxCd));
           const bx = (t.x + 0.5) * CELL - 11;
           const by = t.y * CELL + 2;
           g.rect(bx, by, 22, 3).fill({ color: 0x0b1526, alpha: 0.78 });
-          if (fill > 0) g.rect(bx, by, 22 * fill, 3).fill({ color: 0x3b82f6, alpha: 0.95 });
-          g.rect(bx, by, 22, 3).stroke({ width: 0.7, color: 0x93c5fd, alpha: 0.65 });
+          if (fill > 0) g.rect(bx, by, 22 * fill, 3).fill({ color: fillCol, alpha: 0.95 });
+          g.rect(bx, by, 22, 3).stroke({ width: 0.7, color: strokeCol, alpha: 0.65 });
         }
       }
     }

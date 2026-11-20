@@ -38,7 +38,7 @@ for the full workflow; actual OS installation and device testing remain unverifi
 ## Current game
 
 - Nine maps across seven themes: **Orbital Crossing**, **Washington DC**,
-  **Pacific Fleet**, **Mars Outpost**, **Ironhold Keep**, **Kitchen Counter**,
+  **Pacific Fleet**, **Mars Outpost**, **Ironhold Keep**, **Midnight Kitchen**,
   **Backyard Lawn**, **Asteroid Belt**, and **Nebula Rift**.
 - Five turret roles with two upgrade tiers, six enemy types, ten campaign waves,
   and a separate 150-ship stress scene with twenty towers.

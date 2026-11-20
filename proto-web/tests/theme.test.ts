@@ -169,6 +169,7 @@ describe('theater themes', () => {
     expect(med.victoryTitle).toBe('CASTLE DEFENDED');
     expect(med.defeatTitle).toBe('CASTLE FALLEN');
     expect(med.obstacleLabel).toBe('Dark Forest');
+    expect(med.wallLabel).toBe('WALL');
     expect(med.boostLabel).toBe('Arcane Rune');
     expect(med.spaceBg).toBe(0x151411);
     expect(med.boardBg).toBe(0x243322);
@@ -216,7 +217,8 @@ describe('theater themes', () => {
     expect(kitchen.bossTitle).toBe('KING RAT');
     expect(kitchen.victoryTitle).toBe('FRIDGE DEFENDED');
     expect(kitchen.defeatTitle).toBe('FRIDGE RAIDED');
-    expect(kitchen.obstacleLabel).toBe('Appliances');
+    expect(kitchen.obstacleLabel).toBe('Furniture');
+    expect(kitchen.wallLabel).toBe('COUNTER');
     expect(kitchen.boostLabel).toBe('+BURN');
     expect(kitchen.spaceBg).toBe(0x1b1510);
     expect(kitchen.boardBg).toBe(0x2b2219);
@@ -229,14 +231,17 @@ describe('theater themes', () => {
     expect(kitchen.turrets.plasma.shortName).toBe('Pepper Mill');
     expect(kitchen.turrets.stasis.shortName).toBe('Honey Trap');
     expect(kitchen.turrets.railgun.shortName).toBe('Chef Knife');
-    expect(kitchen.turrets.swarm.shortName).toBe('Soap Spray');
+    expect(kitchen.turrets.swarm.shortName).toBe('Roomba');
+    expect(kitchen.turrets.swarm.fullName).toBe('Roomba Dock');
+    expect(kitchen.turrets.swarm.upgrades).toEqual(['2 Turbo Roombas', '3 Heavy Roombas']);
+    expect(kitchen.turrets.swarm.color).toBe(0x38bdf8);
 
     expect(kitchen.roleTags).toEqual({
       pulse: 'SWAT',
       plasma: 'SPICE',
       stasis: 'GLUE',
       railgun: 'SLICE',
-      swarm: 'SPRAY',
+      swarm: 'VAC',
     });
 
     expect(kitchen.enemies.scout.name).toBe('Kitchen Ant');
@@ -248,7 +253,11 @@ describe('theater themes', () => {
 
     expect(kitchen.waveNames[1]).toBe('Crumb Patrol');
     expect(kitchen.waveNames[10]).toBe('King Rat Siege');
+    expect(kitchen.helpText).toContain('Midnight Kitchen');
+    expect(kitchen.helpText).toContain('Countertops');
     expect(kitchen.helpText).toContain('+BURN');
+    expect(kitchen.helpText).toContain('Roomba');
+    expect(kitchen.helpText).toContain('Fridge Open — Snack Rush');
   });
 
   it('defines Backyard/House labels, defenses, boost label, and wave progression in lawn theme', () => {

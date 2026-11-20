@@ -31,6 +31,7 @@ export interface TheaterTheme {
   defeatTitle: string;
   helpText: string;
   obstacleLabel: string;
+  wallLabel?: string;
   boostLabel?: string;
   roleTags?: Record<string, string>;
   turrets: Record<string, TurretVisualTheme>;
@@ -286,6 +287,7 @@ const MEDIEVAL_THEME: TheaterTheme = {
     'Watch for flying Fire Dragons scorching defenses — tap a damaged turret to Repair with credits! ' +
     'Start paused: plan, then Launch wave.',
   obstacleLabel: 'Dark Forest',
+  wallLabel: 'WALL',
   boostLabel: 'Arcane Rune',
   roleTags: {
     pulse: 'ARCH',
@@ -339,23 +341,25 @@ const KITCHEN_THEME: TheaterTheme = {
   victoryTitle: 'FRIDGE DEFENDED',
   defeatTitle: 'FRIDGE RAIDED',
   helpText:
-    'Defend the fridge from kitchen vermin! Hot Stove Burners (+BURN) add fire burn to passing creeps. ' +
-    'Prepare Honey Traps to counter fast bursts during the Fridge Snack Rush!',
-  obstacleLabel: 'Appliances',
+    'Defend the fridge from kitchen vermin in Midnight Kitchen! ' +
+    'Mount defenses on Countertops (+15% range) & Stove Burners (+BURN). ' +
+    'Deploy Roomba floor vacuums (1/2/3 units) sweeping pests, and prepare Honey Traps to counter fast bursts during Fridge Open — Snack Rush!',
+  obstacleLabel: 'Furniture',
+  wallLabel: 'COUNTER',
   boostLabel: '+BURN',
   roleTags: {
     pulse: 'SWAT',
     plasma: 'SPICE',
     stasis: 'GLUE',
     railgun: 'SLICE',
-    swarm: 'SPRAY',
+    swarm: 'VAC',
   },
   turrets: {
     pulse: { shortName: 'Swatter', fullName: 'Fly Swatter', upgrades: ['Twin Swatter', 'Bug Zapper'], color: 0x38bdf8 },
     plasma: { shortName: 'Pepper Mill', fullName: 'Pepper Mill', upgrades: ['Cayenne Cannon', 'Ghost Pepper'], color: 0xf97316 },
     stasis: { shortName: 'Honey Trap', fullName: 'Honey Trap', upgrades: ['Syrup Spill', 'Super Glue Pad'], color: 0xfacc15 },
     railgun: { shortName: 'Chef Knife', fullName: "Chef's Knife", upgrades: ['Twin Cleavers', 'Laser Slicer'], color: 0xc084fc },
-    swarm: { shortName: 'Soap Spray', fullName: 'Soap Sprayer', upgrades: ['Suds Launcher', 'Dishwasher Pod'], color: 0xf472b6 },
+    swarm: { shortName: 'Roomba', fullName: 'Roomba Dock', upgrades: ['2 Turbo Roombas', '3 Heavy Roombas'], color: 0x38bdf8 },
   },
   enemies: {
     scout: { name: 'Kitchen Ant', color: 0x8b4513 },

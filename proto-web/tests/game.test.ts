@@ -853,8 +853,8 @@ describe('new theater maps & mechanics', () => {
     expect(g.currentMap.mechanic).toBe('kitchen-rush');
     g.credits[0] = 1000;
 
-    // [9, 5] is a stove burner boostCell
-    expect(g.tryPlace(0, 'pulse', 9, 5).ok).toBe(true);
+    // [12, 2] is a stove burner boostCell
+    expect(g.tryPlace(0, 'pulse', 12, 2).ok).toBe(true);
     const burnerTower = g.towers[0];
     expect(burnerTower.boosted).toBe(true);
     expect(g.towerStats(burnerTower).burnDps).toBeGreaterThanOrEqual(10);
@@ -862,8 +862,8 @@ describe('new theater maps & mechanics', () => {
 
     g.launchWave();
     g.spawners = [];
-    const pest = makeEnemy(g, 2001, 'cruiser', 9.5, 6.5, {
-      hp: 500, maxHp: 500, shield: 0, maxShield: 0, cx: 9, cy: 6, nx: 10, ny: 6, rem: 15,
+    const pest = makeEnemy(g, 2001, 'cruiser', 12.5, 3.5, {
+      hp: 500, maxHp: 500, shield: 0, maxShield: 0, cx: 12, cy: 3, nx: 13, ny: 3, rem: 15,
     });
     g.enemies = [pest];
     run(g, 0.3);
@@ -1455,5 +1455,75 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     run(g, 0.5);
     expect(follower.hp).toBeLessThan(500);
     expect(follower.burnT).toBeGreaterThan(0);
+  });
+
+  it('Midnight Kitchen countertop wallCells allow mounting turrets with +15% range (onWall === true)', () => {
+    const g = newGame(2);
+    const kitchenIdx = g.data.maps.findIndex(m => m.id === 'kitchen-raid');
+    g.setMap(kitchenIdx);
+    expect(g.currentMap.name).toBe('Midnight Kitchen');
+    expect(g.currentMap.wallCells?.length).toBe(10);
+    g.credits[0] += 500;
+
+    // [4, 2] is a countertop wallCell; [4, 5] is an adjacent floor cell
+    expect(g.tryPlace(0, 'pulse', 4, 2).ok).toBe(true);
+    expect(g.tryPlace(0, 'pulse', 4, 5).ok).toBe(true);
+    const [counterTower, floorTower] = g.towers;
+    expect(counterTower.onWall).toBe(true);
+    expect(floorTower.onWall).toBe(false);
+    expect(g.towerStats(counterTower).range).toBeCloseTo(g.towerStats(floorTower).range * 1.15, 5);
+  });
+
+  it('Midnight Kitchen Roomba Dock (swarm) deploys 1/2/3 Roombas on slow recharge and performs AoE ground sweeps', () => {
+    const g = newGame(2);
+    const kitchenIdx = g.data.maps.findIndex(m => m.id === 'kitchen-raid');
+    g.setMap(kitchenIdx);
+    g.credits[0] += 2000;
+
+    expect(g.tryPlace(0, 'swarm', 10, 6).ok).toBe(true);
+    const dock = g.towers[0];
+    g.launchWave();
+    g.spawners = [];
+
+    const pestA = makeEnemy(g, 9901, 'cruiser', 11.5, 6.5, {
+      hp: 2000, maxHp: 2000, cx: 11, cy: 6, nx: 12, ny: 6, rem: 15,
+    });
+    const pestB = makeEnemy(g, 9902, 'cruiser', 11.5, 6.8, {
+      hp: 2000, maxHp: 2000, cx: 11, cy: 6, nx: 12, ny: 6, rem: 15,
+    });
+    g.enemies = [pestA, pestB];
+    g.drainEvents();
+
+    // T0: deploys 1 Roomba on 7.5s recharge, no homing missiles
+    run(g, 0.3);
+    expect(dock.stableMaxCd).toBe(7.5);
+    expect(dock.cooldown).toBeGreaterThan(6.5);
+    const t0Roombas = g.knights.filter(k => k.active && k.towerId === dock.id);
+    expect(t0Roombas.length).toBe(1);
+    expect(t0Roombas[0].kind).toBe('roomba');
+    expect(g.projectiles.filter(p => p.active && p.kind === 'missile').length).toBe(0);
+    expect(g.drainEvents()).toContain('roomba-deploy');
+
+    // Roomba rolls to invaders and performs 360° AoE sweep hitting both nearby ground pests
+    run(g, 1.0);
+    expect(pestA.hp).toBeLessThan(2000);
+    expect(pestB.hp).toBeLessThan(2000);
+    expect(g.drainEvents()).toContain('roomba-sweep');
+
+    // T1: deploys 2 Roombas on 7.0s recharge
+    expect(g.upgradeTower(dock.id).ok).toBe(true);
+    for (const k of g.knights) k.active = false;
+    dock.cooldown = 0.05;
+    run(g, 0.1);
+    expect(dock.stableMaxCd).toBe(7.0);
+    expect(g.knights.filter(k => k.active && k.towerId === dock.id && k.kind === 'roomba').length).toBe(2);
+
+    // T2: deploys 3 Roombas on 6.5s recharge
+    expect(g.upgradeTower(dock.id).ok).toBe(true);
+    for (const k of g.knights) k.active = false;
+    dock.cooldown = 0.05;
+    run(g, 0.1);
+    expect(dock.stableMaxCd).toBe(6.5);
+    expect(g.knights.filter(k => k.active && k.towerId === dock.id && k.kind === 'roomba').length).toBe(3);
   });
 });
