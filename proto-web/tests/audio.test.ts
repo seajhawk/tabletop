@@ -19,11 +19,14 @@ const ALL_SOUND_EVENTS: SoundEvent[] = [
   'fridge-open',
   'centipede-split',
   'mole-flush',
+  'meteor-warn',
+  'meteor-impact',
   'kill',
   'boss-phase',
   'leak',
   'ui-place',
   'ui-upgrade',
+  'ui-repair',
   'ui-sell',
   'ui-error',
   'ui-share',
@@ -48,12 +51,15 @@ describe('SoundEngine', () => {
     expect(engine.muted).toBe(false);
   });
 
-  it('defines positive cooldowns for all 27 sound events', () => {
-    expect(ALL_SOUND_EVENTS).toHaveLength(27);
+  it('defines positive cooldowns for all 30 sound events', () => {
+    expect(ALL_SOUND_EVENTS).toHaveLength(30);
     for (const ev of ALL_SOUND_EVENTS) {
       expect(typeof SOUND_COOLDOWNS[ev]).toBe('number');
       expect(SOUND_COOLDOWNS[ev]).toBeGreaterThan(0);
     }
+    expect(SOUND_COOLDOWNS['meteor-warn']).toBe(200);
+    expect(SOUND_COOLDOWNS['meteor-impact']).toBe(120);
+    expect(SOUND_COOLDOWNS['ui-repair']).toBe(80);
   });
 
   describe('with mock AudioContext', () => {
@@ -180,7 +186,7 @@ describe('SoundEngine', () => {
       }
     });
 
-    it.each(THEMES)('synthesizes all 27 SoundEvents cleanly in %s theme', (theme) => {
+    it.each(THEMES)('synthesizes all 30 SoundEvents cleanly in %s theme', (theme) => {
       for (let i = 0; i < ALL_SOUND_EVENTS.length; i++) {
         const ev = ALL_SOUND_EVENTS[i];
         const engine = new SoundEngine(() => mockCtx);

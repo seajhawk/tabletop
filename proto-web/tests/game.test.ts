@@ -1027,3 +1027,148 @@ describe('configurable wave count', () => {
     expect(formatWaveName('space', g.ordinaryWaves[0])).not.toMatch(/ II$| III$/);
   });
 });
+
+describe('mars meteors, turret durability & repair', () => {
+  it('spawns spread-out meteors with warn/impact sounds on mars-outpost and none on orbital-crossing', () => {
+    const g = newGame(2);
+    g.setMap(3); // mars-outpost
+    expect(g.currentMap.mechanic).toBe('mars-storms');
+    g.tryPlace(0, 'pulse', 8, 6);
+    g.tryPlace(1, 'pulse', 16, 10);
+    g.launchWave();
+
+    const sounds: string[] = [];
+    const impacts: { x: number; y: number }[] = [];
+    const seenMeteorIds = new Set<number>();
+    for (let i = 0; i < 60 * 24; i++) {
+      g.step(1 / 60);
+      for (const s of g.drainEvents()) sounds.push(s);
+      for (const m of g.meteors) {
+        if (m.active && !seenMeteorIds.has(m.id)) {
+          seenMeteorIds.add(m.id);
+          impacts.push({ x: m.tx, y: m.ty });
+        }
+      }
+      if (impacts.length >= 4 && sounds.includes('meteor-impact')) break;
+    }
+
+    expect(impacts.length).toBeGreaterThanOrEqual(4);
+    expect(sounds).toContain('meteor-warn');
+    expect(sounds).toContain('meteor-impact');
+
+    // Consecutive meteors should not hit the exact same spot
+    let minPairDist = Infinity;
+    for (let i = 0; i < impacts.length; i++) {
+      for (let j = i + 1; j < impacts.length; j++) {
+        const d = Math.hypot(impacts[i].x - impacts[j].x, impacts[i].y - impacts[j].y);
+        if (d < minPairDist) minPairDist = d;
+      }
+    }
+    expect(minPairDist).toBeGreaterThan(1.0);
+
+    // Non-Mars map (orbital-crossing) should never spawn meteors
+    const g0 = newGame(2);
+    g0.setMap(0);
+    expect(g0.currentMap.id).toBe('orbital-crossing');
+    g0.launchWave();
+    run(g0, 12);
+    expect(g0.meteors.length).toBe(0);
+    expect(g0.drainEvents()).not.toContain('meteor-warn');
+  });
+
+  it('meteor impact damages nearby towers, disables at 0 HP while preserving maze, and degrades fire rate below 50% HP', () => {
+    const g = newGame(2);
+    g.setMap(3); // mars-outpost
+    expect(g.tryPlace(0, 'pulse', 10, 6).ok).toBe(true);
+    const t = g.towers[0];
+    expect(t.hp).toBe(100);
+    expect(t.maxHp).toBe(100);
+
+    const baseFireRate = g.towerStats(t).fireRate;
+    t.hp = 40; // < 50% HP -> 0.80x fireRate
+    expect(g.towerStats(t).fireRate).toBeCloseTo(baseFireRate * 0.80, 6);
+
+    // Upgrade scales maxHp: 100 -> 130 -> 165
+    t.hp = 100;
+    expect(g.upgradeTower(t.id).ok).toBe(true);
+    expect(t.maxHp).toBe(130);
+    expect(t.hp).toBe(130);
+    expect(g.upgradeTower(t.id).ok).toBe(true);
+    expect(t.maxHp).toBe(165);
+    expect(t.hp).toBe(165);
+
+    // Launch wave and inject a direct-hit meteor onto the tower
+    g.launchWave();
+    g.spawners = [];
+    const enemy = makeEnemy(g, 9901, 'scout', 10.5, 7.5);
+    g.enemies = [enemy];
+
+    t.hp = 30;
+    g.meteors.push({
+      active: true,
+      id: 999,
+      tx: t.x + 0.5,
+      ty: t.y + 0.5,
+      sx: t.x - 4,
+      sy: t.y - 5,
+      t: 1.34,
+      dur: 1.35,
+      radius: 1.65,
+      damage: 40,
+    });
+    g.step(1 / 60);
+
+    expect(t.hp).toBe(0);
+    expect(g.towerAt[g.idx(t.x, t.y)]).toBe(t);
+    expect(g.blocked[g.idx(t.x, t.y)]).toBe(1);
+
+    // Disabled tower at 0 HP must not fire
+    const hpAfterImpact = enemy.hp;
+    run(g, 1.5);
+    expect(enemy.hp).toBe(hpAfterImpact);
+    expect(g.beams.some(b => b.active)).toBe(false);
+  });
+
+  it('repairCost / canRepair / repairTower conserve credits, restore HP, re-enable firing, and reject invalid cases', () => {
+    const g = newGame(2);
+    g.setMap(3);
+    expect(g.tryPlace(0, 'pulse', 10, 6).ok).toBe(true);
+    const t = g.towers[0];
+
+    // Full HP -> rejected
+    expect(g.repairCost(t)).toBe(0);
+    expect(g.canRepair(t.id)).toMatchObject({ ok: false, reason: 'full-hp' });
+    expect(g.repairTower(t.id)).toMatchObject({ ok: false, reason: 'full-hp' });
+
+    // Damage to 0 HP
+    t.hp = 0;
+    const cost = g.repairCost(t);
+    expect(cost).toBeGreaterThanOrEqual(8);
+
+    // Insufficient funds -> rejected
+    const savedCredits = g.credits[0];
+    g.credits[0] = cost - 1;
+    expect(g.canRepair(t.id)).toMatchObject({ ok: false, reason: 'funds', cost });
+    expect(g.repairTower(t.id)).toMatchObject({ ok: false, reason: 'funds', cost });
+    expect(t.hp).toBe(0);
+
+    // Restore funds and repair
+    g.credits[0] = savedCredits;
+    g.drainEvents();
+    const res = g.repairTower(t.id);
+    expect(res).toEqual({ ok: true, reason: 'ok', cost, healed: 100 });
+    expect(t.hp).toBe(t.maxHp);
+    expect(g.credits[0]).toBe(savedCredits - cost);
+    expect(g.totalCredits()).toBeCloseTo(g.expectedCredits(), 9);
+    expect(g.drainEvents()).toContain('ui-repair');
+
+    // Re-enabled tower fires again
+    g.launchWave();
+    g.spawners = [];
+    const enemy = makeEnemy(g, 9902, 'scout', 10.5, 7.5);
+    g.enemies = [enemy];
+    const startHp = enemy.hp;
+    run(g, 1.0);
+    expect(enemy.hp).toBeLessThan(startHp);
+  });
+});

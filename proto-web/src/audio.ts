@@ -20,11 +20,14 @@ export const SOUND_COOLDOWNS: Record<SoundEvent, number> = {
   'fridge-open': 120,
   'centipede-split': 90,
   'mole-flush': 100,
+  'meteor-warn': 200,
+  'meteor-impact': 120,
   'kill': 60,
   'boss-phase': 25,
   'leak': 25,
   'ui-place': 25,
   'ui-upgrade': 25,
+  'ui-repair': 80,
   'ui-sell': 25,
   'ui-error': 25,
   'ui-share': 25,
@@ -517,6 +520,12 @@ export class SoundEngine {
           break;
         }
 
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'ui-sell': {
           // soft coin downward-upward chime (587 -> 440 Hz, 90ms)
           const osc = ctx.createOscillator();
@@ -714,6 +723,18 @@ export class SoundEngine {
           break;
         }
 
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // space ion surge: low drone sweep (110 -> 80 Hz, 250ms)
           const osc = ctx.createOscillator();
@@ -891,6 +912,92 @@ export class SoundEngine {
     } catch {
       // Noise synthesis fallback for minimal test mocks
     }
+  }
+
+  private synthesizeMeteorWarn(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(720, t);
+    osc.frequency.exponentialRampToValueAtTime(240, t + 0.35);
+
+    gain.gain.setValueAtTime(0.24, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    this.playNoiseBurst(ctx, destination, t, 0.35, 850, 0.22, 'bandpass', 1.5);
+
+    osc.start(t);
+    osc.stop(t + 0.36);
+    setTimeout(releaseVoice, 360);
+  }
+
+  private synthesizeMeteorImpact(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, t);
+    osc.frequency.exponentialRampToValueAtTime(36, t + 0.32);
+
+    gain.gain.setValueAtTime(0.55, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+
+    osc.connect(gain);
+    gain.connect(destination);
+
+    this.playNoiseBurst(ctx, destination, t, 0.32, 750, 0.48, 'bandpass', 1.8);
+
+    osc.start(t);
+    osc.stop(t + 0.33);
+    setTimeout(releaseVoice, 330);
+  }
+
+  private synthesizeRepairChime(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+    // Metallic wrench clicks
+    this.playNoiseBurst(ctx, destination, t, 0.025, 3400, 0.28, 'bandpass', 2.5);
+    this.playNoiseBurst(ctx, destination, t + 0.045, 0.03, 3800, 0.32, 'bandpass', 2.5);
+
+    // Ascending repair chime
+    const notes = [520, 780, 1040];
+    const step = 0.055;
+    for (let i = 0; i < notes.length; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const noteT = t + 0.04 + i * step;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(notes[i], noteT);
+
+      gain.gain.setValueAtTime(0.28, noteT);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteT + step * 1.2);
+
+      osc.connect(gain);
+      gain.connect(destination);
+
+      osc.start(noteT);
+      osc.stop(noteT + step * 1.3);
+    }
+    setTimeout(releaseVoice, 230);
   }
 
   private synthesizeMilitary(ev: SoundEvent): void {
@@ -1326,6 +1433,12 @@ export class SoundEngine {
           break;
         }
 
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'ui-sell': {
           // Short metallic mechanical release
           const osc = ctx.createOscillator();
@@ -1534,6 +1647,18 @@ export class SoundEngine {
           osc.start(t);
           osc.stop(t + 0.16);
           setTimeout(releaseVoice, 160);
+          break;
+        }
+
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -1901,6 +2026,18 @@ export class SoundEngine {
           break;
         }
 
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Ocean typhoon gale wind & churning waves (90 -> 60 Hz + spray noise, 280ms)
           const osc = ctx.createOscillator();
@@ -2040,6 +2177,12 @@ export class SoundEngine {
           osc2.start(t2);
           osc2.stop(t2 + 0.08);
           setTimeout(releaseVoice, 150);
+          break;
+        }
+
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -2491,6 +2634,18 @@ export class SoundEngine {
           break;
         }
 
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Sweeping filtered dust-storm wind (howling resonant wind 80 -> 140 -> 65 Hz + sweeping bandpass noise, 350ms)
           const osc = ctx.createOscillator();
@@ -2619,6 +2774,12 @@ export class SoundEngine {
           osc.start(t);
           osc.stop(t + 0.14);
           setTimeout(releaseVoice, 140);
+          break;
+        }
+
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -3074,6 +3235,18 @@ export class SoundEngine {
           break;
         }
 
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Howling castle blizzard / dark magic gale (110 -> 80 Hz + wind noise, 300ms)
           const osc = ctx.createOscillator();
@@ -3204,6 +3377,12 @@ export class SoundEngine {
           osc.start(t);
           osc.stop(t + 0.14);
           setTimeout(releaseVoice, 140);
+          break;
+        }
+
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -3639,6 +3818,18 @@ export class SoundEngine {
           break;
         }
 
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Range hood exhaust whoosh / stove burner flare (warm rushing air, 260ms)
           const osc = ctx.createOscillator();
@@ -3848,6 +4039,12 @@ export class SoundEngine {
           osc.start(t);
           osc.stop(t + 0.13);
           setTimeout(releaseVoice, 130);
+          break;
+        }
+
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -4203,6 +4400,18 @@ export class SoundEngine {
           break;
         }
 
+        case 'meteor-warn': {
+          // Subtle descending atmospheric whistle/whoosh (filtered noise + pitch-gliding sine from ~720Hz -> 240Hz over ~0.35s)
+          this.synthesizeMeteorWarn(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'meteor-impact': {
+          // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
+          this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Backyard pollen squall / dry leaf gust (rustling grass noise, 280ms)
           const osc = ctx.createOscillator();
@@ -4414,6 +4623,12 @@ export class SoundEngine {
           osc.start(t);
           osc.stop(t + 0.13);
           setTimeout(releaseVoice, 130);
+          break;
+        }
+
+        case 'ui-repair': {
+          // Quick metallic wrench double-click + bright ascending repair chime (520Hz -> 780Hz -> 1040Hz)
+          this.synthesizeRepairChime(ctx, destination, t, releaseVoice);
           break;
         }
 

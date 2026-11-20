@@ -1,10 +1,10 @@
 # Coordination handoff
 
-Updated: 2026-11-20 8:34 AM Pacific. Pass 10 complete: vertical 90°-rotated phone battlefield (`2p-phone` / `1p-phone`) and configurable wave count (`5 | 10 | 15 | 20 | 30`) in Settings; pushed to `seajhawk/tabletop` and republished to `https://seajhawk.github.io/TTDefense/`.
+Updated: 2026-11-20 10:29 AM Pacific. Renamed **Galactic Alliance → Galactic Defense** across app/docs/GitHub, and completed Pass 11 (**Mars Meteor Showers, Turret Durability & Radial Credit Repair**); pushed to `seajhawk/tabletop` and republished to `https://seajhawk.github.io/TTDefense/`.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative 5-hour interval; rearmed
-at this restart (~8:55 AM Pacific Nov 20), before implementation. After a quota/usage
+at this restart (~3:54 AM Pacific Nov 20), before implementation. After a quota/usage
 stall, rearm SAME timer for 5 hours from restart before other work. Never fixed daily.
 Automation updates require `destination: "thread"`; omitted field was rejected once.
 
@@ -14,37 +14,22 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
 
 ## Implemented
 - **GitHub & Live Pages**:
-  - Main repo: `https://github.com/seajhawk/tabletop` (`main`, Node 22 Actions CI + Pages at `https://seajhawk.github.io/tabletop/`).
+  - Main repo: `https://github.com/seajhawk/tabletop` (`main`, Node 22 CI + Pages at `https://seajhawk.github.io/tabletop/`).
   - Shareable Pages site: **`https://seajhawk.github.io/TTDefense/`** (`seajhawk/TTDefense`, subpath-safe PWA/SW).
-- **9 Maps across 7 Themes** (`shared-data/maps.json`): Space (`Orbital Crossing`,
-  `Asteroid Belt`, `Nebula Rift`), Military (`Washington DC`), Naval (`Pacific Fleet`:
-  stealth subs/sonar/ASW/mines), Mars (`Mars Outpost`: geothermal vents/dust storms),
-  Medieval (`Ironhold Keep`: arcane runes/orc frenzy), Kitchen (`Kitchen Counter`:
-  stove `+BURN` + Fridge Open Snack Rush), Lawn (`Backyard Lawn`: burrowing moles,
-  mosquitoes, centipedes that split in half).
-- **Pass 10 — Vertical Phone Court & Configurable Waves**:
-  - **`2P phone` (`548×1244`) & `1P phone` (`548×1140`)**: `boardRotated: true` rotates the
-    `28×16` grid +90° CW into a full-screen vertical `512×896` court (~65% larger cells on
-    portrait phones, enemies march top-to-bottom toward the base above P1's dock).
-    `boardRoot` rotates all 9 maps/sprites/FX while counter-rotating labels & enemy HP bars
-    upright; `boardLocalToWorld`/`worldToBoardLocal`/`cellAt` keep drag/drop & radials exact.
-    Phone Settings (`516×1060`) & Summary (`480×440`) keep all touch targets `>= 44 CSS px`.
-  - **Configurable Wave Count (`5 | 10 | 15 | 20 | 30`, default `10`)**: `Waves: N` button
-    paired with `Diff:` on Row 3 of Settings; `buildWavePlan()` scales 5-wave quick matches
-    (Boss on W5 at `0.80×` HP) and 15/20/30-wave endurance runs (Bosses on W10/20/30 & final
-    wave) with themed tier names (`formatWaveName`) and separate `ScoreBook` keys for non-10 runs.
+- **Rebrand (`Galactic Defense`)**: Renamed product/title/packages/storage key/docs/Godot config/benchmark/repo description from `Galactic Alliance` to `Galactic Defense` (preserving only the external Codex heartbeat ID `continue-galactic-alliance`).
+- **9 Maps across 7 Themes** (`shared-data/maps.json`), **7 Adaptive Layouts** (vertical +90°-rotated `512×896` court on `2P phone` & `1P phone`), **Configurable Wave Count** (`5 | 10 | 15 | 20 | 30` in Settings), local best scores, offline PWA.
+- **Pass 11 — Mars Meteor Showers & Credit Defense Repair**:
+  - **Incoming Mars Meteors (`mars-storms`)**: `Meteor` pool spawns every `3.3–4.7s` (20% brisker cadence, and `1.25×` faster during Dust Storms) with anti-clustering target selection (avoids spawns/exits and the last 5 impact locations, spreading strikes across varied random spots & defenses).
+  - **Telegraph, Fireball & Impact**: `1.35s` pulsing concentric ground warning reticle + streaking 3-layer glowing fireball, followed by fiery blast/craters dealing `18–40` damage to nearby defenses (`radius 1.65`) and `25` collateral scorch to ground enemies.
+  - **Turret Durability & Offline State**: Towers have `hp`/`maxHp` (`100 -> 130 T1 -> 165 T2`, healing `+30/+35` on upgrade); `<50%` HP slows fire rate (`0.80×`); `0 HP` disables firing (`OFFLINE!` + pulsing repair emblem + smoke, preserving maze paths).
+  - **Radial Credit Repair (`repair`)**: Tapping any damaged tower adds a 4th emerald **`REPAIR` / `FIX!`** radial button (`(0, +52)` opposite Upgrade) showing exact credit cost (`max(8, round(invested * 0.30 * missingRatio))`) & `+HP`; restores full HP, preserves strict `ledger.spent` conservation, and plays procedural `'ui-repair'` / `'meteor-warn'` / `'meteor-impact'` SFX.
 
 ## Verified (2026-11-20)
 - `node scripts/validate-data.mjs` -> PASS (5 turrets, 6 enemies, 9 maps, 11 waves).
 - `npm --prefix proto-web run typecheck` -> PASS (0 errors).
-- `npm --prefix proto-web test` -> PASS (**253/253** across 11 suites, incl. rotated phone
-  geometry/hit-testing, `>= 44 CSS px` phone Settings targets, and 5/10/15/20/30 wave plans).
+- `npm --prefix proto-web test` -> PASS (**322/322** across 12 suites, incl. Mars meteor spread/damage, offline disable, credit repair conservation, 4-button radial hit-test, and 30 `SoundEvent`s).
 - Production builds (`/` and `VITE_BASE=/TTDefense/`) -> PASS (22 precached files).
-- Live Chromium `http://localhost:5173/` (`412×915` portrait phone & `1280×800` desktop) -> PASS
-  (`0` console/page/network errors; verified vertical `2P phone` & `1P phone` on Space and
-  `Backyard Lawn`, drag/drop + radial menus on rotated grid, `Waves` cycling `10->15->20->30->5`,
-  5-wave Boss spawn, and desktop Settings). Boss bar / storm pill offset below Wave pill on
-  vertical phone boards. Archived in `.tasks/pass10-*.png`.
+- Live Chromium `http://localhost:5173/` (`1280×800`) -> PASS (`0` console/page/network errors; verified incoming streaking meteor + orange reticle, varied impact damage bar on `[3, 13]`, 4-button P2 radial showing `REPAIR 9 cr +80 HP`, and live repair deducting `9 cr` + `REPAIRED!` + clearing HP bar). Archived in `.tasks/pass11-*.png`.
 - Unverified: physical device multi-touch/DPI/thermal feel and native OS PWA installation.
 
 ## Runtime
@@ -52,10 +37,5 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
 - Live Pages: `https://seajhawk.github.io/TTDefense/` & `https://seajhawk.github.io/tabletop/`.
 
 ## Next
-1. Playtest the updated vertical `2P phone` layout and `Waves` setting on a real phone at `https://seajhawk.github.io/TTDefense/` (note: tap **Settings → Update app** if an older PWA cache is installed!).
+1. Playtest Mars Meteor Showers & Credit Repair at `http://localhost:5173/` or `https://seajhawk.github.io/TTDefense/` (tap **Settings → Update app** if already cached on phone).
 2. Verify physical multi-touch, DPI comfort, and sustained-load perf on target hardware.
-
-## In progress (8:55 AM restart)
-- Claude sustained-performance harness worker exec42703 active; owns scripts/benchmark-browser.js and focused tests only.
-- Parent owns integration/report/STATUS; no application or canonical balance edits planned.
-

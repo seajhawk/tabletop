@@ -155,6 +155,10 @@ describe('theater themes', () => {
 
     expect(mars.waveNames[1]).toBe('Dust Recon');
     expect(mars.waveNames[10]).toBe('Olympus Rising');
+    expect(mars.helpText).toContain('Geothermal Vent');
+    expect(mars.helpText).toContain('Dust Storm');
+    expect(mars.helpText).toContain('Mars Meteors');
+    expect(mars.helpText).toContain('Repair');
   });
 
   it('defines Ironhold Keep labels, defenses, boost label, and wave progression in medieval theme', () => {

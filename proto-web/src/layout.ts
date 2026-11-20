@@ -349,7 +349,7 @@ export function hitSummaryButton(layout: LayoutDef, x: number, y: number): Summa
   return null;
 }
 
-export type RadialAction = 'upgrade' | 'priority' | 'sell';
+export type RadialAction = 'upgrade' | 'priority' | 'sell' | 'repair';
 export const RADIAL_RADIUS = 52;
 export const RADIAL_BTN_R = 22;
 const RADIAL_LOCAL: { action: RadialAction; lx: number; ly: number }[] = [
@@ -357,9 +357,11 @@ const RADIAL_LOCAL: { action: RadialAction; lx: number; ly: number }[] = [
   { action: 'priority', lx: -45, ly: 26 },
   { action: 'sell', lx: 45, ly: 26 },
 ];
-export function radialButtons(cx: number, cy: number, rot: number, stageW = WORLD_W, stageH = WORLD_H): { action: RadialAction; x: number; y: number; r: number }[] {
+const RADIAL_REPAIR_LOCAL = { action: 'repair' as const, lx: 0, ly: RADIAL_RADIUS };
+export function radialButtons(cx: number, cy: number, rot: number, stageW = WORLD_W, stageH = WORLD_H, showRepair = false): { action: RadialAction; x: number; y: number; r: number }[] {
   const c = Math.cos(rot), s = Math.sin(rot);
-  const rotated = RADIAL_LOCAL.map(({ action, lx, ly }) => ({
+  const local = showRepair ? [...RADIAL_LOCAL, RADIAL_REPAIR_LOCAL] : RADIAL_LOCAL;
+  const rotated = local.map(({ action, lx, ly }) => ({
     action,
     ox: lx * c - ly * s,
     oy: lx * s + ly * c,
@@ -375,8 +377,8 @@ export function radialButtons(cx: number, cy: number, rot: number, stageW = WORL
   const ccy = Math.max(26 - minOy, Math.min(stageH - 26 - maxOy, cy));
   return rotated.map(o => ({ action: o.action, x: ccx + o.ox, y: ccy + o.oy, r: RADIAL_BTN_R }));
 }
-export function hitRadialButton(cx: number, cy: number, rot: number, wx: number, wy: number, stageW = WORLD_W, stageH = WORLD_H): RadialAction | null {
-  for (const b of radialButtons(cx, cy, rot, stageW, stageH)) {
+export function hitRadialButton(cx: number, cy: number, rot: number, wx: number, wy: number, stageW = WORLD_W, stageH = WORLD_H, showRepair = false): RadialAction | null {
+  for (const b of radialButtons(cx, cy, rot, stageW, stageH, showRepair)) {
     if (Math.hypot(wx - b.x, wy - b.y) <= b.r + 4) return b.action;
   }
   return null;

@@ -43,6 +43,21 @@ export interface Tower {
   aimAngle: number;
   kills: number;
   boosted: boolean;
+  hp: number;
+  maxHp: number;
+}
+
+export interface Meteor {
+  active: boolean;
+  id: number;
+  tx: number;
+  ty: number;
+  sx: number;
+  sy: number;
+  t: number;
+  dur: number;
+  radius: number;
+  damage: number;
 }
 
 export interface TowerStats {
@@ -235,6 +250,7 @@ export class Game {
   rings: Ring[] = [];
   particles: Particle[] = [];
   popups: Popup[] = [];
+  meteors: Meteor[] = [];
   dist: Int16Array;
   private queue: Int32Array;
   paused = true;
@@ -255,6 +271,9 @@ export class Game {
   runId = 0;
   stormActive = false;
   stormTimer = 22;
+  meteorTimer = 3.2;
+  private nextMeteorId = 1;
+  private recentMeteors: { x: number; y: number }[] = [];
   rushActive = false;
   rushTimer = 0;
   private nextId = 1;
@@ -459,8 +478,11 @@ export class Game {
     for (const r of this.rings) r.active = false;
     for (const pt of this.particles) pt.active = false;
     for (const pop of this.popups) pop.active = false;
+    this.meteors = [];
+    this.recentMeteors = [];
     this.stormActive = false;
     this.stormTimer = 22;
+    this.meteorTimer = 3.2;
     this.rushActive = false;
     this.rushTimer = 0;
 
@@ -577,6 +599,8 @@ export class Game {
       aimAngle: 0,
       kills: 0,
       boosted: this.boostMask[i] === 1,
+      hp: 100,
+      maxHp: 100,
     };
     this.credits[owner] -= def.cost;
     this.ledger.spent += def.cost;
@@ -639,6 +663,9 @@ export class Game {
     if (this.currentMap.mechanic === 'mars-storms' && this.stormActive && !t.boosted && t.tier < 2) {
       stats.range *= 0.80;
     }
+    if (t.hp > 0 && t.hp < t.maxHp * 0.5) {
+      stats.fireRate *= 0.80;
+    }
     return stats;
   }
 
@@ -665,8 +692,49 @@ export class Game {
     this.ledger.spent += u.cost;
     t.invested += u.cost;
     t.tier++;
+    if (t.tier === 1) {
+      t.maxHp = 130;
+      t.hp = Math.min(t.maxHp, t.hp + 30);
+    } else if (t.tier === 2) {
+      t.maxHp = 165;
+      t.hp = Math.min(t.maxHp, t.hp + 35);
+    }
     this.towerVersion++;
     return { ok: true, reason: 'ok', cost: u.cost, tier: t.tier, name: u.name };
+  }
+
+  repairCost(t: Tower): number {
+    if (t.hp >= t.maxHp) return 0;
+    const miss = (t.maxHp - t.hp) / t.maxHp;
+    return Math.max(8, Math.round(t.invested * 0.30 * miss));
+  }
+
+  canRepair(towerId: number, payer?: number): { ok: boolean; reason: string; cost?: number } {
+    if (this.over) return { ok: false, reason: 'over' };
+    const t = this.towerById(towerId);
+    if (!t) return { ok: false, reason: 'not-found' };
+    if (t.hp >= t.maxHp) return { ok: false, reason: 'full-hp' };
+    const p = payer ?? t.owner;
+    if (p < 0 || p >= this.credits.length) return { ok: false, reason: 'unknown-player' };
+    const cost = this.repairCost(t);
+    if (this.credits[p] + 1e-9 < cost) return { ok: false, reason: 'funds', cost };
+    return { ok: true, reason: 'ok', cost };
+  }
+
+  repairTower(towerId: number, payer?: number): { ok: boolean; reason: string; cost?: number; healed?: number } {
+    const c = this.canRepair(towerId, payer);
+    if (!c.ok || c.cost === undefined) return { ok: false, reason: c.reason, cost: c.cost };
+    const t = this.towerById(towerId)!;
+    const p = payer ?? t.owner;
+    const healed = Math.round(t.maxHp - t.hp);
+    this.credits[p] -= c.cost;
+    this.ledger.spent += c.cost;
+    t.hp = t.maxHp;
+    this.towerVersion++;
+    this.emitSound('ui-repair');
+    this.spawnParticles(t.x + 0.5, t.y + 0.5, 8, 0x82e3b4, 2.2, 2.4);
+    this.spawnPopup(t.x + 0.5, t.y + 0.2, 'REPAIRED!', 0x82e3b4);
+    return { ok: true, reason: 'ok', cost: c.cost, healed };
   }
 
   cycleTowerPriority(towerId: number): TargetPriority | null {
@@ -711,9 +779,14 @@ export class Game {
 
   /** Owner gets 70%; all active players (owner included) split the remaining 30%. Fractions are kept. */
   awardBounty(bounty: number, owner: number): void {
-    this.credits[owner] += bounty * OWNER_SHARE;
-    const share = (bounty * (1 - OWNER_SHARE)) / this.playerCount;
-    for (let p = 0; p < this.playerCount; p++) this.credits[p] += share;
+    if (owner >= 0 && owner < this.playerCount) {
+      this.credits[owner] += bounty * OWNER_SHARE;
+      const share = (bounty * (1 - OWNER_SHARE)) / this.playerCount;
+      for (let p = 0; p < this.playerCount; p++) this.credits[p] += share;
+    } else {
+      const share = bounty / this.playerCount;
+      for (let p = 0; p < this.playerCount; p++) this.credits[p] += share;
+    }
     this.ledger.bounty += bounty;
   }
 
@@ -802,6 +875,11 @@ export class Game {
           this.stormTimer += 22;
         }
       }
+      this.meteorTimer -= dt * (this.stormActive ? 1.25 : 1.0);
+      if (this.meteorTimer <= 0) {
+        this.meteorTimer = 3.3 + Math.random() * 1.4;
+        this.spawnMeteor();
+      }
     }
     if (this.currentMap.mechanic === 'kitchen-rush' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
       this.rushTimer += dt;
@@ -818,6 +896,7 @@ export class Game {
     this.fireTowers(dt);
     this.updateProjectiles(dt);
     this.updateMines(dt);
+    this.updateMeteors(dt);
     this.updateEffects(dt);
     this.compactEnemies();
     if (!this.over && this.mode === 'normal' && this.launched && this.spawners.length === 0 && this.enemies.length === 0) {
@@ -1256,6 +1335,7 @@ export class Game {
     const isNaval = this.currentMap.mechanic === 'naval-subs-mines';
     const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
     for (const t of this.towers) {
+      if (t.hp <= 0) continue;
       t.cooldown -= dt;
       if (t.cooldown > 0) continue;
 
@@ -1708,6 +1788,132 @@ export class Game {
       this.spawnParticles(m.x, m.y, 8, 0xff8844, 2.6, 2.5);
       this.emitSound('impact-mine');
       m.active = false;
+    }
+  }
+
+  private spawnMeteor(): void {
+    const minX = 1.5;
+    const maxX = Math.max(minX, this.w - 2.5);
+    const minY = 1.5;
+    const maxY = Math.max(minY, this.h - 2.5);
+    const clampX = (x: number) => Math.max(minX, Math.min(maxX, x));
+    const clampY = (y: number) => Math.max(minY, Math.min(maxY, y));
+    const validTarget = (cx: number, cy: number): boolean => {
+      for (const [ex, ey] of this.currentMap.exits) {
+        if (Math.hypot(cx - (ex + 0.5), cy - (ey + 0.5)) <= 2.2) return false;
+      }
+      for (const [sx, sy] of this.currentMap.spawns) {
+        if (Math.hypot(cx - (sx + 0.5), cy - (sy + 0.5)) <= 1.8) return false;
+      }
+      return true;
+    };
+
+    const candidates: { x: number; y: number; minDist: number }[] = [];
+    for (let attempt = 0; attempt < 42 && candidates.length < 14; attempt++) {
+      let cx: number;
+      let cy: number;
+      if (this.towers.length > 0 && Math.random() < 0.55) {
+        const t = this.towers[Math.floor(Math.random() * this.towers.length)];
+        cx = clampX(t.x + 0.5 + (Math.random() - 0.5) * 1.8);
+        cy = clampY(t.y + 0.5 + (Math.random() - 0.5) * 1.8);
+      } else {
+        cx = clampX(minX + Math.random() * (maxX - minX));
+        cy = clampY(minY + Math.random() * (maxY - minY));
+      }
+      if (!validTarget(cx, cy)) continue;
+      let minDist = Infinity;
+      for (const prev of this.recentMeteors) {
+        const d = Math.hypot(cx - prev.x, cy - prev.y);
+        if (d < minDist) minDist = d;
+      }
+      candidates.push({ x: cx, y: cy, minDist });
+    }
+
+    let chosen = { x: (minX + maxX) * 0.5, y: (minY + maxY) * 0.5 };
+    if (candidates.length > 0) {
+      const qualifying = candidates.filter(c => c.minDist >= 4.0);
+      if (qualifying.length > 0) {
+        chosen = qualifying[Math.floor(Math.random() * qualifying.length)];
+      } else {
+        let best = candidates[0];
+        for (const c of candidates) {
+          if (c.minDist > best.minDist) best = c;
+        }
+        chosen = best;
+      }
+    }
+
+    if (this.recentMeteors.length >= 5) this.recentMeteors.shift();
+    this.recentMeteors.push({ x: chosen.x, y: chosen.y });
+
+    const meteor = acquire(this.meteors, () => ({
+      active: false,
+      id: 0,
+      tx: 0,
+      ty: 0,
+      sx: 0,
+      sy: 0,
+      t: 0,
+      dur: 1.35,
+      radius: 1.65,
+      damage: 40,
+    }));
+    Object.assign(meteor, {
+      active: true,
+      id: this.nextMeteorId++,
+      tx: chosen.x,
+      ty: chosen.y,
+      sx: chosen.x - 4.5,
+      sy: chosen.y - 5.5,
+      t: 0,
+      dur: 1.35,
+      radius: 1.65,
+      damage: 40,
+    });
+    this.emitSound('meteor-warn');
+  }
+
+  private updateMeteors(dt: number): void {
+    for (const m of this.meteors) {
+      if (!m.active) continue;
+      m.t += dt;
+      if (m.t < m.dur) continue;
+      m.active = false;
+      this.emitSound('meteor-impact');
+
+      const ring = acquire(this.rings, () => ({ active: false, x: 0, y: 0, r: 0, ttl: 0, max: 0, color: 0 }));
+      Object.assign(ring, { active: true, x: m.tx, y: m.ty, r: m.radius, ttl: 0.45, max: 0.45, color: 0xff6b2b });
+      this.spawnParticles(m.tx, m.ty, 7, 0xff8c42, 3.2, 3.0);
+      this.spawnParticles(m.tx, m.ty, 7, 0xffd166, 2.6, 2.5);
+
+      for (const t of this.towers) {
+        const d = Math.hypot((t.x + 0.5) - m.tx, (t.y + 0.5) - m.ty);
+        if (d <= m.radius) {
+          const dmg = d <= 0.75 ? m.damage : Math.max(18, Math.round(m.damage * (1 - (d - 0.75) / 1.15)));
+          const wasAlive = t.hp > 0;
+          t.hp = Math.max(0, t.hp - dmg);
+          this.towerVersion++;
+          if (wasAlive && t.hp === 0) {
+            this.spawnPopup(t.x + 0.5, t.y + 0.2, 'OFFLINE!', 0xff4d5a);
+          } else {
+            this.spawnPopup(t.x + 0.5, t.y + 0.2, `-${dmg}`, 0xff9f43);
+          }
+          this.spawnParticles(t.x + 0.5, t.y + 0.5, 4, 0xff9f43, 2.2, 2.2);
+        }
+      }
+
+      for (const e of this.enemies) {
+        if (e.dead || e.def.flying) continue;
+        if (Math.hypot(e.x - m.tx, e.y - m.ty) <= m.radius) {
+          this.damageEnemy(e, 25, -1, {
+            armorPierce: false,
+            shieldMultiplier: 1,
+            shieldStrip: 0,
+            burnDps: 0,
+            burnDuration: 0,
+          });
+        }
+      }
     }
   }
 

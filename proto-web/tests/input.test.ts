@@ -455,6 +455,51 @@ describe('buttons, selling & radial menus', () => {
     expect(game.totalCredits()).toBeCloseTo(game.expectedCredits(), 9);
   });
 
+  it('tapping a damaged tower shows repair radial button, deducts credits & restores hp, and rejects when funds are insufficient', () => {
+    const { game, input, cell, toasts, sounds, layout } = setup();
+    game.tryPlace(0, 'pulse', 4, 6);
+    const tower = game.towerAt[game.idx(4, 6)]!;
+    const pos = cell(4, 6);
+
+    // Damage tower to half HP
+    tower.hp = Math.floor(tower.maxHp * 0.5);
+    const expectedCost = game.repairCost(tower);
+    expect(expectedCost).toBeGreaterThan(0);
+
+    // Tap damaged tower to open radial
+    input.pointerDown(1, pos.x, pos.y, 'touch', 0, 0);
+    input.pointerUp(1, pos.x, pos.y, 50);
+    const r = input.openRadials.get(0)!;
+    expect(r).toBeDefined();
+
+    const repairBtn = radialButtons(r.cx, r.cy, r.rot, layout.stageW, layout.stageH, true).find(b => b.action === 'repair')!;
+    const creditsBefore = game.credits[0];
+    input.pointerDown(2, repairBtn.x, repairBtn.y, 'touch', 0, 80);
+    input.pointerUp(2, repairBtn.x, repairBtn.y, 120);
+
+    expect(tower.hp).toBe(tower.maxHp);
+    expect(game.credits[0]).toBe(creditsBefore - expectedCost);
+    expect(toasts.at(-1)).toBe(`Repaired (-${expectedCost} cr)`);
+    expect(sounds.at(-1)).toBe('ui-repair');
+    expect(input.openRadials.has(0)).toBe(false);
+
+    // Damage again and drain credits: repair rejects cleanly
+    tower.hp = Math.floor(tower.maxHp * 0.5);
+    game.credits[0] = 0;
+    input.pointerDown(3, pos.x, pos.y, 'touch', 0, 150);
+    input.pointerUp(3, pos.x, pos.y, 200);
+    const r2 = input.openRadials.get(0)!;
+    const repairBtn2 = radialButtons(r2.cx, r2.cy, r2.rot, layout.stageW, layout.stageH, true).find(b => b.action === 'repair')!;
+    input.pointerDown(4, repairBtn2.x, repairBtn2.y, 'touch', 0, 220);
+    input.pointerUp(4, repairBtn2.x, repairBtn2.y, 260);
+
+    expect(tower.hp).toBeLessThan(tower.maxHp);
+    expect(game.credits[0]).toBe(0);
+    expect(toasts.at(-1)).toBe('Not enough credits');
+    expect(sounds.at(-1)).toBe('ui-error');
+    expect(input.openRadials.has(0)).toBe(false);
+  });
+
   it('empty-tap spares a menu with a held radial press; the held upgrade commits once for its owner', () => {
     const { game, input, cell } = setup();
     const start = game.currentMap.startingCredits;

@@ -223,8 +223,9 @@ const MARS_THEME: TheaterTheme = {
   defeatTitle: 'COLONY LOST',
   helpText:
     'Deploy colony defenses from YOUR dock to protect Ares Dome. ' +
-    'Tap unit for radial Upgrade / Priority / Sell. ' +
-    'Drag or flick ◆ credits to share with teammates. Start paused: plan, then Launch wave.',
+    'Geothermal Vents boost turrets and shield from Dust Storms. ' +
+    'Watch for incoming Mars Meteors that damage defenses — tap a damaged turret to Repair with credits! ' +
+    'Start paused: plan, then Launch wave.',
   obstacleLabel: 'Canyon Ridge',
   boostLabel: 'Geothermal Vent',
   roleTags: {

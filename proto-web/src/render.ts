@@ -439,7 +439,7 @@ export class Renderer {
       const g = new Graphics();
       container.addChild(g);
       const btns: { title: Text; sub: Text; desc: Text }[] = [];
-      for (let b = 0; b < 3; b++) {
+      for (let b = 0; b < 4; b++) {
         const title = mkText('', 11, C.ice, { bold: true });
         const sub = mkText('', 12, C.gold, { bold: true });
         const desc = mkText('', 9, C.ice);
@@ -1581,6 +1581,8 @@ export class Renderer {
         if (mt.base.texture !== bTex) mt.base.texture = bTex;
         mt.base.width = CELL * 1.16;
         mt.base.height = CELL * 1.16;
+        mt.base.alpha = t.hp <= 0 ? 0.48 : 1;
+        mt.base.tint = t.hp <= 0 ? 0x9a7575 : 0xffffff;
 
         const tierIdx = Math.min(2, t.tier);
         const hTex = sprites.turrets[t.def.id]?.[tierIdx] ?? Texture.EMPTY;
@@ -1588,6 +1590,8 @@ export class Renderer {
         mt.head.width = CELL * 1.28;
         mt.head.height = CELL * 1.28;
         mt.head.rotation = t.aimAngle;
+        mt.head.alpha = t.hp <= 0 ? 0.48 : 1;
+        mt.head.tint = t.hp <= 0 ? 0x9a7575 : 0xffffff;
 
         const bg = mt.badge.clear();
         if (t.boosted) {
@@ -1629,7 +1633,7 @@ export class Renderer {
     for (const t of this.game.towers) {
       const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
       const col = this.turretColor(t.def.id);
-      drawTurretHead(hg, t.def.id, cx, cy - 1, CELL * 0.32, col, t.aimAngle, t.tier, 1, theme.id);
+      drawTurretHead(hg, t.def.id, cx, cy - 1, CELL * 0.32, col, t.aimAngle, t.tier, t.hp <= 0 ? 0.45 : 1, theme.id);
       if (t.tier >= 1) {
         for (let i = 0; i < t.tier; i++) {
           const ox = cx - (t.tier - 1) * 3.5 + i * 7;
@@ -2081,6 +2085,93 @@ export class Renderer {
       }
     }
 
+    // Mars meteor showers: impact warning reticle + streaking incoming fireball
+    for (const m of gm.meteors) {
+      if (!m.active) continue;
+      const prog = Math.max(0, Math.min(1, m.t / m.dur));
+      const tx = m.tx * CELL, ty = m.ty * CELL, radPx = m.radius * CELL;
+      g.circle(tx, ty, radPx)
+        .fill({ color: 0xff4518, alpha: 0.08 + prog * 0.14 })
+        .stroke({ width: 1.6, color: 0xff6b2b, alpha: 0.55 + prog * 0.40 });
+      g.circle(tx, ty, Math.max(2, radPx * (1 - prog)))
+        .stroke({ width: 1.4, color: 0xffd166, alpha: 0.85 });
+      g.moveTo(tx - 8, ty).lineTo(tx - 3, ty)
+        .moveTo(tx + 3, ty).lineTo(tx + 8, ty)
+        .moveTo(tx, ty - 8).lineTo(tx, ty - 3)
+        .moveTo(tx, ty + 3).lineTo(tx, ty + 8)
+        .stroke({ width: 1.4, color: 0xffd166, alpha: 0.75 });
+
+      const mx = (m.sx + (m.tx - m.sx) * prog) * CELL;
+      const my = (m.sy + (m.ty - m.sy) * prog) * CELL;
+      const sxPx = m.sx * CELL, syPx = m.sy * CELL;
+      const dx = sxPx - mx, dy = syPx - my;
+      const dLen = Math.hypot(dx, dy) || 1;
+      const ux = dx / dLen, uy = dy / dLen;
+      glow.moveTo(mx, my).lineTo(mx + ux * 52, my + uy * 52).stroke({ width: 11, color: 0xff4518, alpha: 0.42 });
+      glow.moveTo(mx, my).lineTo(mx + ux * 38, my + uy * 38).stroke({ width: 6.5, color: 0xff9f43, alpha: 0.62 });
+      glow.moveTo(mx, my).lineTo(mx + ux * 22, my + uy * 22).stroke({ width: 3.2, color: 0xfff3b0, alpha: 0.85 });
+      for (let sp = 0; sp < 3; sp++) {
+        const dist = 16 + sp * 11 + Math.sin(gm.time * 22 + m.id * 3 + sp * 2.1) * 4;
+        const perp = Math.cos(gm.time * 19 + m.id + sp * 2.7) * (3 + sp * 1.5);
+        const spx = mx + ux * dist - uy * perp;
+        const spy = my + uy * dist + ux * perp;
+        glow.circle(spx, spy, 2.2 - sp * 0.4).fill({ color: sp === 0 ? 0xfff3b0 : 0xff9f43, alpha: 0.82 - sp * 0.16 });
+      }
+      const rCore = 6 + prog * 4;
+      glow.circle(mx, my, rCore * 2.1).fill({ color: 0xff6b2b, alpha: 0.45 });
+      const ang = Math.atan2(ty - my, tx - mx);
+      const pts: number[] = [];
+      for (let v = 0; v < 7; v++) {
+        const a = ang + (v * Math.PI * 2) / 7;
+        const vr = rCore * (v % 2 === 0 ? 1.08 : 0.78);
+        pts.push(mx + Math.cos(a) * vr, my + Math.sin(a) * vr);
+      }
+      g.poly(pts).fill({ color: 0x4a2c1d, alpha: 0.98 }).stroke({ width: 1.4, color: 0xff8c42, alpha: 0.95 });
+      g.circle(mx + Math.cos(ang) * rCore * 0.45, my + Math.sin(ang) * rCore * 0.45, rCore * 0.45)
+        .fill({ color: 0xfff3b0, alpha: 0.95 });
+    }
+
+    // Turret durability bars, damage smoke/sparks, and offline repair indicator
+    const upX = rotated ? -1 : 0, upY = rotated ? 0 : -1;
+    const sideX = rotated ? 0 : 1, sideY = rotated ? -1 : 0;
+    for (const t of gm.towers) {
+      if (t.hp >= t.maxHp) continue;
+      const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
+      const ratio = Math.max(0, t.hp / t.maxHp);
+      const barCol = ratio > 0.5 ? 0xffc16e : ratio > 0.2 ? 0xff8c42 : 0xff4d5a;
+      if (rotated) {
+        g.rect(cx + 14, cy - 12, 4, 24).fill({ color: 0x06101c, alpha: 0.88 });
+        if (ratio > 0) {
+          const fw = 24 * ratio;
+          g.rect(cx + 14, cy + 12 - fw, 4, fw).fill({ color: barCol, alpha: 0.96 });
+        }
+      } else {
+        g.rect(cx - 12, cy + 14, 24, 4).fill({ color: 0x06101c, alpha: 0.88 });
+        if (ratio > 0) g.rect(cx - 12, cy + 14, 24 * ratio, 4).fill({ color: barCol, alpha: 0.96 });
+      }
+      for (let s = 0; s < 2; s++) {
+        const phase = (gm.time * 1.15 + t.id * 0.73 + s * 0.5) % 1;
+        const drift = 4 + phase * 14;
+        const sway = Math.sin(gm.time * 4.2 + t.id + s * 2.4) * 3.5;
+        g.circle(cx + upX * drift + sideX * sway, cy + upY * drift + sideY * sway, 2.2 + phase * 2.4)
+          .fill({ color: 0x6b7280, alpha: (1 - phase) * 0.52 });
+      }
+      const spPhase = (gm.time * 2.3 + t.id * 1.1) % 1;
+      const spDrift = 2 + spPhase * 11;
+      const spSway = Math.cos(gm.time * 7.5 + t.id) * 4.5;
+      glow.circle(cx + upX * spDrift + sideX * spSway, cy + upY * spDrift + sideY * spSway, 1.8)
+        .fill({ color: 0xff8c42, alpha: (1 - spPhase) * 0.85 });
+      if (t.hp <= 0) {
+        const pulse = 0.5 + 0.5 * Math.sin(gm.time * 7 + t.id);
+        const ringR = 13 + pulse * 2.5;
+        glow.circle(cx, cy, ringR).stroke({ width: 3.2, color: 0xff4d5a, alpha: 0.45 + pulse * 0.35 });
+        g.circle(cx, cy, ringR).stroke({ width: 1.8, color: pulse > 0.5 ? 0xff4d5a : 0xffc16e, alpha: 0.92 });
+        g.circle(cx, cy, 7.5).fill({ color: 0x160a0e, alpha: 0.88 }).stroke({ width: 1.4, color: 0xffc16e, alpha: 0.92 });
+        g.moveTo(cx - 4, cy).lineTo(cx + 4, cy).moveTo(cx, cy - 4).lineTo(cx, cy + 4)
+          .stroke({ width: 2.2, color: 0xffc16e, alpha: 0.95 });
+      }
+    }
+
     // pooled floating popups
     const popups = gm.popups;
     while (this.popupPool.length < popups.length) {
@@ -2273,13 +2364,24 @@ export class Renderer {
       g.circle(tx, ty, stats.range * CELL).fill({ color: tcol, alpha: 0.05 }).stroke({ width: 1.5, color: tcol, alpha: 0.45 });
       g.circle(m.cx, m.cy, RADIAL_RADIUS).stroke({ width: 1.5, color: PLAYER_COLORS[m.owner] ?? C.cyan, alpha: 0.5 });
 
-      const btns = radialButtons(m.cx, m.cy, m.rot, l.stageW, l.stageH);
+      const showRepair = tower.hp < tower.maxHp;
+      const btns = radialButtons(m.cx, m.cy, m.rot, l.stageW, l.stageH, showRepair);
       const nextUpg = this.game.nextUpgrade(tower);
       const canUpg = this.game.canUpgrade(tower.id).ok;
       const refund = (tower.invested * 0.7).toFixed(1);
 
+      for (let bi = btns.length; bi < rv.btns.length; bi++) {
+        rv.btns[bi].title.visible = false;
+        rv.btns[bi].sub.visible = false;
+        rv.btns[bi].desc.visible = false;
+      }
+
       btns.forEach((b, bi) => {
         const lbl = rv.btns[bi];
+        lbl.title.visible = true;
+        lbl.sub.visible = true;
+        lbl.desc.visible = true;
+        lbl.title.style.fill = C.ice;
         let border = C.cyan;
         let alpha = 1;
         if (b.action === 'upgrade') {
@@ -2296,6 +2398,17 @@ export class Renderer {
           lbl.sub.text = PRIORITY_LABEL[tower.priority] ?? tower.priority.toUpperCase();
           lbl.desc.text = 'Target';
           lbl.sub.style.fill = C.cyan;
+        } else if (b.action === 'repair') {
+          const cost = this.game.repairCost(tower);
+          const canRep = this.game.canRepair(tower.id, m.owner).ok;
+          const missingHp = Math.round(tower.maxHp - tower.hp);
+          border = canRep ? C.mint : 0x556474;
+          alpha = canRep ? 1 : 0.65;
+          lbl.title.text = tower.hp <= 0 ? 'FIX!' : 'REPAIR';
+          lbl.sub.text = `${cost} cr`;
+          lbl.desc.text = `+${missingHp} HP`;
+          lbl.title.style.fill = canRep ? C.mint : 0x7c8b9b;
+          lbl.sub.style.fill = canRep ? C.gold : 0x7c8b9b;
         } else {
           border = C.coral;
           lbl.title.text = 'SELL';

@@ -311,14 +311,28 @@ describe('hud + viewport', () => {
       }
       expect(hitRadialButton(640, 400, rot, 640, 400)).toBeNull();
 
+      // 4-button repair mode: zero pairwise overlap, accurate hit-test, and clamps inside stage
+      const btns4 = radialButtons(640, 400, rot, WORLD_W, WORLD_H, true);
+      expect(btns4.map(b => b.action)).toEqual(['upgrade', 'priority', 'sell', 'repair']);
+      for (let i = 0; i < btns4.length; i++) {
+        for (let j = i + 1; j < btns4.length; j++) {
+          expect(Math.hypot(btns4[i].x - btns4[j].x, btns4[i].y - btns4[j].y)).toBeGreaterThanOrEqual(2 * RADIAL_BTN_R - 1e-6);
+        }
+      }
+      const repairBtn = btns4.find(b => b.action === 'repair')!;
+      expect(hitRadialButton(640, 400, rot, repairBtn.x, repairBtn.y, WORLD_W, WORLD_H, true)).toBe('repair');
+      expect(hitRadialButton(640, 400, rot, repairBtn.x, repairBtn.y, WORLD_W, WORLD_H, false)).toBeNull();
+
       for (const [sw, sh] of [[WORLD_W, WORLD_H], [920, 1280]]) {
         for (const [cx, cy] of [[0, 0], [sw, 0], [0, sh], [sw, sh]]) {
-          const clamped = radialButtons(cx, cy, rot, sw, sh);
-          for (const b of clamped) {
-            expect(b.x).toBeGreaterThanOrEqual(26 - 1e-6);
-            expect(b.x).toBeLessThanOrEqual(sw - 26 + 1e-6);
-            expect(b.y).toBeGreaterThanOrEqual(26 - 1e-6);
-            expect(b.y).toBeLessThanOrEqual(sh - 26 + 1e-6);
+          for (const showRepair of [false, true]) {
+            const clamped = radialButtons(cx, cy, rot, sw, sh, showRepair);
+            for (const b of clamped) {
+              expect(b.x).toBeGreaterThanOrEqual(26 - 1e-6);
+              expect(b.x).toBeLessThanOrEqual(sw - 26 + 1e-6);
+              expect(b.y).toBeGreaterThanOrEqual(26 - 1e-6);
+              expect(b.y).toBeLessThanOrEqual(sh - 26 + 1e-6);
+            }
           }
         }
       }

@@ -53,7 +53,7 @@ export const REASON_TEXT: Record<string, string> = {
   ok: 'Placed', outside: 'Outside grid', reserved: 'Reserved cell', asteroid: 'Asteroid',
   occupied: 'Occupied', enemy: 'Enemy in cell', funds: 'Not enough credits',
   'blocks-path': 'Would block route', 'unknown-player': 'Unknown player',
-  'unknown-turret': 'Unknown turret', over: 'Match over',
+  'unknown-turret': 'Unknown turret', over: 'Match over', 'full-hp': 'Already full HP',
 };
 
 const THEATER_REASON_OVERRIDES: Record<string, Record<string, string>> = {
@@ -153,7 +153,9 @@ export class InputController {
 
     // 2. Open radial menu buttons (per-owner, supports simultaneous players).
     for (const m of this.openRadials.values()) {
-      const action = hitRadialButton(m.cx, m.cy, m.rot, x, y, layout.stageW, layout.stageH);
+      const rt = this.game.towerById(m.towerId);
+      const showRepair = !!rt && rt.hp < rt.maxHp;
+      const action = hitRadialButton(m.cx, m.cy, m.rot, x, y, layout.stageW, layout.stageH, showRepair);
       if (action) {
         this.pointers.set(id, { kind: 'radial-btn', owner: m.owner, towerId: m.towerId, action });
         return;
@@ -269,7 +271,9 @@ export class InputController {
       const m = this.openRadials.get(p.owner);
       if (!m || m.towerId !== p.towerId) return;
       const layout = this.getLayout();
-      if (hitRadialButton(m.cx, m.cy, m.rot, x, y, layout.stageW, layout.stageH) !== p.action) return;
+      const rt = this.game.towerById(m.towerId);
+      const showRepair = !!rt && rt.hp < rt.maxHp;
+      if (hitRadialButton(m.cx, m.cy, m.rot, x, y, layout.stageW, layout.stageH, showRepair) !== p.action) return;
       if (p.action === 'upgrade') {
         const r = this.game.upgradeTower(p.towerId);
         if (r.ok) {
@@ -291,6 +295,16 @@ export class InputController {
           this.hooks.sound?.('ui-sell');
         }
         this.openRadials.delete(p.owner);
+      } else if (p.action === 'repair') {
+        const r = this.game.repairTower(m.towerId, m.owner);
+        if (r.ok) {
+          this.hooks.toast(`Repaired (-${r.cost} cr)`, m.cx, m.cy, true);
+          this.hooks.sound?.('ui-repair');
+        } else {
+          this.hooks.toast(reasonText(r.reason, this.game.currentMap.theme), m.cx, m.cy, false);
+          this.hooks.sound?.('ui-error');
+        }
+        this.openRadials.delete(m.owner);
       }
     } else if (p.kind === 'credit') {
       const cd = this.creditDrags.get(id)!;
