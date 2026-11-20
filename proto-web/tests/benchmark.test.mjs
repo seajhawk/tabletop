@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 // The harness is loaded exactly the way the parent tooling loads it: no module system, a bare function expression.
 const SOURCE = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'scripts', 'benchmark-browser.js'), 'utf8');
 const loadHarness = () => vm.runInNewContext('(' + SOURCE + ')', { URL, setTimeout, clearTimeout });
-const SCORE_KEY = 'galactic-alliance:best-scores:v1';
+const SCORE_KEY = 'galactic-defense:best-scores:v1';
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const MAP_IDS = ['orbital-crossing', 'pacific-fleet', 'ironhold-keep'];
 
@@ -59,7 +59,7 @@ function makeWorld(o = {}) {
   const game = new FakeGame();
   if (o.noSpawnEnemy) game.spawnEnemy = undefined;
   let muted = false;
-  const renderer = { update() {}, isMuted: () => muted, app: { renderer: { gl: null, type: 1 } } };
+  const renderer = Object.assign(Object.create({ update() {} }), { isMuted: () => muted, app: { renderer: { gl: null, type: 1 } } });
   const input = { hooks: { button: id => { if (id === 'sfx') muted = !muted; } } };
   const window = { __ga: { game, renderer, input, layout: () => ({ id: '2p-opposing' }) }, localStorage,
     innerWidth: 1920, innerHeight: 1080, devicePixelRatio: 1, location: { href: 'http://127.0.0.1:4173/' } };

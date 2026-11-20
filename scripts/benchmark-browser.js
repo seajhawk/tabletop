@@ -1,5 +1,5 @@
 /*
- * Galactic Alliance - bounded SUSTAINED-load browser benchmark (single self-contained async function expression).
+ * Galactic Defense - bounded SUSTAINED-load browser benchmark (single self-contained async function expression).
  *
  * Run it (parent/coordinator only) with Playwright MCP `browser_run_code_unsafe` { filename: "scripts/benchmark-browser.js" },
  * or load it in Node: `const fn = vm.runInNewContext('(' + source + ')', { URL, setTimeout, clearTimeout })`.
@@ -57,7 +57,7 @@ async function galacticBenchmarkBrowser(existingPage, options) {
   const MAX_TOTAL_MS = 40000;
   const FIXTURE_LIVES = 1000000000;
   const EXPECTED_TOWERS = 20;
-  const SCORE_KEY = 'galactic-alliance:best-scores:v1';
+  const SCORE_KEY = 'galactic-defense:best-scores:v1';
 
   const fail = (kind, message, cause) => {
     const e = new Error(message);
