@@ -461,3 +461,11 @@ export function getTheater(theme?: string): TheaterTheme {
       return SPACE_THEME;
   }
 }
+
+export function formatWaveName(
+  themeId: string | undefined,
+  wave: { index: number; name: string; templateIndex?: number; tierSuffix?: string },
+): string {
+  const base = getTheater(themeId).waveNames[wave.templateIndex ?? wave.index] ?? wave.name;
+  return `${base}${wave.tierSuffix ?? ''}`;
+}

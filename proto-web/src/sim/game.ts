@@ -1,6 +1,7 @@
 // Rendering-independent simulation: grid, routes, waves, weapons, economy.
 import {
   DIFFICULTIES,
+  WAVE_COUNTS,
   type Difficulty,
   type EnemyDef,
   type GameData,
@@ -10,6 +11,7 @@ import {
   type TargetPriority,
   type TurretDef,
   type TurretUpgrade,
+  type WaveCount,
   type WaveDef,
 } from '../types';
 import { hex } from '../data';
@@ -212,8 +214,10 @@ export class Game {
   h: number;
   readonly turretById = new Map<string, TurretDef>();
   readonly enemyById = new Map<string, EnemyDef>();
-  readonly ordinaryWaves: WaveDef[];
+  private readonly baseOrdinaryWaves: WaveDef[];
+  ordinaryWaves: WaveDef[];
   readonly stressWave: WaveDef | undefined;
+  waveCount: WaveCount = 10;
   playerCount: number;
   credits: number[] = [];
   lives = 0;
@@ -267,7 +271,8 @@ export class Game {
     this.h = this.currentMap.height;
     for (const t of data.turrets) this.turretById.set(t.id, t);
     for (const e of data.enemies) this.enemyById.set(e.id, e);
-    this.ordinaryWaves = data.waves.filter(w => !w.stress).sort((a, b) => a.index - b.index);
+    this.baseOrdinaryWaves = data.waves.filter(w => !w.stress).sort((a, b) => a.index - b.index);
+    this.ordinaryWaves = this.buildWavePlan(this.baseOrdinaryWaves, this.waveCount);
     this.stressWave = data.waves.find(w => w.stress);
     this.playerCount = playerCount;
     const n = this.w * this.h;
@@ -310,6 +315,71 @@ export class Game {
     const order: Difficulty[] = ['easy', 'medium', 'hard'];
     const next = order[(order.indexOf(this.difficulty) + 1) % order.length];
     this.setDifficulty(next);
+    return next;
+  }
+
+  buildWavePlan(base: WaveDef[], count: WaveCount): WaveDef[] {
+    if (base.length === 0) return [];
+    const cloneGroups = (groups: WaveDef['groups'], scale = 1, trimBossEscorts = false) =>
+      groups.map(g => {
+        const isBoss = this.enemyById.get(g.enemyId)?.boss === true;
+        if (isBoss) return { ...g, count: 1 };
+        const factor = trimBossEscorts ? 0.7 : scale;
+        return { ...g, count: factor === 1 ? g.count : Math.max(1, Math.round(g.count * factor)) };
+      });
+
+    if (count === 10) {
+      return base.map(w => ({ ...w, groups: cloneGroups(w.groups), templateIndex: w.index }));
+    }
+
+    const byIndex = new Map(base.map(w => [w.index, w]));
+
+    if (count === 5) {
+      const picks = [1, 3, 4, 5, 10];
+      return picks.map((targetIdx, i) => {
+        const fallback = i === picks.length - 1 ? base[base.length - 1] : base[Math.min(i, base.length - 1)];
+        const src = byIndex.get(targetIdx) ?? fallback;
+        const isFinal = i === picks.length - 1;
+        return {
+          ...src,
+          index: i + 1,
+          templateIndex: src.index,
+          groups: cloneGroups(src.groups, 1, isFinal),
+        };
+      });
+    }
+
+    const plan: WaveDef[] = base.map(w => ({ ...w, groups: cloneGroups(w.groups), templateIndex: w.index }));
+    const cycle = [3, 4, 5, 6, 7, 8, 9];
+    for (let i = base.length + 1; i <= count; i++) {
+      const isBossWave = i === count || i % 10 === 0;
+      const src = isBossWave
+        ? (byIndex.get(10) ?? base[base.length - 1])
+        : (byIndex.get(cycle[(i - 11) % cycle.length]) ?? base[(i - 1) % base.length]);
+      const tier = Math.floor((i - 1) / 10) + 1;
+      const tierSuffix = tier <= 1 ? undefined : tier === 2 ? ' II' : ' III';
+      const scale = 1 + 0.15 * (tier - 1);
+      plan.push({
+        ...src,
+        index: i,
+        templateIndex: src.index,
+        tierSuffix,
+        groups: cloneGroups(src.groups, scale),
+      });
+    }
+    return plan;
+  }
+
+  setWaveCount(count: WaveCount): void {
+    this.waveCount = count;
+    this.ordinaryWaves = this.buildWavePlan(this.baseOrdinaryWaves, count);
+    this.reset();
+  }
+
+  cycleWaveCount(): WaveCount {
+    const idx = WAVE_COUNTS.indexOf(this.waveCount);
+    const next = WAVE_COUNTS[(idx + 1) % WAVE_COUNTS.length];
+    this.setWaveCount(next);
     return next;
   }
 
@@ -404,6 +474,7 @@ export class Game {
     this.launched = false;
     this.mode = 'normal';
     this.waveCursor = 0;
+    this.ordinaryWaves = this.buildWavePlan(this.baseOrdinaryWaves, this.waveCount);
     this.time = 0;
     this.lastEarlyBonus = 0;
     this.autoWaveTimer = 0;
@@ -666,10 +737,13 @@ export class Game {
   }
 
   private startWave(w: WaveDef): void {
-    const hpScale = w.stress ? 1 : this.waveHealthScale(w.index);
+    const baseHpScale = w.stress ? 1 : this.waveHealthScale(w.index);
     for (const g of w.groups) {
       const enemy = this.enemyById.get(g.enemyId);
       if (!enemy) continue;
+      const hpScale = (!w.stress && this.waveCount === 5 && w.index === 5 && enemy.boss)
+        ? baseHpScale * 0.80
+        : baseHpScale;
       this.spawners.push({ enemy, remaining: g.count, interval: g.interval, timer: 0, spawnIndex: g.spawnIndex, hpScale });
     }
     this.launched = true;

@@ -1,4 +1,4 @@
-import { DIFFICULTIES, type Difficulty } from './types';
+import { DIFFICULTIES, WAVE_COUNTS, type Difficulty } from './types';
 
 /** Local-only best scores: one versioned localStorage key, no network. */
 export const SCORE_STORAGE_KEY = 'galactic-alliance:best-scores:v1';
@@ -18,6 +18,7 @@ export interface ScoreResult {
   mapId: string;
   difficulty: Difficulty;
   players: number;
+  waveCount?: number;
   score: number;
   best: number;
   /** True when this run beat the previous record (or set the first non-zero one). */
@@ -33,6 +34,7 @@ export interface ScoreSource {
   over: 'won' | 'lost' | null;
   difficulty: Difficulty;
   playerCount: number;
+  waveCount?: number;
   lives: number;
   currentMap: { id: string };
   stats: { kills: number };
@@ -40,7 +42,8 @@ export interface ScoreSource {
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 
-const keyOf = (mapId: string, d: string, p: number) => `${mapId}|${d}|${p}`;
+export const scoreKey = (mapId: string, d: string, p: number, waveCount = 10): string =>
+  waveCount === 10 ? `${mapId}|${d}|${p}` : `${mapId}|${d}|${p}|w${waveCount}`;
 
 export class ScoreBook {
   private records = new Map<string, BestRecord>();
@@ -64,13 +67,15 @@ export class ScoreBook {
     if (g.runId === this.lastRunId) return this.last;
     this.lastRunId = g.runId;
     this.last = null;
+    const waveCount = g.waveCount ?? 10;
     if (!this.maps.has(g.currentMap.id) || !Object.prototype.hasOwnProperty.call(DIFFICULTIES, g.difficulty)
-      || !(PLAYER_COUNTS as readonly number[]).includes(g.playerCount)) return null;
+      || !(PLAYER_COUNTS as readonly number[]).includes(g.playerCount)
+      || !(WAVE_COUNTS as readonly number[]).includes(waveCount)) return null;
     const won = g.over === 'won';
     const score = computeScore(g.stats.kills, g.lives, won);
     if (!Number.isSafeInteger(score) || score < 0 || score > MAX_SCORE) return null;
     this.load();
-    const key = keyOf(g.currentMap.id, g.difficulty, g.playerCount);
+    const key = scoreKey(g.currentMap.id, g.difficulty, g.playerCount, waveCount);
     const prev = this.records.get(key);
     const improved = prev ? score > prev.score : score > 0;
     if (!prev || improved) {
@@ -78,7 +83,7 @@ export class ScoreBook {
       this.unsaved = !this.save();
     }
     this.last = {
-      runId: g.runId, mapId: g.currentMap.id, difficulty: g.difficulty, players: g.playerCount,
+      runId: g.runId, mapId: g.currentMap.id, difficulty: g.difficulty, players: g.playerCount, waveCount,
       score, best: this.records.get(key)!.score, improved, persisted: this.canPersist && !this.unsaved,
     };
     return this.last;
@@ -90,9 +95,9 @@ export class ScoreBook {
     return this.last && this.last.runId === g.runId ? this.last : null;
   }
 
-  bestFor(mapId: string, difficulty: Difficulty, players: number): number | undefined {
+  bestFor(mapId: string, difficulty: Difficulty, players: number, waveCount = 10): number | undefined {
     this.load();
-    return this.records.get(keyOf(mapId, difficulty, players))?.score;
+    return this.records.get(scoreKey(mapId, difficulty, players, waveCount))?.score;
   }
 
   private load(): void {
@@ -118,13 +123,15 @@ export class ScoreBook {
     for (const m of this.maps) {
       for (const d of Object.keys(DIFFICULTIES)) {
         for (const p of PLAYER_COUNTS) {
-          const k = keyOf(m, d, p);
-          if (!Object.prototype.hasOwnProperty.call(recs, k)) continue;
-          const r = (recs as Record<string, unknown>)[k];
-          if (typeof r !== 'object' || r === null) continue;
-          const { score, won } = r as Record<string, unknown>;
-          if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 0 || score > MAX_SCORE) continue;
-          this.records.set(k, { score, won: won === true });
+          for (const w of WAVE_COUNTS) {
+            const k = scoreKey(m, d, p, w);
+            if (!Object.prototype.hasOwnProperty.call(recs, k)) continue;
+            const r = (recs as Record<string, unknown>)[k];
+            if (typeof r !== 'object' || r === null) continue;
+            const { score, won } = r as Record<string, unknown>;
+            if (typeof score !== 'number' || !Number.isSafeInteger(score) || score < 0 || score > MAX_SCORE) continue;
+            this.records.set(k, { score, won: won === true });
+          }
         }
       }
     }

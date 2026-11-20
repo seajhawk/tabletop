@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CREDIT_TRANSFER_AMOUNT, InputController, reasonText, TOUCH_LIFT } from '../src/input';
 import { attachPointerInput } from '../src/inputDom';
 import {
-  CELL, CORNER_SCALE, creditChipRect, DOCK_W, dockToWorld, dockUp, hitDockSlot, LAYOUTS, radialButtons,
+  boardCellCenter, CORNER_SCALE, creditChipRect, DOCK_W, dockToWorld, dockUp, hitDockSlot, LAYOUTS, radialButtons,
   settingsButtonRects, settingsPanelRect, slotRect, summaryButtonRects, TURRET_ORDER,
 } from '../src/layout';
 import { newGame } from './helpers';
@@ -28,7 +28,7 @@ function setup(layoutIdx = 0) {
     const r = creditChipRect();
     return dockToWorld(layout.docks[dockIdx], r.x + r.w / 2, r.y + r.h / 2);
   };
-  const cell = (x: number, y: number) => ({ x: layout.board.x + (x + 0.5) * CELL, y: layout.board.y + (y + 0.5) * CELL });
+  const cell = (x: number, y: number) => boardCellCenter(layout.board, x, y, layout.boardRotated);
   return { game, input, toasts, buttons, sounds, creditFlies, slot, chip, cell, layout };
 }
 
@@ -201,9 +201,9 @@ describe('4P corners: four independent diagonal dock drags', () => {
 
 describe('buttons, selling & radial menus', () => {
   it('phone modal blank header captures touches above the covered HUD button', () => {
-    const { input, layout, buttons } = setup(LAYOUTS.findIndex(l => l.id === '1p-phone'));
+    const { input, layout, buttons } = setup(LAYOUTS.findIndex(l => l.id === '2p-phone'));
     input.toggleSettings();
-    const hud = layout.hudButtons.settings;
+    const hud = layout.hudButtons.wave;
     const x = hud.x + hud.w / 2, y = hud.y + 5;
     input.pointerDown(1, x, y, 'touch', 0, 0);
     input.pointerUp(1, x, y, 10);
@@ -311,21 +311,41 @@ describe('buttons, selling & radial menus', () => {
     });
   }
 
-  it('2P phone portrait layout supports board placement and radial menus at portrait board coords', () => {
+  it('2P phone portrait layout supports rotated vertical-court placement, radial menus, and waves settings button', () => {
     const phoneIdx = LAYOUTS.findIndex(l => l.id === '2p-phone');
-    const { game, input, slot, cell } = setup(phoneIdx);
-    const s = slot(0, 0);
-    const target = cell(5, 6);
-    input.pointerDown(1, s.x, s.y, 'touch', 0, 0);
-    input.pointerUp(1, target.x, target.y + TOUCH_LIFT, 10);
+    const { game, input, slot, cell, buttons, layout } = setup(phoneIdx);
+    const s0 = slot(0, 0);
+    const target0 = cell(5, 6);
+    input.pointerDown(1, s0.x, s0.y, 'touch', 0, 0);
+    input.pointerUp(1, target0.x, target0.y + TOUCH_LIFT, 10);
     expect(game.towerAt[game.idx(5, 6)]).toMatchObject({ owner: 0, def: { id: 'pulse' } });
 
-    input.pointerDown(2, target.x, target.y, 'touch', 0, 20);
-    input.pointerUp(2, target.x, target.y, 60);
+    // P1 top dock (rotated PI) lifts downward (+TOUCH_LIFT in dock-up = +y in world)
+    const s1 = slot(1, 1);
+    const target1 = cell(20, 10);
+    input.pointerDown(10, s1.x, s1.y, 'touch', 0, 12);
+    input.pointerUp(10, target1.x, target1.y - TOUCH_LIFT, 15);
+    expect(game.towerAt[game.idx(20, 10)]).toMatchObject({ owner: 1, def: { id: 'plasma' } });
+
+    input.pointerDown(2, target0.x, target0.y, 'touch', 0, 20);
+    input.pointerUp(2, target0.x, target0.y, 60);
     const radial = input.openRadials.get(0);
     expect(radial).toBeDefined();
-    expect(radial!.cx).toBeCloseTo(target.x, 6);
-    expect(radial!.cy).toBeCloseTo(target.y, 6);
+    expect(radial!.cx).toBeCloseTo(target0.x, 6);
+    expect(radial!.cy).toBeCloseTo(target0.y, 6);
+
+    // Upgrade via radial on rotated board
+    const upgBtn = radialButtons(radial!.cx, radial!.cy, radial!.rot, layout.stageW, layout.stageH).find(b => b.action === 'upgrade')!;
+    input.pointerDown(3, upgBtn.x, upgBtn.y, 'touch', 0, 70);
+    input.pointerUp(3, upgBtn.x, upgBtn.y, 80);
+    expect(game.towerAt[game.idx(5, 6)]!.tier).toBe(1);
+
+    // Settings 'waves' button fires on release
+    input.toggleSettings();
+    const wavesBtn = settingsButtonRects(layout).waves;
+    input.pointerDown(4, wavesBtn.x + wavesBtn.w / 2, wavesBtn.y + wavesBtn.h / 2, 'touch', 0, 90);
+    input.pointerUp(4, wavesBtn.x + wavesBtn.w / 2, wavesBtn.y + wavesBtn.h / 2, 100);
+    expect(buttons).toEqual(['waves']);
   });
 
   it('emits ui-place, ui-error, ui-upgrade, ui-sell, and ui-share sound events', () => {

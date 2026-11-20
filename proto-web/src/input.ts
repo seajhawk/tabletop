@@ -3,7 +3,7 @@ import type { Game, PlaceResult } from './sim/game';
 import type { SoundEvent } from './types';
 import { getTheater } from './theme';
 import {
-  CELL, cellAt, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton, hitSettingsButton,
+  boardCellCenter, cellAt, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton, hitSettingsButton,
   hitSummaryButton, inRect, settingsPanelRect, TURRET_ORDER, type ButtonId, type Dock, type LayoutDef, type RadialAction,
 } from './layout';
 
@@ -143,7 +143,7 @@ export class InputController {
 
     // 1. Right-click quick-sells tower at (x, y) and closes any radial on that tower.
     if (type === 'mouse' && button === 2) {
-      const c = cellAt(x, y, layout.board);
+      const c = cellAt(x, y, layout.board, layout.boardRotated);
       const t = c ? this.game.towerAt[this.game.idx(c.x, c.y)] : null;
       if (t && this.openRadials.get(t.owner)?.towerId === t.id) this.openRadials.delete(t.owner);
       this.sellAt(x, y);
@@ -204,7 +204,7 @@ export class InputController {
     }
 
     // 5. Board tower tap.
-    const c = cellAt(x, y, layout.board);
+    const c = cellAt(x, y, layout.board, layout.boardRotated);
     const tower = c ? this.game.towerAt[this.game.idx(c.x, c.y)] : null;
     if (c && tower) {
       this.pointers.set(id, { kind: 'tap', cx: c.x, cy: c.y, towerId: tower.id, x, y, t: now });
@@ -306,7 +306,7 @@ export class InputController {
       }
     } else if (p.kind === 'tap') {
       const layout = this.getLayout();
-      const c = cellAt(x, y, layout.board);
+      const c = cellAt(x, y, layout.board, layout.boardRotated);
       if (c && c.x === p.cx && c.y === p.cy && now - p.t < TAP_MS) {
         const tower = this.game.towerById(p.towerId);
         if (!tower) return;
@@ -315,11 +315,12 @@ export class InputController {
           this.openRadials.delete(tower.owner);
         } else {
           const ownerDock = layout.docks.find(d => d.player === tower.owner) ?? layout.docks[0];
+          const center = boardCellCenter(layout.board, tower.x, tower.y, layout.boardRotated);
           this.openRadials.set(tower.owner, {
             towerId: tower.id,
             owner: tower.owner,
-            cx: layout.board.x + (tower.x + 0.5) * CELL,
-            cy: layout.board.y + (tower.y + 0.5) * CELL,
+            cx: center.x,
+            cy: center.y,
             rot: ownerDock ? ownerDock.rot : 0,
           });
         }
@@ -391,14 +392,16 @@ export class InputController {
     const lift = d.touch ? TOUCH_LIFT : 0;
     d.ax = d.px + d.upx * lift;
     d.ay = d.py + d.upy * lift;
-    d.cell = cellAt(d.ax, d.ay, this.getLayout().board);
+    const layout = this.getLayout();
+    d.cell = cellAt(d.ax, d.ay, layout.board, layout.boardRotated);
   }
   private refreshDrag(d: DragState): void {
     this.aim(d);
     d.result = d.cell ? this.game.check(d.owner, d.turretId, d.cell.x, d.cell.y) : null;
   }
   private sellAt(x: number, y: number): void {
-    const c = cellAt(x, y, this.getLayout().board);
+    const layout = this.getLayout();
+    const c = cellAt(x, y, layout.board, layout.boardRotated);
     if (!c) return;
     const refund = this.game.sellAt(c.x, c.y);
     if (refund !== null) {

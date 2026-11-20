@@ -9,7 +9,7 @@ import { LAYOUTS, Viewport, type ButtonId } from './layout';
 import { Renderer } from './render';
 import { ScoreBook, browserStorage } from './scores';
 import { createBrowserPwa, canApplyGameUpdate } from './pwa';
-import { getTheater } from './theme';
+import { formatWaveName } from './theme';
 import { DIFFICULTIES, type MapTheme } from './types';
 
 async function main(): Promise<void> {
@@ -76,7 +76,7 @@ async function main(): Promise<void> {
         } else {
           const w = game.ordinaryWaves[game.waveCursor - 1];
           const bonus = game.lastEarlyBonus > 0 ? ` (+${game.lastEarlyBonus} cr early bonus!)` : '';
-          const wName = w ? (getTheater(game.currentMap.theme).waveNames[w.index] ?? w.name) : '';
+          const wName = w ? formatWaveName(game.currentMap.theme, w) : '';
           if (w) renderer.toast(`Wave ${w.index}: ${wName}${bonus}`, cx, cy, true);
         }
         break;
@@ -102,6 +102,14 @@ async function main(): Promise<void> {
         input.settingsOpen = keepOpen;
         const d = game.cycleDifficulty();
         renderer.toast(`Difficulty: ${DIFFICULTIES[d].label}`, cx, cy, true);
+        break;
+      }
+      case 'waves': {
+        const keepOpen = input.settingsOpen;
+        input.cancelAll();
+        input.settingsOpen = keepOpen;
+        const w = game.cycleWaveCount();
+        renderer.toast(`Waves: ${w}`, cx, cy, true);
         break;
       }
       case 'auto':

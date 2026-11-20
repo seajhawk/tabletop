@@ -3,6 +3,8 @@ import { loadData } from '../src/data';
 import { computeHitDamage, lineIntersectsCircle, pickTarget, predictIntercept } from '../src/sim/combat';
 import { Game } from '../src/sim/game';
 import { FixedStepper } from '../src/sim/stepper';
+import { formatWaveName } from '../src/theme';
+import { WAVE_COUNTS } from '../src/types';
 import { makeEnemy, newGame, run } from './helpers';
 
 describe('economy', () => {
@@ -953,5 +955,75 @@ describe('new theater maps & mechanics', () => {
     run(g, 8);
     expect(g.enemies.length).toBe(0);
     expect(g.totalCredits()).toBeCloseTo(g.expectedCredits(), 6);
+  });
+});
+
+describe('configurable wave count', () => {
+  it('cycles wave counts 10 -> 15 -> 20 -> 30 -> 5 -> 10 and updates totalWaves', () => {
+    const g = newGame(2);
+    expect(g.waveCount).toBe(10);
+    expect(g.totalWaves).toBe(10);
+
+    const seen: number[] = [];
+    for (let i = 0; i < WAVE_COUNTS.length; i++) {
+      seen.push(g.cycleWaveCount());
+      expect(g.totalWaves).toBe(g.waveCount);
+    }
+    expect(seen).toEqual([15, 20, 30, 5, 10]);
+  });
+
+  it('places boss waves on wave 5 (5-wave) and waves 10/15/20/30 for extended counts', () => {
+    const g = newGame(2);
+
+    const hasBoss = (w: typeof g.ordinaryWaves[number], count?: number) =>
+      w.groups.some(gr => g.enemyById.get(gr.enemyId)?.boss === true && (count === undefined || gr.count === count));
+
+    g.setWaveCount(5);
+    expect(g.ordinaryWaves.map(w => w.templateIndex)).toEqual([1, 3, 4, 5, 10]);
+    expect(hasBoss(g.ordinaryWaves[4], 1)).toBe(true);
+
+    g.setWaveCount(15);
+    expect(hasBoss(g.ordinaryWaves[9])).toBe(true);
+    expect(hasBoss(g.ordinaryWaves[14], 1)).toBe(true);
+    expect(g.ordinaryWaves[10].tierSuffix).toBe(' II');
+
+    g.setWaveCount(20);
+    expect(hasBoss(g.ordinaryWaves[19])).toBe(true);
+
+    g.setWaveCount(30);
+    expect(hasBoss(g.ordinaryWaves[19])).toBe(true);
+    expect(hasBoss(g.ordinaryWaves[29])).toBe(true);
+    expect(g.ordinaryWaves[20].tierSuffix).toBe(' III');
+  });
+
+  it('applies 0.80 boss HP scale on wave 5 of a 5-wave match and wins after clearing wave 5', () => {
+    const g5 = newGame(2);
+    g5.setWaveCount(5);
+    // Advance to wave 5 (index 5)
+    g5.waveCursor = 4;
+    g5.launchWave();
+    const boss5 = g5.enemies.find(e => e.def.boss) ?? (() => {
+      run(g5, 2);
+      return g5.enemies.find(e => e.def.boss);
+    })();
+    expect(boss5).toBeDefined();
+    const expectedBossHp = Math.round(boss5!.def.hp * g5.waveHealthScale(5) * 0.80);
+    expect(boss5!.maxHp).toBe(expectedBossHp);
+
+    // Clear all enemies & spawners on wave 5 -> triggers victory
+    g5.spawners = [];
+    g5.enemies = [];
+    g5.step(1 / 60);
+    expect(g5.over).toBe('won');
+  });
+
+  it('formats themed wave names with templateIndex and tierSuffix', () => {
+    const g = newGame(2);
+    g.setWaveCount(30);
+    const w11 = g.ordinaryWaves[10]; // tier 2
+    const w21 = g.ordinaryWaves[20]; // tier 3
+    expect(formatWaveName('space', w11)).toMatch(/ II$/);
+    expect(formatWaveName('space', w21)).toMatch(/ III$/);
+    expect(formatWaveName('space', g.ordinaryWaves[0])).not.toMatch(/ II$| III$/);
   });
 });

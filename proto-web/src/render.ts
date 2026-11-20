@@ -6,11 +6,11 @@ import type { InputController } from './input';
 import { DIFFICULTIES, type MapTheme } from './types';
 import { hex } from './data';
 import { scoreLines, type ScoreResult } from './scores';
-import { getTheater, type TheaterTheme, type ThemeId } from './theme';
+import { formatWaveName, getTheater, type TheaterTheme, type ThemeId } from './theme';
 import { buildMilitaryTextures, type MilitaryTextureSet } from './militarySprites';
 import { buildTheaterTextures, type TheaterTextureSet } from './theaterSprites';
 import {
-  CELL, creditChipRect, dockToWorld, GRID_H, GRID_W, HUD_BUTTON_IDS, isPhoneLayout,
+  boardCellCenter, boardLocalToWorld, CELL, creditChipRect, dockToWorld, GRID_H, GRID_W, HUD_BUTTON_IDS, isPhoneLayout,
   PHONE_SETTINGS, RADIAL_BTN_R, RADIAL_RADIUS, radialButtons, SETTINGS_BUTTON_IDS,
   settingsButtonRects, settingsPanelRect, slotRect, SUMMARY_BUTTON_IDS,
   summaryButtonRects, summaryCardRect, TURRET_ORDER,
@@ -19,6 +19,9 @@ import {
 } from './layout';
 import { followRoute } from './sim/grid';
 import type { PwaController } from './pwa';
+
+const BOARD_W = GRID_W * CELL;
+const BOARD_H = GRID_H * CELL;
 
 type PwaView = Pick<PwaController, 'installLabel' | 'installDisabled' | 'updateLabel' | 'updateDisabled' | 'updateAvailable' | 'statusText'>;
 
@@ -253,6 +256,8 @@ interface FlyingChip {
 
 export class Renderer {
   readonly world = new Container();
+  private stageBg = new Container();
+  private boardRoot = new Container();
   private bg = new Container();
   private craterLayer = new Container();
   private routeG = new Graphics();
@@ -283,6 +288,8 @@ export class Renderer {
   private lastGameTime = 0;
 
   private sprites: Sprite[] = [];
+  private hpBars: Graphics[] = [];
+  private chipG = new Graphics();
   private textures = new Map<string, Texture>();
   private dockViews: DockView[] = [];
   private buttons: ButtonView<HudButtonId>[] = [];
@@ -361,11 +368,14 @@ export class Renderer {
     this.lastLives = game.lives;
     this.routePulseG.blendMode = 'add';
     this.fxGlow.blendMode = 'add';
-    this.world.addChild(
+    this.boardRoot.addChild(
       this.bg, this.craterLayer, this.routeG, this.routePulseG, this.mineLayer,
       this.towerBaseG, this.towerHeadG, this.milTowerLayer,
-      this.enemyShadowG, this.enemyLayer, this.onMapHudLayer, this.fxGlow, this.fx,
-      this.stormG, this.ghostG, this.dockLayer, this.radialLayer, this.hudLayer,
+      this.enemyShadowG, this.enemyLayer, this.fxGlow, this.fx, this.stormG,
+    );
+    this.world.addChild(
+      this.stageBg, this.boardRoot, this.onMapHudLayer, this.ghostG,
+      this.dockLayer, this.radialLayer, this.hudLayer,
       this.settingsLayer, this.fxTextLayer, this.toastLayer,
     );
     app.stage.addChild(this.world);
@@ -420,7 +430,8 @@ export class Renderer {
     this.stormAlertText.anchor.set(0.5, 0.5);
     this.stormAlertText.visible = false;
     this.stormAlertG.visible = false;
-    this.hudLayer.addChild(this.bossBarG, this.bossLabel, this.stormAlertG, this.stormAlertText);
+    this.hudLayer.addChild(this.bossBarG, this.bossLabel);
+    this.onMapHudLayer.addChild(this.stormAlertG, this.stormAlertText);
 
     for (let i = 0; i < 4; i++) {
       const container = new Container();
@@ -440,6 +451,7 @@ export class Renderer {
       this.radialPool.push({ container, g, btns });
     }
 
+    this.fxTextLayer.addChild(this.chipG);
     for (let i = 0; i < 8; i++) {
       this.flyingChips.push({ active: false, fromX: 0, fromY: 0, toX: 0, toY: 0, t: 0, dur: 0.35, amount: 0, color: C.cyan });
       const lbl = mkText('', 12, 0xffffff, { bold: true });
@@ -540,10 +552,21 @@ export class Renderer {
     return this.theme().turrets[id]?.color ?? this.tc.get(id) ?? C.cyan;
   }
 
+  private syncBoardRoot(layout: LayoutDef): void {
+    if (layout.boardRotated) {
+      this.boardRoot.position.set(layout.board.x + layout.board.w, layout.board.y);
+      this.boardRoot.rotation = Math.PI / 2;
+    } else {
+      this.boardRoot.position.set(layout.board.x, layout.board.y);
+      this.boardRoot.rotation = 0;
+    }
+  }
+
   // ---------- static scene ----------
   private buildBoard(): void {
     this.mapSeen = this.game.mapVersion;
     this.clearCraters();
+    for (const c of this.stageBg.removeChildren()) c.destroy();
     for (const c of this.bg.removeChildren()) c.destroy();
     const map = this.game.currentMap;
     const theme = this.theme();
@@ -551,49 +574,54 @@ export class Renderer {
     const sprites = this.activeSprites(theme.id);
     const mapTex = this.mapTextures[theme.id] ?? null;
     const l = this.getLayout();
-    const board = l.board, sw = l.stageW, sh = l.stageH;
+    const sw = l.stageW, sh = l.stageH;
+    const rotated = !!l.boardRotated;
+    this.syncBoardRoot(l);
+
+    const stageG = new Graphics();
+    stageG.rect(0, 0, sw, sh).fill(theme.spaceBg);
+    this.stageBg.addChild(stageG);
 
     const g = new Graphics();
-    g.rect(0, 0, sw, sh).fill(theme.spaceBg);
-    g.rect(board.x, board.y, board.w, board.h).fill({ color: theme.boardBg });
+    g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: theme.boardBg });
     this.bg.addChild(g);
 
     const avgExitY = map.exits.reduce((s, [, y]) => s + y, 0) / Math.max(1, map.exits.length);
-    const ex = board.x + board.w + 34, ey = board.y + (avgExitY + 0.5) * CELL;
+    const ex = BOARD_W + 34, ey = (avgExitY + 0.5) * CELL;
 
     if (hasSprites && mapTex) {
       const sat = new Sprite(mapTex);
-      sat.position.set(board.x, board.y);
-      sat.width = board.w;
-      sat.height = board.h;
+      sat.position.set(0, 0);
+      sat.width = BOARD_W;
+      sat.height = BOARD_H;
       const wash = new Graphics();
-      wash.rect(board.x, board.y, board.w, board.h).fill({ color: 0x0a0f0c, alpha: 0.07 });
+      wash.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0x0a0f0c, alpha: 0.07 });
       this.bg.addChild(sat, wash);
     } else if (theme.id === 'military') {
       const terrain = new Graphics();
       // Subtle green-olive topo contour arcs & range rings centered on Seattle
-      const seattleCx = board.x + board.w - 34, seattleCy = ey;
+      const seattleCx = BOARD_W - 34, seattleCy = ey;
       for (let i = 1; i <= 5; i++) {
         terrain.circle(seattleCx, seattleCy, 95 + i * 115).stroke({ width: 1.2, color: 0x2c4738, alpha: 0.34 });
       }
       // Faint topo contour loops across landmass
       for (let i = 0; i < 6; i++) {
-        const cx = board.x + (0.25 + hash(i, 11) * 0.55) * board.w;
-        const cy = board.y + (0.18 + hash(i, 12) * 0.64) * board.h;
+        const cx = (0.25 + hash(i, 11) * 0.55) * BOARD_W;
+        const cy = (0.18 + hash(i, 12) * 0.64) * BOARD_H;
         terrain.ellipse(cx, cy, 48 + i * 14, 26 + i * 9).stroke({ width: 1, color: 0x2b4536, alpha: 0.32 });
       }
 
       // Puget Sound & Pacific coastal water on the western edge
       const westCoast = [
-        board.x, board.y,
-        board.x + CELL * 2.1, board.y,
-        board.x + CELL * 1.85, board.y + board.h * 0.18,
-        board.x + CELL * 2.25, board.y + board.h * 0.34,
-        board.x + CELL * 1.55, board.y + board.h * 0.52,
-        board.x + CELL * 2.15, board.y + board.h * 0.72,
-        board.x + CELL * 1.65, board.y + board.h * 0.88,
-        board.x + CELL * 2.0, board.y + board.h,
-        board.x, board.y + board.h,
+        0, 0,
+        CELL * 2.1, 0,
+        CELL * 1.85, BOARD_H * 0.18,
+        CELL * 2.25, BOARD_H * 0.34,
+        CELL * 1.55, BOARD_H * 0.52,
+        CELL * 2.15, BOARD_H * 0.72,
+        CELL * 1.65, BOARD_H * 0.88,
+        CELL * 2.0, BOARD_H,
+        0, BOARD_H,
       ];
       terrain.poly(westCoast).fill({ color: 0x0c2433, alpha: 0.92 });
       terrain.moveTo(westCoast[2], westCoast[3]);
@@ -601,17 +629,17 @@ export class Renderer {
       terrain.stroke({ width: 2, color: 0x4a7b8c, alpha: 0.45 });
 
       // Elliott Bay / Puget Sound shoreline on the right around Seattle
-      const rx = board.x + board.w;
+      const rx = BOARD_W;
       const bay = [
-        rx, board.y,
-        rx - CELL * 2.3, board.y,
-        rx - CELL * 1.9, board.y + board.h * 0.22,
-        rx - CELL * 2.6, board.y + board.h * 0.38,
-        rx - CELL * 1.7, board.y + board.h * 0.52,
-        rx - CELL * 2.4, board.y + board.h * 0.7,
-        rx - CELL * 1.85, board.y + board.h * 0.86,
-        rx - CELL * 2.2, board.y + board.h,
-        rx, board.y + board.h,
+        rx, 0,
+        rx - CELL * 2.3, 0,
+        rx - CELL * 1.9, BOARD_H * 0.22,
+        rx - CELL * 2.6, BOARD_H * 0.38,
+        rx - CELL * 1.7, BOARD_H * 0.52,
+        rx - CELL * 2.4, BOARD_H * 0.7,
+        rx - CELL * 1.85, BOARD_H * 0.86,
+        rx - CELL * 2.2, BOARD_H,
+        rx, BOARD_H,
       ];
       terrain.poly(bay).fill({ color: 0x0c2433, alpha: 0.9 });
       terrain.moveTo(bay[2], bay[3]);
@@ -650,19 +678,20 @@ export class Renderer {
       terrain.moveTo(snx, sny - 27).lineTo(snx, sny - 44).stroke({ width: 2, color: 0xe6f2e0 });
       terrain.circle(snx, sny - 45, 2.4).fill({ color: 0x62d99a });
 
+      const pad = 2000;
       const cover = new Graphics();
-      cover.rect(0, 0, sw, board.y).fill(theme.spaceBg);
-      cover.rect(0, board.y + board.h, sw, sh - board.y - board.h).fill(theme.spaceBg);
-      cover.rect(0, board.y, board.x, board.h).fill(theme.spaceBg);
-      cover.rect(board.x + board.w, board.y, sw - board.x - board.w, board.h).fill(theme.spaceBg);
+      cover.rect(-pad, -pad, BOARD_W + pad * 2, pad).fill(theme.spaceBg);
+      cover.rect(-pad, BOARD_H, BOARD_W + pad * 2, pad).fill(theme.spaceBg);
+      cover.rect(-pad, 0, pad, BOARD_H).fill(theme.spaceBg);
+      cover.rect(BOARD_W, 0, pad, BOARD_H).fill(theme.spaceBg);
       this.bg.addChild(terrain, cover);
     } else {
       // orbital rings + Earth, masked to the board via outer cover bands
       const orbit = new Graphics();
       for (let i = 1; i <= 5; i++) orbit.circle(ex, ey, 150 + i * 105).stroke({ width: 1.5, color: C.ice, alpha: 0.07 });
       for (let i = 0; i < 80; i++) {
-        const sx = board.x + hash(i + this.game.mapIndex * 97, 1) * board.w;
-        const sy = board.y + hash(i + this.game.mapIndex * 97, 2) * board.h;
+        const sx = hash(i + this.game.mapIndex * 97, 1) * BOARD_W;
+        const sy = hash(i + this.game.mapIndex * 97, 2) * BOARD_H;
         orbit.circle(sx, sy, 0.6 + hash(i, 3) * 1.1).fill({ color: C.ice, alpha: 0.14 + hash(i, 4) * 0.32 });
       }
       orbit.circle(ex, ey, 196).fill({ color: 0x3d8de0, alpha: 0.10 });
@@ -679,10 +708,10 @@ export class Renderer {
 
       const pad = 2000;
       const cover = new Graphics();
-      cover.rect(-pad, -pad, sw + pad * 2, board.y + pad).fill(theme.spaceBg);
-      cover.rect(-pad, board.y + board.h, sw + pad * 2, sh - board.y - board.h + pad).fill(theme.spaceBg);
-      cover.rect(-pad, board.y, board.x + pad, board.h).fill(theme.spaceBg);
-      cover.rect(board.x + board.w, board.y, sw - board.x - board.w + pad, board.h).fill(theme.spaceBg);
+      cover.rect(-pad, -pad, BOARD_W + pad * 2, pad).fill(theme.spaceBg);
+      cover.rect(-pad, BOARD_H, BOARD_W + pad * 2, pad).fill(theme.spaceBg);
+      cover.rect(-pad, 0, pad, BOARD_H).fill(theme.spaceBg);
+      cover.rect(BOARD_W, 0, pad, BOARD_H).fill(theme.spaceBg);
       this.bg.addChild(orbit, cover);
     }
 
@@ -690,13 +719,13 @@ export class Renderer {
     const grid = new Graphics();
     const minorGridAlpha = theme.id === 'kitchen' ? 0.14 : hasSprites ? 0.08 : 0.55;
     const majorGridAlpha = theme.id === 'kitchen' ? 0.22 : hasSprites ? 0.16 : 0.95;
-    for (let x = 0; x <= GRID_W; x++) grid.moveTo(board.x + x * CELL, board.y).lineTo(board.x + x * CELL, board.y + board.h);
-    for (let y = 0; y <= GRID_H; y++) grid.moveTo(board.x, board.y + y * CELL).lineTo(board.x + board.w, board.y + y * CELL);
+    for (let x = 0; x <= GRID_W; x++) grid.moveTo(x * CELL, 0).lineTo(x * CELL, BOARD_H);
+    for (let y = 0; y <= GRID_H; y++) grid.moveTo(0, y * CELL).lineTo(BOARD_W, y * CELL);
     grid.stroke({ width: 1, color: theme.gridColor, alpha: minorGridAlpha });
-    for (let x = 0; x <= GRID_W; x += 4) grid.moveTo(board.x + x * CELL, board.y).lineTo(board.x + x * CELL, board.y + board.h);
-    for (let y = 0; y <= GRID_H; y += 4) grid.moveTo(board.x, board.y + y * CELL).lineTo(board.x + board.w, board.y + y * CELL);
+    for (let x = 0; x <= GRID_W; x += 4) grid.moveTo(x * CELL, 0).lineTo(x * CELL, BOARD_H);
+    for (let y = 0; y <= GRID_H; y += 4) grid.moveTo(0, y * CELL).lineTo(BOARD_W, y * CELL);
     grid.stroke({ width: hasSprites ? 1 : 1.5, color: theme.gridColor, alpha: majorGridAlpha });
-    grid.rect(board.x, board.y, board.w, board.h).stroke({
+    grid.rect(0, 0, BOARD_W, BOARD_H).stroke({
       width: 2,
       color: theme.id === 'military' ? 0x687a6e : theme.borderColor,
       alpha: hasSprites ? 0.85 : 0.35,
@@ -707,7 +736,7 @@ export class Renderer {
     if (hasSprites && sprites && sprites.obstacles.length > 0) {
       const obsAlpha = theme.id === 'naval' ? 0.62 : (theme.id === 'kitchen' || theme.id === 'lawn') ? 0.85 : 0.92;
       for (const [ax, ay] of map.asteroids) {
-        const cx = board.x + (ax + 0.5) * CELL, cy = board.y + (ay + 0.5) * CELL;
+        const cx = (ax + 0.5) * CELL, cy = (ay + 0.5) * CELL;
         const obs = new Sprite(sprites.obstacles[(ax * 7 + ay * 13) % sprites.obstacles.length]);
         obs.anchor.set(0.5);
         obs.position.set(cx, cy);
@@ -721,7 +750,7 @@ export class Renderer {
     } else {
       const ast = new Graphics();
       for (const [ax, ay] of map.asteroids) {
-        const cx = board.x + (ax + 0.5) * CELL, cy = board.y + (ay + 0.5) * CELL;
+        const cx = (ax + 0.5) * CELL, cy = (ay + 0.5) * CELL;
         const pts: number[] = [];
         const n = 9;
         for (let i = 0; i < n; i++) {
@@ -746,7 +775,7 @@ export class Renderer {
       const boostG = new Graphics();
       this.bg.addChild(boostG);
       for (const [bx, by] of map.boostCells) {
-        const cx = board.x + (bx + 0.5) * CELL, cy = board.y + (by + 0.5) * CELL;
+        const cx = (bx + 0.5) * CELL, cy = (by + 0.5) * CELL;
         if (sprites?.boost) {
           const sp = new Sprite(sprites.boost);
           sp.anchor.set(0.5);
@@ -762,11 +791,14 @@ export class Renderer {
         tag.anchor.set(0.5);
         const pw = Math.max(28, Math.ceil(tag.width) + 8);
         const pillG = new Graphics();
-        pillG.roundRect(cx - pw / 2, cy + CELL * 0.24, pw, 10, 3)
+        pillG.roundRect(-pw / 2, -5, pw, 10, 3)
           .fill({ color: 0x0b0f14, alpha: 0.85 })
           .stroke({ width: 0.8, color: boostCol, alpha: 0.7 });
-        tag.position.set(cx, cy + CELL * 0.24 + 5);
-        this.bg.addChild(pillG, tag);
+        const tagC = new Container();
+        tagC.addChild(pillG, tag);
+        tagC.rotation = rotated ? -Math.PI / 2 : 0;
+        tagC.position.set(cx + (rotated ? CELL * 0.24 + 5 : 0), cy + (rotated ? 0 : CELL * 0.24 + 5));
+        this.bg.addChild(tagC);
       }
     }
 
@@ -774,35 +806,56 @@ export class Renderer {
     const por = new Graphics();
     this.bg.addChild(por);
     for (const [sx, sy] of map.spawns) {
-      const cx = board.x + (sx + 0.5) * CELL, cy = board.y + (sy + 0.5) * CELL;
+      const cx = (sx + 0.5) * CELL, cy = (sy + 0.5) * CELL;
+      const lblC = new Container();
       if (hasSprites) {
         por.circle(cx, cy, 15).fill({ color: 0x120909, alpha: 0.78 }).stroke({ width: 1.8, color: 0xd94c4c, alpha: 0.92 });
-        // Crimson tactical invasion chevrons pointing right
+        // Crimson tactical invasion chevrons pointing local +x (right on desktop, down on phone)
         por.moveTo(cx - 6, cy - 5).lineTo(cx - 1, cy).lineTo(cx - 6, cy + 5)
           .moveTo(cx + 1, cy - 5).lineTo(cx + 6, cy).lineTo(cx + 1, cy + 5)
           .stroke({ width: 2, color: 0xff7575, alpha: 0.95 });
         const inl = mkText(theme.spawnLabel, 10, 0xff9a9a, { bold: true });
-        const ly = sy <= 1 ? board.y + (sy + 1) * CELL + 4 : board.y + sy * CELL - 18;
-        const lx = board.x + sx * CELL + 2;
-        por.roundRect(lx - 2, ly - 1, inl.width + 10, 15, 4)
+        inl.anchor.set(0.5);
+        const pw = inl.width + 10, ph = 15;
+        const pill = new Graphics();
+        pill.roundRect(-pw / 2, -ph / 2, pw, ph, 4)
           .fill({ color: 0x120909, alpha: 0.85 })
           .stroke({ width: 1, color: 0xd94c4c, alpha: 0.7 });
-        inl.position.set(lx + 3, ly);
-        this.bg.addChild(inl);
+        lblC.addChild(pill, inl);
+        if (rotated) {
+          lblC.rotation = -Math.PI / 2;
+          const lx = sx <= 1 ? (sx + 1) * CELL + 4 + ph / 2 : sx * CELL - 4 - ph / 2;
+          const ly = Math.min(Math.max(cy, pw / 2 + 4), BOARD_H - pw / 2 - 4);
+          lblC.position.set(lx, ly);
+        } else {
+          const ly = sy <= 1 ? (sy + 1) * CELL + 4 + ph / 2 : sy * CELL - 18 + ph / 2;
+          const lx = Math.min(Math.max(sx * CELL + 2 + pw / 2, pw / 2 + 4), BOARD_W - pw / 2 - 4);
+          lblC.position.set(lx, ly);
+        }
       } else {
         por.circle(cx, cy, 15).fill({ color: 0x6a4cf0, alpha: 0.35 });
         por.circle(cx, cy, 13).stroke({ width: 2, color: C.violet });
         por.circle(cx, cy, 8).stroke({ width: 2, color: C.cyan, alpha: 0.9 });
         por.circle(cx, cy, 3).fill(C.ice);
         const inl = mkText(theme.spawnLabel, 10.5, C.violet, { bold: true });
-        const ly = sy <= 1 ? board.y + (sy + 1) * CELL + 2 : board.y + sy * CELL - 15;
-        inl.position.set(board.x + sx * CELL + 4, ly);
-        this.bg.addChild(inl);
+        inl.anchor.set(0.5);
+        lblC.addChild(inl);
+        if (rotated) {
+          lblC.rotation = -Math.PI / 2;
+          const lx = sx <= 1 ? (sx + 1) * CELL + 10 : sx * CELL - 10;
+          const ly = Math.min(Math.max(cy, inl.width / 2 + 4), BOARD_H - inl.width / 2 - 4);
+          lblC.position.set(lx, ly);
+        } else {
+          const ly = sy <= 1 ? (sy + 1) * CELL + 9 : sy * CELL - 8;
+          const lx = Math.min(Math.max(sx * CELL + 4 + inl.width / 2, inl.width / 2 + 4), BOARD_W - inl.width / 2 - 4);
+          lblC.position.set(lx, ly);
+        }
       }
+      this.bg.addChild(lblC);
     }
     const exitColor = hasSprites ? 0xd9e87a : C.mint;
     for (const [x, y] of map.exits) {
-      const rx = board.x + x * CELL, ry = board.y + y * CELL;
+      const rx = x * CELL, ry = y * CELL;
       if (hasSprites) {
         por.rect(rx + 2, ry + 2, CELL - 4, CELL - 4).fill({ color: 0x8be0ae, alpha: 0.08 });
         const b = 8;
@@ -815,26 +868,43 @@ export class Renderer {
         por.rect(rx + 2, ry + 2, CELL - 4, CELL - 4).fill({ color: exitColor, alpha: 0.22 }).stroke({ width: 2, color: exitColor });
       }
     }
+    const gateC = new Container();
     if (hasSprites) {
       const minExitY = map.exits.reduce((m, [, y]) => Math.min(m, y), GRID_H);
+      const minExitX = map.exits.reduce((m, [x]) => Math.min(m, x), GRID_W);
       const avgExitX = map.exits.reduce((s, [x]) => s + x, 0) / Math.max(1, map.exits.length);
       const gate = mkText(theme.objectiveLabel, 11, exitColor, { bold: true });
+      gate.anchor.set(0.5, 0.5);
       const pw = gate.width + 14, ph = 18;
-      const px = Math.min(Math.max(board.x + (avgExitX + 0.5) * CELL - pw / 2, board.x + 6), board.x + board.w - pw - 6);
-      const py = Math.max(board.y + 6, board.y + minExitY * CELL - 20);
       const pill = new Graphics();
-      pill.roundRect(px, py, pw, ph, 5)
+      pill.roundRect(-pw / 2, -ph / 2, pw, ph, 5)
         .fill({ color: 0x101712, alpha: 0.9 })
         .stroke({ width: 1.2, color: exitColor, alpha: 0.9 });
-      gate.anchor.set(0.5, 0.5);
-      gate.position.set(px + pw / 2, py + ph / 2);
-      this.bg.addChild(pill, gate);
+      gateC.addChild(pill, gate);
+      if (rotated) {
+        gateC.rotation = -Math.PI / 2;
+        const lx = Math.min(BOARD_W - ph / 2 - 6, minExitX * CELL - 14);
+        const ly = Math.min(Math.max((avgExitY + 0.5) * CELL, pw / 2 + 6), BOARD_H - pw / 2 - 6);
+        gateC.position.set(lx, ly);
+      } else {
+        const px = Math.min(Math.max((avgExitX + 0.5) * CELL, pw / 2 + 6), BOARD_W - pw / 2 - 6);
+        const py = Math.max(6 + ph / 2, minExitY * CELL - 20 + ph / 2);
+        gateC.position.set(px, py);
+      }
     } else {
       const gate = mkText(theme.objectiveLabel, 12, exitColor, { bold: true });
-      gate.anchor.set(1, 0.5);
-      gate.position.set(board.x + board.w - 36, board.y + (avgExitY + 0.5) * CELL - 24);
-      this.bg.addChild(gate);
+      gateC.addChild(gate);
+      if (rotated) {
+        gate.anchor.set(0.5);
+        gateC.rotation = -Math.PI / 2;
+        const ly = Math.min(Math.max((avgExitY + 0.5) * CELL, gate.width / 2 + 6), BOARD_H - gate.width / 2 - 6);
+        gateC.position.set(BOARD_W - 46, ly);
+      } else {
+        gate.anchor.set(1, 0.5);
+        gateC.position.set(BOARD_W - 36, (avgExitY + 0.5) * CELL - 24);
+      }
     }
+    this.bg.addChild(gateC);
   }
 
   private buildEnemyTextures(): void {
@@ -1029,6 +1099,7 @@ export class Renderer {
       });
     }
 
+    this.syncBoardRoot(layout);
     this.buildBoard();
     this.towerSeen = -1;
     this.pathSeen = -1;
@@ -1083,12 +1154,12 @@ export class Renderer {
       t.style.wordWrapWidth = wrap;
       t.style.align = 'center';
     };
-    this.settingsTitle.style.fontSize = phone ? 40 : 15;
-    this.settingsTitle.style.lineHeight = Math.round((phone ? 40 : 15) * 1.3);
+    this.settingsTitle.style.fontSize = phone ? 30 : 15;
+    this.settingsTitle.style.lineHeight = Math.round((phone ? 30 : 15) * 1.3);
     this.settingsTitle.style.align = 'left';
-    this.settingsTitle.position.set(pr.x + (phone ? 30 : 20), pr.y + (phone ? 36 : 18));
-    set(this.settingsStatus, phone ? 28 : 11, phone ? pr.w - 60 : 0);
-    set(this.settingsTip, phone ? 26 : 11, phone ? pr.w - 60 : 0);
+    this.settingsTitle.position.set(pr.x + (phone ? 22 : 20), pr.y + (phone ? 30 : 18));
+    set(this.settingsStatus, phone ? 18 : 11, phone ? 480 : 0);
+    set(this.settingsTip, phone ? 15 : 11, phone ? 480 : 0);
     this.settingsTip.text = phone ? SETTINGS_TIP_PHONE : SETTINGS_TIP_DESKTOP;
     if (phone) {
       this.settingsStatus.position.set(pr.x + pr.w / 2, pr.y + PHONE_SETTINGS.statusTop + PHONE_SETTINGS.statusH / 2);
@@ -1098,8 +1169,8 @@ export class Renderer {
       this.settingsTip.position.set(pr.x + pr.w / 2, pr.y + pr.h - 32);
     }
     for (const sb of this.settingsButtons) {
-      const size = sb.id === 'close' ? (phone ? 44 : 15) : phone ? 32 : 13;
-      set(sb.label, size, phone && sb.id !== 'close' ? Math.floor(sb.rect.w - 24) : 0);
+      const size = sb.id === 'close' ? (phone ? 32 : 15) : phone ? 21 : 13;
+      set(sb.label, size, phone && sb.id !== 'close' ? Math.floor(sb.rect.w - 16) : 0);
       sb.label.anchor.set(0.5);
       sb.label.position.set(sb.rect.x + sb.rect.w / 2, sb.rect.y + sb.rect.h / 2);
     }
@@ -1153,7 +1224,8 @@ export class Renderer {
       case 'close': return '✕';
       case 'map': return `Map: ${g.currentMap.name}`;
       case 'layout': return `Layout: ${this.getLayout().name}`;
-      case 'difficulty': return `Difficulty: ${DIFFICULTIES[g.difficulty].label}`;
+      case 'difficulty': return `Diff: ${DIFFICULTIES[g.difficulty].label}`;
+      case 'waves': return `Waves: ${g.waveCount}`;
       case 'speed': return `Speed: ${g.speed}x`;
       case 'auto': return `Auto-Wave: ${g.autoWave ? 'On' : 'Off'}`;
       case 'sfx': return `Audio SFX: ${this.isMuted() ? 'Off' : 'On'}`;
@@ -1295,18 +1367,14 @@ export class Renderer {
     const board = layout.board;
     const map = g.currentMap;
     const pw = 104, ph = 26;
+    const rotated = !!layout.boardRotated;
+    const avgExitX = map.exits.reduce((s, [x]) => s + x, 0) / Math.max(1, map.exits.length);
     const maxExitY = map.exits.reduce((m, [, y]) => Math.max(m, y), 0);
-    let px: number;
-    let py: number;
-    if (hasSprites) {
-      const avgExitX = map.exits.reduce((s, [x]) => s + x, 0) / Math.max(1, map.exits.length);
-      const cx = board.x + (avgExitX + 0.5) * CELL;
-      px = Math.min(Math.max(cx - pw / 2, board.x + 6), board.x + board.w - pw - 6);
-      py = Math.min(board.y + (maxExitY + 1) * CELL + 6, board.y + board.h - ph - 6);
-    } else {
-      px = board.x + board.w - 114;
-      py = Math.min(board.y + (maxExitY + 1) * CELL + 8, board.y + board.h - ph - 6);
-    }
+    const exitLocalX = hasSprites ? (avgExitX + 0.5) * CELL : BOARD_W - 62;
+    const exitLocalY = (maxExitY + 1) * CELL;
+    const wp = boardLocalToWorld(board, exitLocalX, exitLocalY, rotated);
+    const px = Math.min(Math.max(wp.x - pw / 2, board.x + 8), board.x + board.w - pw - 8);
+    const py = Math.min(Math.max(wp.y + 6, board.y + 8), board.y + board.h - ph - 8);
 
     const barCol = ratio > 0.6 ? 0x62d99a : ratio > 0.3 ? 0xf2be54 : 0xf05656;
     const borderCol = flash ? 0xf05656 : critical && pulseBucket === 1 ? 0xff8a8a : barCol;
@@ -1347,7 +1415,7 @@ export class Renderer {
       label = `Auto in ${g.autoWaveTimer.toFixed(1)}s`;
     } else if ((g.phase === 'running' || g.phase === 'paused') && g.waveCursor > 0) {
       const cw = g.ordinaryWaves[g.waveCursor - 1];
-      const wName = cw ? (theme.waveNames[cw.index] ?? cw.name) : '';
+      const wName = cw ? formatWaveName(theme.id, cw) : '';
       label = `W${g.waveCursor}/${g.totalWaves} · ${wName}`;
     } else if (g.canLaunch) {
       const nw = g.ordinaryWaves[g.waveCursor];
@@ -1355,7 +1423,7 @@ export class Renderer {
         const hasBoss = nw.groups.some(gr => g.enemyById.get(gr.enemyId)?.boss);
         const hasAir = nw.groups.some(gr => g.enemyById.get(gr.enemyId)?.flying);
         const tag = hasBoss ? ' [BOSS]' : hasAir ? ' [AIR]' : '';
-        const wName = theme.waveNames[nw.index] ?? nw.name;
+        const wName = formatWaveName(theme.id, nw);
         label = `Next: ${wName}${tag}`;
       }
     } else if (g.over === 'won') {
@@ -1454,7 +1522,6 @@ export class Renderer {
 
   private syncMines(): void {
     const mines = this.game.mines;
-    const board = this.getLayout().board;
     const mineTex = this.activeSprites()?.mine ?? this.theaterTex.naval.mine ?? Texture.EMPTY;
     while (this.mineSprites.length < mines.length) {
       const s = new Sprite(mineTex);
@@ -1475,7 +1542,7 @@ export class Renderer {
       s.visible = true;
       s.width = 22;
       s.height = 22;
-      s.position.set(board.x + m.x * CELL, board.y + m.y * CELL);
+      s.position.set(m.x * CELL, m.y * CELL);
     }
   }
 
@@ -1483,7 +1550,6 @@ export class Renderer {
     const theme = this.theme();
     const hasSprites = theme.id !== 'space';
     const sprites = this.activeSprites(theme.id);
-    const board = this.getLayout().board;
     this.towerBaseG.visible = !hasSprites;
     this.towerHeadG.visible = !hasSprites;
     this.milTowerLayer.visible = hasSprites;
@@ -1509,7 +1575,7 @@ export class Renderer {
         }
         const t = towers[i];
         mt.container.visible = true;
-        const cx = board.x + (t.x + 0.5) * CELL, cy = board.y + (t.y + 0.5) * CELL;
+        const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
         mt.container.position.set(cx, cy);
         const bTex = sprites.bases[t.def.id] ?? Texture.EMPTY;
         if (mt.base.texture !== bTex) mt.base.texture = bTex;
@@ -1549,7 +1615,7 @@ export class Renderer {
       const bg = this.towerBaseG.clear();
       const baseFill = 0x0a2236;
       for (const t of this.game.towers) {
-        const cx = board.x + (t.x + 0.5) * CELL, cy = board.y + (t.y + 0.5) * CELL;
+        const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
         const col = this.turretColor(t.def.id);
         bg.circle(cx, cy, CELL * 0.46).fill({ color: baseFill, alpha: 0.95 }).stroke({ width: 2, color: col, alpha: 0.9 });
         if (t.tier >= 2) bg.circle(cx, cy, CELL * 0.38).stroke({ width: 1.5, color: C.gold, alpha: 0.7 });
@@ -1561,7 +1627,7 @@ export class Renderer {
 
     const hg = this.towerHeadG.clear();
     for (const t of this.game.towers) {
-      const cx = board.x + (t.x + 0.5) * CELL, cy = board.y + (t.y + 0.5) * CELL;
+      const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
       const col = this.turretColor(t.def.id);
       drawTurretHead(hg, t.def.id, cx, cy - 1, CELL * 0.32, col, t.aimAngle, t.tier, 1, theme.id);
       if (t.tier >= 1) {
@@ -1580,15 +1646,14 @@ export class Renderer {
     const g = this.routeG.clear();
     const theme = this.theme();
     const hasSprites = theme.id !== 'space';
-    const board = this.getLayout().board;
     const dotColor = theme.routeDotColor;
     this.routePaths = [];
     for (const [sx, sy] of this.game.currentMap.spawns) {
       const route = followRoute(this.game.w, this.game.h, this.game.dist, this.game.idx(sx, sy));
       const pts: { x: number; y: number }[] = [];
       for (let i = 0; i < route.length; i++) {
-        const x = board.x + ((route[i] % this.game.w) + 0.5) * CELL;
-        const y = board.y + (Math.floor(route[i] / this.game.w) + 0.5) * CELL;
+        const x = ((route[i] % this.game.w) + 0.5) * CELL;
+        const y = (Math.floor(route[i] / this.game.w) + 0.5) * CELL;
         pts.push({ x, y });
         g.circle(x, y, hasSprites ? 1.5 : 1.6).fill({ color: dotColor, alpha: 0.20 });
       }
@@ -1624,7 +1689,7 @@ export class Renderer {
     const hasSprites = themeId !== 'space';
     const isLawnBurrow = this.game.currentMap.mechanic === 'lawn-split-burrow';
     const sprites = this.activeSprites(themeId);
-    const board = this.getLayout().board;
+    const rotated = !!this.getLayout().boardRotated;
     const sg = this.enemyShadowG.clear();
     const spriteSizes: Record<string, number> = {
       swarmer: 22, scout: 30, cruiser: 36, frigate: 37, phase: 38, dreadnought: 60,
@@ -1634,10 +1699,18 @@ export class Renderer {
       s.anchor.set(0.5);
       this.enemyLayer.addChild(s);
       this.sprites.push(s);
+      const hb = new Graphics();
+      this.enemyLayer.addChild(hb);
+      this.hpBars.push(hb);
     }
     for (let i = 0; i < this.sprites.length; i++) {
       const s = this.sprites[i];
-      if (i >= list.length) { if (s.visible) s.visible = false; continue; }
+      const hb = this.hpBars[i];
+      if (i >= list.length) {
+        if (s.visible) s.visible = false;
+        if (hb.visible) hb.visible = false;
+        continue;
+      }
       const e = list[i];
       const useMound = hasSprites && isLawnBurrow && e.submerged && e.revealedT <= 0 && !!sprites?.moleMound;
       const spriteTex = useMound ? sprites!.moleMound : (hasSprites ? sprites?.enemies[e.def.id] : undefined);
@@ -1652,18 +1725,35 @@ export class Renderer {
         s.scale.set(splitScale);
       }
       s.visible = true;
-      const wx = board.x + (e.x + e.ox) * CELL;
-      const wy = board.y + (e.y + e.oy) * CELL;
-      s.position.set(wx, wy);
+      const ex = (e.x + e.ox) * CELL;
+      const ey = (e.y + e.oy) * CELL;
+      s.position.set(ex, ey);
       s.rotation = useMound ? 0 : e.ang;
       s.alpha = e.submerged ? (e.revealedT > 0 ? (isLawnBurrow ? 1.0 : 0.96) : (isLawnBurrow ? 0.96 : 0.34)) : 1;
       s.tint = e.slowT > 0 ? 0x9ffff0 : e.burnT > 0 ? 0xffbb77 : 0xffffff;
       if (e.def.flying) {
         if (hasSprites) {
-          sg.ellipse(wx - 12, wy + 12, 13, 6).fill({ color: 0x050806, alpha: 0.42 });
+          sg.ellipse(ex - 12, ey + 12, 13, 6).fill({ color: 0x050806, alpha: 0.42 });
         } else {
-          sg.ellipse(wx + 6, wy + 8, 10, 5).fill({ color: 0x02060d, alpha: 0.5 });
+          sg.ellipse(ex + 6, ey + 8, 10, 5).fill({ color: 0x02060d, alpha: 0.5 });
         }
+      }
+      if (e.hp < e.maxHp || e.shield > 0) {
+        hb.visible = true;
+        hb.position.set(ex, ey);
+        hb.rotation = rotated ? -Math.PI / 2 : 0;
+        const bw = e.def.boss ? 34 : e.isSplitChild ? 12 : 16;
+        const bx = -bw / 2;
+        const by = -(e.def.boss ? 24 : e.isSplitChild ? 11 : 14);
+        hb.clear();
+        hb.rect(bx, by, bw, 2.5).fill({ color: 0x000000, alpha: 0.65 });
+        hb.rect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 2.5).fill({ color: C.mint });
+        if (e.maxShield > 0 && e.shield > 0) {
+          hb.rect(bx, by - 3.5, bw, 2.2).fill({ color: 0x000000, alpha: 0.65 });
+          hb.rect(bx, by - 3.5, bw * Math.max(0, e.shield / e.maxShield), 2.2).fill({ color: C.cyan });
+        }
+      } else if (hb.visible) {
+        hb.visible = false;
       }
     }
   }
@@ -1671,15 +1761,18 @@ export class Renderer {
   private drawFx(dt: number): void {
     const g = this.fx.clear();
     const glow = this.fxGlow.clear();
+    const cg = this.chipG.clear();
     const gm = this.game;
     const themeId = this.theme().id;
     const hasSprites = themeId !== 'space';
-    const board = this.getLayout().board;
+    const layout = this.getLayout();
+    const board = layout.board;
+    const rotated = !!layout.boardRotated;
 
     if (!hasSprites) {
       for (const t of gm.towers) {
         if (t.tier >= 2) {
-          const cx = board.x + (t.x + 0.5) * CELL, cy = board.y + (t.y + 0.5) * CELL;
+          const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
           glow.circle(cx, cy, CELL * 0.34).fill({ color: this.turretColor(t.def.id), alpha: 0.22 });
         }
       }
@@ -1688,7 +1781,7 @@ export class Renderer {
     // Naval sea mine blinking indicator dots
     for (const m of gm.mines) {
       if (!m.active) continue;
-      const mx = board.x + m.x * CELL, my = board.y + m.y * CELL;
+      const mx = m.x * CELL, my = m.y * CELL;
       const blink = Math.sin(gm.time * 8 + m.x * 3 + m.y * 5) > 0;
       g.circle(mx, my, blink ? 2.8 : 1.7).fill({ color: blink ? 0xff4242 : 0x991f1f, alpha: blink ? 0.95 : 0.72 });
     }
@@ -1696,8 +1789,8 @@ export class Renderer {
     for (const b of gm.beams) {
       if (!b.active) continue;
       const a = Math.max(0, b.ttl / b.max);
-      const x1 = board.x + b.x1 * CELL, y1 = board.y + b.y1 * CELL;
-      const x2 = board.x + b.x2 * CELL, y2 = board.y + b.y2 * CELL;
+      const x1 = b.x1 * CELL, y1 = b.y1 * CELL;
+      const x2 = b.x2 * CELL, y2 = b.y2 * CELL;
       const w = b.width || 2.5;
       if (themeId === 'military') {
         if (b.kind === 'rail') {
@@ -1774,7 +1867,7 @@ export class Renderer {
     for (const r of gm.rings) {
       if (!r.active) continue;
       const k = 1 - r.ttl / r.max;
-      const cx = board.x + r.x * CELL, cy = board.y + r.y * CELL;
+      const cx = r.x * CELL, cy = r.y * CELL;
       const rad = r.r * CELL * (0.35 + 0.65 * k);
       if (themeId === 'military') {
         if (r.max <= 0.3) {
@@ -1854,11 +1947,11 @@ export class Renderer {
 
     for (const p of gm.projectiles) {
       if (!p.active) continue;
-      const px = board.x + p.x * CELL, py = board.y + p.y * CELL;
+      const px = p.x * CELL, py = p.y * CELL;
       if (themeId === 'military' || themeId === 'naval') {
         if (p.kind === 'missile') {
-          const sx = board.x + (p.x - p.vx * 0.085) * CELL;
-          const sy = board.y + (p.y - p.vy * 0.085) * CELL;
+          const sx = (p.x - p.vx * 0.085) * CELL;
+          const sy = (p.y - p.vy * 0.085) * CELL;
           g.moveTo(sx, sy).lineTo(px, py).stroke({ width: 3, color: 0xe6ece8, alpha: 0.65 });
           const spd = Math.hypot(p.vx, p.vy) || 1;
           const tx = px - (p.vx / spd) * 9, ty = py - (p.vy / spd) * 9;
@@ -1936,16 +2029,16 @@ export class Renderer {
       if (hasSprites) {
         const isBurn = pt.color === 0xff8a3d || pt.color === 0xffc16e;
         const pcol = isBurn ? pt.color : (themeId === 'naval' ? 0xb8effa : 0x4a4742);
-        g.circle(board.x + pt.x * CELL, board.y + pt.y * CELL, pt.size).fill({ color: pcol, alpha: a * (isBurn ? 0.85 : 0.6) });
+        g.circle(pt.x * CELL, pt.y * CELL, pt.size).fill({ color: pcol, alpha: a * (isBurn ? 0.85 : 0.6) });
       } else {
-        glow.circle(board.x + pt.x * CELL, board.y + pt.y * CELL, pt.size).fill({ color: pt.color, alpha: a * 0.85 });
+        glow.circle(pt.x * CELL, pt.y * CELL, pt.size).fill({ color: pt.color, alpha: a * 0.85 });
       }
     }
 
     const isLawnBurrow = gm.currentMap.mechanic === 'lawn-split-burrow';
     for (const e of gm.enemies) {
       if (e.dead) continue;
-      const ex = board.x + (e.x + e.ox) * CELL, ey = board.y + (e.y + e.oy) * CELL;
+      const ex = (e.x + e.ox) * CELL, ey = (e.y + e.oy) * CELL;
       if (e.submerged) {
         if (e.revealedT <= 0) {
           const pulse = 13 + Math.sin(gm.time * 5 + e.id) * 2;
@@ -1986,16 +2079,6 @@ export class Renderer {
       if (e.burnT > 0) {
         glow.circle(ex, ey, e.def.boss ? 18 : 10).fill({ color: 0xff7a2f, alpha: 0.25 + 0.12 * Math.sin(gm.time * 24 + e.id) });
       }
-      if (e.hp < e.maxHp || e.shield > 0) {
-        const bw = e.def.boss ? 34 : e.isSplitChild ? 12 : 16;
-        const bx = ex - bw / 2, by = ey - (e.def.boss ? 24 : e.isSplitChild ? 11 : 14);
-        g.rect(bx, by, bw, 2.5).fill({ color: 0x000000, alpha: 0.65 });
-        g.rect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 2.5).fill({ color: C.mint });
-        if (e.maxShield > 0 && e.shield > 0) {
-          g.rect(bx, by - 3.5, bw, 2.2).fill({ color: 0x000000, alpha: 0.65 });
-          g.rect(bx, by - 3.5, bw * Math.max(0, e.shield / e.maxShield), 2.2).fill({ color: C.cyan });
-        }
-      }
     }
 
     // pooled floating popups
@@ -2013,7 +2096,8 @@ export class Renderer {
       txt.visible = true;
       if (txt.text !== p.text) txt.text = p.text;
       txt.style.fill = p.color;
-      txt.position.set(board.x + p.x * CELL, board.y + p.y * CELL);
+      const wp = boardLocalToWorld(board, p.x * CELL, p.y * CELL, rotated);
+      txt.position.set(wp.x, wp.y);
       txt.alpha = Math.min(1, p.ttl / Math.max(0.1, p.max * 0.45));
     }
 
@@ -2028,8 +2112,8 @@ export class Renderer {
       const arc = Math.sin(k * Math.PI) * -28;
       const x = fc.fromX + (fc.toX - fc.fromX) * ease;
       const y = fc.fromY + (fc.toY - fc.fromY) * ease + arc;
-      glow.circle(x, y, 22).fill({ color: fc.color, alpha: 0.45 * (1 - k * 0.4) });
-      g.roundRect(x - 24, y - 12, 48, 24, 8).fill({ color: C.panel, alpha: 0.95 }).stroke({ width: 2, color: fc.color });
+      cg.circle(x, y, 22).fill({ color: fc.color, alpha: 0.35 * (1 - k * 0.4) });
+      cg.roundRect(x - 24, y - 12, 48, 24, 8).fill({ color: C.panel, alpha: 0.95 }).stroke({ width: 2, color: fc.color });
       lbl.visible = true;
       lbl.text = `+${fc.amount.toFixed(0)}`;
       lbl.style.fill = fc.color;
@@ -2052,16 +2136,16 @@ export class Renderer {
     const board = this.getLayout().board;
     if (isMarsStorm) {
       // Translucent rust-amber wind streaks sweeping diagonally across the board
-      g.rect(board.x, board.y, board.w, board.h).fill({ color: 0xc95b24, alpha: 0.10 });
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0xc95b24, alpha: 0.10 });
       const t = gm.time * 280;
       for (let i = 0; i < 24; i++) {
-        const rx = ((hash(i, 41) * board.w + t * (0.9 + (i % 3) * 0.25)) % (board.w + 180)) - 140;
-        const ry = ((hash(i, 42) * board.h + t * 0.32) % (board.h + 80)) - 40;
+        const rx = ((hash(i, 41) * BOARD_W + t * (0.9 + (i % 3) * 0.25)) % (BOARD_W + 180)) - 140;
+        const ry = ((hash(i, 42) * BOARD_H + t * 0.32) % (BOARD_H + 80)) - 40;
         const len = 70 + (i % 4) * 35;
-        const x1 = Math.max(board.x, board.x + rx);
-        const y1 = Math.max(board.y, board.y + ry);
-        const x2 = Math.min(board.x + board.w, board.x + rx + len);
-        const y2 = Math.min(board.y + board.h, board.y + ry + len * 0.28);
+        const x1 = Math.max(0, rx);
+        const y1 = Math.max(0, ry);
+        const x2 = Math.min(BOARD_W, rx + len);
+        const y2 = Math.min(BOARD_H, ry + len * 0.28);
         if (x2 > x1 && y2 > y1) {
           g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.6 + (i % 2), color: 0xffa65c, alpha: 0.22 });
         }
@@ -2072,31 +2156,31 @@ export class Renderer {
       // Soft icy cyan-white translucent fridge-light trapezoid/mist radiating leftward from open fridge (exits)
       const exits = gm.currentMap.exits;
       const avgExitY = exits.reduce((s, [, y]) => s + y, 0) / Math.max(1, exits.length);
-      const fy = board.y + (avgExitY + 0.5) * CELL;
-      const fx = board.x + board.w;
-      const leftX = board.x + board.w * 0.16;
-      const midX = board.x + board.w * 0.48;
-      const topOuter = Math.max(board.y, fy - board.h * 0.44);
-      const botOuter = Math.min(board.y + board.h, fy + board.h * 0.44);
-      const topInner = Math.max(board.y, fy - board.h * 0.28);
-      const botInner = Math.min(board.y + board.h, fy + board.h * 0.28);
-      const topExit = Math.max(board.y, fy - CELL * 1.15);
-      const botExit = Math.min(board.y + board.h, fy + CELL * 1.15);
+      const fy = (avgExitY + 0.5) * CELL;
+      const fx = BOARD_W;
+      const leftX = BOARD_W * 0.16;
+      const midX = BOARD_W * 0.48;
+      const topOuter = Math.max(0, fy - BOARD_H * 0.44);
+      const botOuter = Math.min(BOARD_H, fy + BOARD_H * 0.44);
+      const topInner = Math.max(0, fy - BOARD_H * 0.28);
+      const botInner = Math.min(BOARD_H, fy + BOARD_H * 0.28);
+      const topExit = Math.max(0, fy - CELL * 1.15);
+      const botExit = Math.min(BOARD_H, fy + CELL * 1.15);
 
-      g.rect(board.x, board.y, board.w, board.h).fill({ color: 0x8ae8ff, alpha: 0.05 });
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0x8ae8ff, alpha: 0.05 });
       g.poly([fx, topExit, fx, botExit, leftX, botOuter, leftX, topOuter]).fill({ color: 0xb8f3ff, alpha: 0.11 });
       g.poly([fx, topExit, fx, botExit, midX, botInner, midX, topInner]).fill({ color: 0xe6fbff, alpha: 0.13 });
 
       // Subtle drifting icy chill wisps clipped inside board
       const t = gm.time * 170;
       for (let i = 0; i < 18; i++) {
-        const span = board.w * 0.82;
-        const rx = board.w - ((hash(i, 51) * span + t * (0.75 + (i % 3) * 0.22)) % (span + 120));
-        const ry = hash(i, 52) * board.h;
+        const span = BOARD_W * 0.82;
+        const rx = BOARD_W - ((hash(i, 51) * span + t * (0.75 + (i % 3) * 0.22)) % (span + 120));
+        const ry = hash(i, 52) * BOARD_H;
         const len = 45 + (i % 4) * 24;
-        const x1 = Math.max(board.x, board.x + rx - len);
-        const x2 = Math.min(board.x + board.w, board.x + rx);
-        const y = Math.max(board.y + 4, Math.min(board.y + board.h - 4, board.y + ry));
+        const x1 = Math.max(0, rx - len);
+        const x2 = Math.min(BOARD_W, rx);
+        const y = Math.max(4, Math.min(BOARD_H - 4, ry));
         if (x2 > x1) {
           g.moveTo(x1, y).lineTo(x2, y).stroke({ width: 1.4 + (i % 2) * 0.6, color: 0xb8f3ff, alpha: 0.20 });
         }
@@ -2105,10 +2189,11 @@ export class Renderer {
       this.stormAlertText.style.fill = 0xb8f3ff;
     }
 
-    // Centered top-of-board alert pill (below Boss bar if Boss is active)
+    // Centered top-of-board alert pill (below Wave pill on vertical phone boards, and below Boss bar if Boss is active)
     const hasBoss = !!gm.activeBoss();
-    const py = hasBoss ? board.y + 48 : board.y + 8;
-    const pw = 336, ph = 24;
+    const topOffset = this.getLayout().boardRotated ? 42 : 8;
+    const py = hasBoss ? board.y + topOffset + 40 : board.y + topOffset;
+    const pw = Math.min(350, board.w - 20), ph = 24;
     const px = board.x + board.w / 2 - pw / 2;
     this.stormAlertG.visible = true;
     this.stormAlertG.clear()
@@ -2116,6 +2201,7 @@ export class Renderer {
       .fill({ color: isKitchenRush ? 0x0c2433 : 0x2b1208, alpha: 0.90 })
       .stroke({ width: 1.5, color: isKitchenRush ? 0x6ee7ff : 0xff8c42, alpha: 0.92 });
     this.stormAlertText.visible = true;
+    this.stormAlertText.style.fontSize = board.w < 560 ? 10 : 11;
     this.stormAlertText.position.set(board.x + board.w / 2, py + ph / 2);
   }
 
@@ -2130,14 +2216,14 @@ export class Renderer {
       const def = this.game.turretById.get(d.turretId)!;
       const ok = !!d.result?.ok;
       if (d.cell) {
-        const cx = board.x + (d.cell.x + 0.5) * CELL, cy = board.y + (d.cell.y + 0.5) * CELL;
+        const { x: cx, y: cy } = boardCellCenter(board, d.cell.x, d.cell.y, !!layout.boardRotated);
         if (hasSprites) {
           g.circle(cx, cy, def.range * CELL).fill({ color: 0xf2e2ad, alpha: 0.06 }).stroke({ width: 1.2, color: 0xf2e2ad, alpha: 0.45 });
-          g.rect(board.x + d.cell.x * CELL, board.y + d.cell.y * CELL, CELL, CELL)
+          g.rect(cx - CELL / 2, cy - CELL / 2, CELL, CELL)
             .fill({ color: ok ? 0x6db88a : 0xd46a6a, alpha: 0.24 }).stroke({ width: 2, color: ok ? 0x6db88a : 0xd46a6a });
         } else {
           g.circle(cx, cy, def.range * CELL).fill({ color: col, alpha: 0.07 }).stroke({ width: 1.5, color: col, alpha: 0.5 });
-          g.rect(board.x + d.cell.x * CELL, board.y + d.cell.y * CELL, CELL, CELL)
+          g.rect(cx - CELL / 2, cy - CELL / 2, CELL, CELL)
             .fill({ color: ok ? C.mint : C.coral, alpha: 0.22 }).stroke({ width: 2, color: ok ? C.mint : C.coral });
         }
         drawIcon(g, d.turretId, cx, cy, CELL * 0.34, col, 0.85, -Math.PI / 2, theme.id);
@@ -2181,7 +2267,7 @@ export class Renderer {
       rv.container.visible = true;
       const g = rv.g.clear();
       const stats = this.game.towerStats(tower);
-      const tx = board.x + (tower.x + 0.5) * CELL, ty = board.y + (tower.y + 0.5) * CELL;
+      const { x: tx, y: ty } = boardCellCenter(board, tower.x, tower.y, !!l.boardRotated);
       const tcol = this.turretColor(tower.def.id);
 
       g.circle(tx, ty, stats.range * CELL).fill({ color: tcol, alpha: 0.05 }).stroke({ width: 1.5, color: tcol, alpha: 0.45 });
@@ -2282,7 +2368,7 @@ export class Renderer {
         const hasBoss = nw.groups.some(gr => g.enemyById.get(gr.enemyId)?.boss);
         const hasAir = nw.groups.some(gr => g.enemyById.get(gr.enemyId)?.flying);
         const tag = hasBoss ? ' [BOSS]' : hasAir ? ' [AIR]' : '';
-        const wName = theme.waveNames[nw.index] ?? nw.name;
+        const wName = formatWaveName(theme.id, nw);
         nextLine = `Next: ${wName}${tag}`;
       }
     }
@@ -2307,10 +2393,12 @@ export class Renderer {
       return;
     }
     const theme = this.theme();
-    const board = this.getLayout().board;
+    const layout = this.getLayout();
+    const board = layout.board;
     this.bossLabel.text = theme.bossTitle;
     this.bossLabel.visible = true;
-    const bw = 320, bx = board.x + board.w / 2 - bw / 2, by = board.y + 8;
+    const bw = Math.min(340, board.w - 28), bx = board.x + board.w / 2 - bw / 2, by = board.y + (layout.boardRotated ? 42 : 8);
+    this.bossLabel.position.set(board.x + board.w / 2, by);
     g.roundRect(bx - 8, by - 2, bw + 16, 36, 8).fill({ color: theme.panelBg, alpha: 0.88 }).stroke({ width: 1.5, color: 0xff4d5a, alpha: 0.85 });
     const barY = by + 16;
     if (boss.maxShield > 0) {
@@ -2329,18 +2417,20 @@ export class Renderer {
   private applySummaryTypography(layout: LayoutDef): void {
     const phone = isPhoneLayout(layout);
     const rows: [Text, number, number][] = phone
-      ? [[this.summaryTitle, 42, -190], [this.summarySub, 26, -130], [this.summaryStats, 24, -60],
-         [this.summaryPlayers, 24, 0], [this.summaryScore, 26, 78]]
+      ? [[this.summaryTitle, 34, -168], [this.summarySub, 19, -114], [this.summaryStats, 19, -58],
+         [this.summaryPlayers, 18, -4], [this.summaryScore, 18, 54]]
       : [[this.summaryTitle, 30, -86], [this.summarySub, 14, -52], [this.summaryStats, 14, -14],
          [this.summaryPlayers, 13.5, 18], [this.summaryScore, 13, 44]];
     for (const [t, size, y] of rows) {
       t.style.fontSize = size;
       t.style.lineHeight = Math.round(size * 1.3);
+      t.style.wordWrap = phone;
+      t.style.wordWrapWidth = phone ? 440 : 0;
       t.position.set(0, y);
     }
     for (const sb of this.summaryButtons) {
-      sb.label.style.fontSize = phone ? 26 : 14;
-      sb.label.style.lineHeight = Math.round((phone ? 26 : 14) * 1.3);
+      sb.label.style.fontSize = phone ? 21 : 14;
+      sb.label.style.lineHeight = Math.round((phone ? 21 : 14) * 1.3);
     }
     this.summaryKey = '';
   }

@@ -20,7 +20,7 @@ export interface Dock { player: number; cx: number; cy: number; rot: number; sca
 
 export const HUD_BUTTON_IDS = ['wave', 'pause', 'fullscreen', 'settings'] as const;
 export type HudButtonId = typeof HUD_BUTTON_IDS[number];
-export const SETTINGS_BUTTON_IDS = ['map', 'layout', 'difficulty', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close'] as const;
+export const SETTINGS_BUTTON_IDS = ['map', 'layout', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close'] as const;
 export type SettingsButtonId = typeof SETTINGS_BUTTON_IDS[number];
 export const SUMMARY_BUTTON_IDS = ['play-again', 'next-map'] as const;
 export type SummaryButtonId = typeof SUMMARY_BUTTON_IDS[number];
@@ -34,6 +34,7 @@ export interface LayoutDef {
   stageW: number;
   stageH: number;
   board: Rect;
+  boardRotated?: boolean;
   docks: Dock[];
   hudButtons: Record<HudButtonId, Rect>;
   statsOrigin: Vec;
@@ -119,6 +120,17 @@ export function horizontalHud(cx: number, y: number): Record<HudButtonId, Rect> 
   };
 }
 
+/** 488x50 single-row always-on HUD bar centered at `cx` for 548-wide vertical phone stages. */
+export function phoneHorizontalHud(cx: number, y: number): Record<HudButtonId, Rect> {
+  const x = cx - 244;
+  return {
+    wave: { x, y, w: 204, h: 50 },
+    pause: { x: x + 212, y, w: 120, h: 50 },
+    fullscreen: { x: x + 340, y, w: 70, h: 50 },
+    settings: { x: x + 418, y, w: 70, h: 50 },
+  };
+}
+
 const H = Math.PI / 2;
 const DEG = Math.PI / 180;
 /** Corner docks sit diagonally at 0.61 scale: clear of board, HUD, and stage edges. */
@@ -140,12 +152,13 @@ export const LAYOUTS: LayoutDef[] = [
     id: '2p-phone',
     name: '2P phone',
     playerCount: 2,
-    stageW: 920,
-    stageH: 1280,
-    board: { x: 12, y: 384, w: GRID_W * CELL, h: GRID_H * CELL },
-    docks: [makeDock(0, 460, 1170, 0, 1.55), makeDock(1, 460, 110, Math.PI, 1.55)],
-    hudButtons: horizontalHud(460, 294),
-    statsOrigin: { x: 740, y: 224 },
+    stageW: 548,
+    stageH: 1244,
+    board: { x: 18, y: 204, w: GRID_H * CELL, h: GRID_W * CELL },
+    boardRotated: true,
+    docks: [makeDock(0, 274, 1172, 0, 1.10), makeDock(1, 274, 74, Math.PI, 1.10)],
+    hudButtons: phoneHorizontalHud(274, 148),
+    statsOrigin: { x: 18, y: 212 },
   },
   {
     id: '1p-base',
@@ -162,12 +175,13 @@ export const LAYOUTS: LayoutDef[] = [
     id: '1p-phone',
     name: '1P phone',
     playerCount: 1,
-    stageW: 920,
-    stageH: 1280,
-    board: { x: 12, y: 244, w: GRID_W * CELL, h: GRID_H * CELL },
-    docks: [makeDock(0, 460, 1120, 0, 1.65)],
-    hudButtons: horizontalHud(460, 148),
-    statsOrigin: { x: 740, y: 40 },
+    stageW: 548,
+    stageH: 1140,
+    board: { x: 18, y: 80, w: GRID_H * CELL, h: GRID_W * CELL },
+    boardRotated: true,
+    docks: [makeDock(0, 274, 1058, 0, 1.12)],
+    hudButtons: phoneHorizontalHud(274, 16),
+    statsOrigin: { x: 18, y: 88 },
   },
   {
     id: '4p-edges',
@@ -227,10 +241,10 @@ export function hitHudButton(layout: LayoutDef, x: number, y: number): HudButton
   return null;
 }
 
-/** Phone stages render at ~0.4 scale, so Settings is a stage-centred modal with >=114 world-px targets (>=44 CSS px at 360 wide). */
+/** Phone stages (548 wide) render at ~0.51..0.71 scale, so Settings is a stage-centred modal with >=92 world-px targets (>=44 CSS px at 360x640). */
 export const PHONE_SETTINGS = {
-  w: 860, h: 1200, margin: 24, rowH: 114, gap: 12, headerH: 124, closeW: 114,
-  statusTop: 1002, statusH: 108, tipTop: 1116, tipH: 72,
+  w: 516, h: 1060, margin: 18, rowH: 92, gap: 12, headerH: 104, closeW: 92,
+  statusTop: 842, statusH: 120, tipTop: 970, tipH: 80,
 } as const;
 
 export function settingsPanelRect(layout: LayoutDef): Rect {
@@ -257,7 +271,8 @@ export function settingsButtonRects(layout: LayoutDef): Record<SettingsButtonId,
       close: { x: px + pw - m - closeW, y: py + 5, w: closeW, h: bh },
       map: { x: x0, y: ry(0), w: fw, h: bh },
       layout: { x: x0, y: ry(1), w: fw, h: bh },
-      difficulty: { x: x0, y: ry(2), w: fw, h: bh },
+      difficulty: { x: x0, y: ry(2), w: hw, h: bh },
+      waves: { x: x1, y: ry(2), w: hw, h: bh },
       speed: { x: x0, y: ry(3), w: hw, h: bh },
       auto: { x: x1, y: ry(3), w: hw, h: bh },
       sfx: { x: x0, y: ry(4), w: hw, h: bh },
@@ -273,7 +288,8 @@ export function settingsButtonRects(layout: LayoutDef): Record<SettingsButtonId,
     close: { x: px + 440 - 46, y: py + 12, w: 34, h: 32 },
     map: { x: x0, y: py + 58, w: 400, h: 36 },
     layout: { x: x0, y: py + 102, w: 400, h: 36 },
-    difficulty: { x: x0, y: py + 146, w: 400, h: 36 },
+    difficulty: { x: x0, y: py + 146, w: hw, h: 36 },
+    waves: { x: x0 + hw + gap, y: py + 146, w: hw, h: 36 },
     speed: { x: x0, y: py + 190, w: hw, h: 36 },
     auto: { x: x0 + hw + gap, y: py + 190, w: hw, h: 36 },
     sfx: { x: x0, y: py + 234, w: hw, h: 36 },
@@ -300,7 +316,7 @@ export function isPhoneLayout(layout: LayoutDef): boolean {
 
 export function summaryCardRect(layout: LayoutDef): Rect {
   const phone = isPhoneLayout(layout);
-  const w = phone ? 820 : 500, h = phone ? 500 : 252;
+  const w = phone ? 480 : 500, h = phone ? 440 : 252;
   return {
     x: layout.board.x + (layout.board.w - w) / 2,
     y: layout.board.y + (layout.board.h - h) / 2,
@@ -365,9 +381,24 @@ export function hitRadialButton(cx: number, cy: number, rot: number, wx: number,
   }
   return null;
 }
-export function cellAt(wx: number, wy: number, board: Rect = BOARD): { x: number; y: number } | null {
+export function boardLocalToWorld(board: Rect, lx: number, ly: number, rotated = false): Vec {
+  if (!rotated) return { x: board.x + lx, y: board.y + ly };
+  return { x: board.x + board.w - ly, y: board.y + lx };
+}
+export function worldToBoardLocal(board: Rect, wx: number, wy: number, rotated = false): Vec {
+  if (!rotated) return { x: wx - board.x, y: wy - board.y };
+  return { x: wy - board.y, y: board.x + board.w - wx };
+}
+export function boardCellCenter(board: Rect, gx: number, gy: number, rotated = false): Vec {
+  return boardLocalToWorld(board, (gx + 0.5) * CELL, (gy + 0.5) * CELL, rotated);
+}
+export function cellAt(wx: number, wy: number, board: Rect = BOARD, rotated = false): { x: number; y: number } | null {
   if (!inRect(board, wx, wy)) return null;
-  return { x: Math.floor((wx - board.x) / CELL), y: Math.floor((wy - board.y) / CELL) };
+  const l = worldToBoardLocal(board, wx, wy, rotated);
+  return {
+    x: Math.max(0, Math.min(GRID_W - 1, Math.floor(l.x / CELL))),
+    y: Math.max(0, Math.min(GRID_H - 1, Math.floor(l.y / CELL))),
+  };
 }
 
 /** Uniform fit of the design stage into the window. */

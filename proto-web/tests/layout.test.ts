@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W, dockPolygon, dockToWorld, dockUp,
-  hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton, hitSettingsButton, hitSummaryButton,
-  HUD_BUTTON_IDS, inRect, LAYOUTS, polygonsOverlap, RADIAL_BTN_R, radialButtons, rectPolygon, rectsOverlap,
-  PHONE_SETTINGS, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect, SUMMARY_BUTTON_IDS, summaryButtonRects,
-  summaryCardRect, TURRET_ORDER, Viewport, WORLD_H, WORLD_W, worldToDock,
+  BOARD, boardCellCenter, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
+  dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton,
+  hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, LAYOUTS, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
+  radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect,
+  SUMMARY_BUTTON_IDS, summaryButtonRects, summaryCardRect, TURRET_ORDER, Viewport, WORLD_H, WORLD_W, worldToBoardLocal,
+  worldToDock,
 } from '../src/layout';
 
 const DEG = Math.PI / 180;
@@ -58,20 +59,24 @@ describe('rotation-aware dock layout', () => {
     expect(top.length).toBe(2);
   });
 
-  it('2P phone has portrait stage, >= 1.5x top/bottom docks, and portrait Viewport.fit', () => {
+  it('2P phone has portrait stage, rotated vertical court, >= 1.1x top/bottom docks, and portrait Viewport.fit', () => {
     const L = LAYOUTS.find(l => l.id === '2p-phone')!;
     expect(L.stageH).toBeGreaterThan(L.stageW);
-    expect(L.stageW).toBe(920);
-    expect(L.stageH).toBe(1280);
-    for (const d of L.docks) expect(d.scale).toBeGreaterThanOrEqual(1.5);
+    expect(L.stageW).toBe(548);
+    expect(L.stageH).toBe(1244);
+    expect(L.boardRotated).toBe(true);
+    expect(L.board.h).toBeGreaterThan(L.board.w);
+    expect(L.board).toEqual({ x: 18, y: 204, w: 512, h: 896 });
+    for (const d of L.docks) expect(d.scale).toBeGreaterThanOrEqual(1.1);
     expect(L.docks[0].cy).toBeGreaterThan(L.board.y + L.board.h);
     expect(L.docks[1].cy).toBeLessThan(L.board.y);
 
     const v = new Viewport();
     expect(v.fit(390, 844, L.stageW, L.stageH)).toBe(true);
-    expect(v.scale).toBeCloseTo(390 / 920, 9);
-    expect(v.ox).toBeCloseTo(0, 9);
-    expect(v.oy).toBeCloseTo((844 - 1280 * v.scale) / 2, 9);
+    const expectedScale = Math.min(390 / 548, 844 / 1244);
+    expect(v.scale).toBeCloseTo(expectedScale, 9);
+    expect(v.ox).toBeCloseTo((390 - 548 * expectedScale) / 2, 9);
+    expect(v.oy).toBeCloseTo((844 - 1244 * expectedScale) / 2, 9);
   });
 
   it('1P base side has 1 dock on the right/base side at cx=1184, cy=400, scale=1', () => {
@@ -82,13 +87,16 @@ describe('rotation-aware dock layout', () => {
     expect(L.docks[0].bounds.x).toBeGreaterThan(L.board.x + L.board.w);
   });
 
-  it('1P phone has 1 dock at the bottom at scale=1.65', () => {
+  it('1P phone has 1 dock at the bottom at scale=1.12 and rotated vertical court', () => {
     const L = LAYOUTS.find(l => l.id === '1p-phone')!;
     expect(L.playerCount).toBe(1);
-    expect(L.stageW).toBe(920);
-    expect(L.stageH).toBe(1280);
+    expect(L.stageW).toBe(548);
+    expect(L.stageH).toBe(1140);
+    expect(L.boardRotated).toBe(true);
+    expect(L.board.h).toBeGreaterThan(L.board.w);
+    expect(L.board).toEqual({ x: 18, y: 80, w: 512, h: 896 });
     expect(L.docks).toHaveLength(1);
-    expect(L.docks[0]).toMatchObject({ player: 0, cx: 460, cy: 1120, rot: 0, scale: 1.65 });
+    expect(L.docks[0]).toMatchObject({ player: 0, cx: 274, cy: 1058, rot: 0, scale: 1.12 });
     expect(L.docks[0].bounds.y).toBeGreaterThan(L.board.y + L.board.h);
   });
 
@@ -257,7 +265,7 @@ describe('rotation-aware dock layout', () => {
 describe('hud + viewport', () => {
   it('always-on HUD buttons and settings/summary button IDs match contract', () => {
     expect(HUD_BUTTON_IDS).toEqual(['wave', 'pause', 'fullscreen', 'settings']);
-    expect(SETTINGS_BUTTON_IDS).toEqual(['map', 'layout', 'difficulty', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close']);
+    expect(SETTINGS_BUTTON_IDS).toEqual(['map', 'layout', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close']);
     expect(SUMMARY_BUTTON_IDS).toEqual(['play-again', 'next-map']);
     expect(BUTTON_IDS).toEqual([...HUD_BUTTON_IDS, ...SETTINGS_BUTTON_IDS, ...SUMMARY_BUTTON_IDS]);
     expect(TURRET_ORDER).toEqual(['pulse', 'plasma', 'stasis', 'railgun', 'swarm']);
@@ -317,7 +325,7 @@ describe('hud + viewport', () => {
     }
   });
 
-  it('board is 28x16 cells and cellAt maps corners for default and phone boards', () => {
+  it('board is 28x16 cells and cellAt + coordinate helpers map corners for default and rotated phone boards', () => {
     expect(BOARD.w / CELL).toBe(28);
     expect(BOARD.h / CELL).toBe(16);
     expect(cellAt(BOARD.x + 1, BOARD.y + 1)).toEqual({ x: 0, y: 0 });
@@ -325,8 +333,23 @@ describe('hud + viewport', () => {
     expect(cellAt(BOARD.x - 1, BOARD.y)).toBeNull();
 
     const phone = LAYOUTS.find(l => l.id === '2p-phone')!;
-    expect(cellAt(phone.board.x + 1, phone.board.y + 1, phone.board)).toEqual({ x: 0, y: 0 });
-    expect(cellAt(phone.board.x + phone.board.w - 1, phone.board.y + phone.board.h - 1, phone.board)).toEqual({ x: 27, y: 15 });
+    // Rotated +90 deg CW: logical (0,0) -> top-right, (0,15) -> top-left, (27,0) -> bottom-right, (27,15) -> bottom-left
+    expect(cellAt(phone.board.x + phone.board.w - 1, phone.board.y + 1, phone.board, true)).toEqual({ x: 0, y: 0 });
+    expect(cellAt(phone.board.x + 1, phone.board.y + 1, phone.board, true)).toEqual({ x: 0, y: 15 });
+    expect(cellAt(phone.board.x + phone.board.w - 1, phone.board.y + phone.board.h - 1, phone.board, true)).toEqual({ x: 27, y: 0 });
+    expect(cellAt(phone.board.x + 1, phone.board.y + phone.board.h - 1, phone.board, true)).toEqual({ x: 27, y: 15 });
+    expect(cellAt(phone.board.x - 1, phone.board.y, phone.board, true)).toBeNull();
+
+    for (const [gx, gy] of [[0, 0], [0, 15], [27, 0], [27, 15], [13, 7]]) {
+      const wc = boardCellCenter(phone.board, gx, gy, true);
+      expect(cellAt(wc.x, wc.y, phone.board, true)).toEqual({ x: gx, y: gy });
+      const back = worldToBoardLocal(phone.board, wc.x, wc.y, true);
+      expect(back.x).toBeCloseTo((gx + 0.5) * CELL, 9);
+      expect(back.y).toBeCloseTo((gy + 0.5) * CELL, 9);
+      const fwd = boardLocalToWorld(phone.board, back.x, back.y, true);
+      expect(fwd.x).toBeCloseTo(wc.x, 9);
+      expect(fwd.y).toBeCloseTo(wc.y, 9);
+    }
   });
 
   it('viewport scale + inverse transform round-trip and tracks worldW/worldH changes', () => {
@@ -354,6 +377,8 @@ describe('settings modal geometry', () => {
       const r = settingsButtonRects(L);
       expect(r.close).toEqual({ x: p.x + 394, y: p.y + 12, w: 34, h: 32 });
       expect(r.map).toEqual({ x: p.x + 20, y: p.y + 58, w: 400, h: 36 });
+      expect(r.difficulty).toEqual({ x: p.x + 20, y: p.y + 146, w: 194, h: 36 });
+      expect(r.waves).toEqual({ x: p.x + 226, y: p.y + 146, w: 194, h: 36 });
       expect(r.auto).toEqual({ x: p.x + 226, y: p.y + 190, w: 194, h: 36 });
       expect(r.update).toEqual({ x: p.x + 226, y: p.y + 322, w: 194, h: 36 });
     }
@@ -365,7 +390,7 @@ describe('settings modal geometry', () => {
       const rects = settingsButtonRects(L);
 
       it('has seven disjoint rows in the panel, ordered above the status and tip areas', () => {
-        const rows = [['map'], ['layout'], ['difficulty'], ['speed', 'auto'], ['sfx', 'stats'], ['reset', 'stress'], ['install', 'update']] as const;
+        const rows = [['map'], ['layout'], ['difficulty', 'waves'], ['speed', 'auto'], ['sfx', 'stats'], ['reset', 'stress'], ['install', 'update']] as const;
         let prevBottom = -Infinity;
         for (const row of rows) {
           const top = rects[row[0]].y;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadData } from '../src/data';
-import { computeScore, SCORE_STORAGE_KEY, ScoreBook, scoreLines } from '../src/scores';
+import { computeScore, SCORE_STORAGE_KEY, ScoreBook, scoreKey, scoreLines } from '../src/scores';
 import { newGame } from './helpers';
 
 const data = loadData();
@@ -250,5 +250,35 @@ describe('scoreLines copy', () => {
       .toEqual(['Score 5 · Best 5', 'New best']);
     expect(scoreLines({ runId: 1, mapId: 'm', difficulty: 'easy', players: 1, score: 3, best: 5, improved: false, persisted: true }))
       .toEqual(['Score 3 · Best 5', '']);
+  });
+});
+
+describe('waveCount score isolation', () => {
+  it('keeps the original key for waveCount = 10 and isolates 5 / 20 wave bests', () => {
+    expect(scoreKey(mapIds[0], 'medium', 2)).toBe(`${mapIds[0]}|medium|2`);
+    expect(scoreKey(mapIds[0], 'medium', 2, 10)).toBe(`${mapIds[0]}|medium|2`);
+    expect(scoreKey(mapIds[0], 'medium', 2, 5)).toBe(`${mapIds[0]}|medium|2|w5`);
+    expect(scoreKey(mapIds[0], 'medium', 2, 20)).toBe(`${mapIds[0]}|medium|2|w20`);
+
+    const s = new FakeStorage();
+    const b = book(s);
+    const g = newGame(2);
+
+    finish(g, 10, 1);
+    expect(b.observe(g)?.best).toBe(200);
+
+    g.setWaveCount(5);
+    finish(g, 5, 1);
+    expect(b.observe(g)?.best).toBe(150);
+
+    g.setWaveCount(20);
+    finish(g, 30, 1);
+    expect(b.observe(g)?.best).toBe(400);
+
+    const reloaded = book(s);
+    expect(reloaded.bestFor(g.currentMap.id, 'medium', 2)).toBe(200);
+    expect(reloaded.bestFor(g.currentMap.id, 'medium', 2, 10)).toBe(200);
+    expect(reloaded.bestFor(g.currentMap.id, 'medium', 2, 5)).toBe(150);
+    expect(reloaded.bestFor(g.currentMap.id, 'medium', 2, 20)).toBe(400);
   });
 });
