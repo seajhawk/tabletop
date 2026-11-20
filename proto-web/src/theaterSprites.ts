@@ -6,6 +6,7 @@ export interface TheaterTextureSet extends MilitaryTextureSet {
   boost?: Texture;
   base?: Texture;
   moleMound?: Texture;
+  knight?: Texture;
 }
 
 export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
@@ -1454,20 +1455,69 @@ function paintMedievalBase(key: TurretKey): Texture {
       return;
     }
 
-    // swarm: royal purple & gold runed stone plinth
+    // swarm: Warm rustic timber & cobblestone Horse Paddock Courtyard with fence rails, hay bales, and arched gateway facing +X
     withGroundShadow(ctx, () => {
-      polygonPath(ctx, c, c, 32, 8, 0);
-      ctx.fillStyle = '#4d2b6e';
+      roundedRectPath(ctx, 12, 14, 72, 68, 8);
+      ctx.fillStyle = '#5c4d3c';
       ctx.fill();
     });
-    polygonPath(ctx, c, c, 32, 8, 0);
-    ctx.fillStyle = '#6c3c96';
+    roundedRectPath(ctx, 12, 14, 72, 68, 8);
+    ctx.fillStyle = '#8b7d6b';
     ctx.fill();
-    strokeInk(ctx, 1.85);
-    polygonPath(ctx, c, c, 23, 8, 0);
-    ctx.strokeStyle = '#f2c138';
-    ctx.lineWidth = 2.2;
-    ctx.stroke();
+    strokeInk(ctx, 1.9);
+
+    // Cobblestone courtyard paving
+    ctx.fillStyle = '#736657';
+    for (const [cx, cy, r] of [
+      [28, 28, 5],
+      [44, 24, 4.5],
+      [60, 30, 5],
+      [34, 48, 5.5],
+      [52, 46, 5],
+      [68, 48, 5.5],
+      [30, 66, 5],
+      [48, 68, 4.5],
+      [64, 65, 5],
+    ]) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Golden hay bales in rear corners
+    for (const hy of [19, 65]) {
+      roundedRectPath(ctx, 18, hy, 16, 12, 2.5);
+      ctx.fillStyle = '#e6bc47';
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+      ctx.strokeStyle = '#9e6b1b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(23, hy + 1);
+      ctx.lineTo(23, hy + 11);
+      ctx.moveTo(29, hy + 1);
+      ctx.lineTo(29, hy + 11);
+      ctx.stroke();
+    }
+
+    // Wooden paddock fence rails (top, bottom, rear)
+    ctx.fillStyle = '#7d4b24';
+    ctx.fillRect(14, 15, 62, 5);
+    strokeInk(ctx, 1.3);
+    ctx.fillStyle = '#7d4b24';
+    ctx.fillRect(14, 76, 62, 5);
+    strokeInk(ctx, 1.3);
+    ctx.fillStyle = '#6b3e1c';
+    ctx.fillRect(14, 15, 5, 66);
+    strokeInk(ctx, 1.3);
+
+    // Arched stone/timber gateway posts on right (+X)
+    for (const gy of [22, 62]) {
+      roundedRectPath(ctx, 73, gy, 11, 12, 3);
+      ctx.fillStyle = '#a3998b';
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+    }
   });
 }
 
@@ -1536,16 +1586,75 @@ function paintMedievalTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
       ctx.fill();
       strokeInk(ctx, 1.7);
 
-      // Glowing flaming boulder in sling
-      const flame = ctx.createRadialGradient(74, c, 2, 74, c, tier === 2 ? 14 : 11);
-      flame.addColorStop(0, '#fff7c2');
-      flame.addColorStop(0.55, '#ff7b14');
-      flame.addColorStop(1, '#b8250b');
-      ctx.fillStyle = flame;
-      ctx.beginPath();
-      ctx.arc(74, c, tier === 2 ? 12 : 9.5, 0, Math.PI * 2);
-      ctx.fill();
-      strokeInk(ctx, 1.6);
+      if (tier === 2) {
+        // Tier 2 Max-Power Flaming Trebuchet: burning braziers on frame + blazing fiery pitch fireball
+        for (const by of [23, 73]) {
+          ctx.fillStyle = '#3c424a';
+          ctx.beginPath();
+          ctx.arc(30, by, 6, 0, Math.PI * 2);
+          ctx.fill();
+          strokeInk(ctx, 1.3);
+
+          const brazier = ctx.createRadialGradient(30, by, 1, 30, by, 7.5);
+          brazier.addColorStop(0, '#fff9c4');
+          brazier.addColorStop(0.5, '#ff8f1c');
+          brazier.addColorStop(1, 'rgba(217, 38, 11, 0)');
+          ctx.fillStyle = brazier;
+          ctx.beginPath();
+          ctx.arc(30, by, 7.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Outer blazing flame aura
+        const aura = ctx.createRadialGradient(74, c, 4, 74, c, 21);
+        aura.addColorStop(0, 'rgba(255, 240, 140, 0.95)');
+        aura.addColorStop(0.45, 'rgba(255, 115, 18, 0.85)');
+        aura.addColorStop(1, 'rgba(184, 24, 8, 0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(74, c, 21, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Flame tongues licking backward/outward around the cradle
+        ctx.fillStyle = '#ff6a12';
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2;
+          const rOuter = i % 2 === 0 ? 16 : 12;
+          const px = 74 + Math.cos(a) * rOuter;
+          const py = c + Math.sin(a) * rOuter;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          const aMid = a + Math.PI / 8;
+          ctx.lineTo(74 + Math.cos(aMid) * 9, c + Math.sin(aMid) * 9);
+        }
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.4);
+
+        // Molten white-gold pitch fireball core
+        const core = ctx.createRadialGradient(73, c - 1, 1.5, 74, c, 10.5);
+        core.addColorStop(0, '#ffffff');
+        core.addColorStop(0.45, '#fff08a');
+        core.addColorStop(0.85, '#ff7b14');
+        core.addColorStop(1, '#c92a0a');
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(74, c, 10.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+      } else {
+        // Glowing flaming boulder in sling
+        const flame = ctx.createRadialGradient(74, c, 2, 74, c, 11);
+        flame.addColorStop(0, '#fff7c2');
+        flame.addColorStop(0.55, '#ff7b14');
+        flame.addColorStop(1, '#b8250b');
+        ctx.fillStyle = flame;
+        ctx.beginPath();
+        ctx.arc(74, c, 9.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.6);
+      }
       return;
     }
 
@@ -1605,77 +1714,298 @@ function paintMedievalTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
       return;
     }
 
-    // swarm: Arcane Spire — ornate runed stone spire crowned with floating violet-gold magic star orbs
+    // swarm: Knight Stable (T0: Timber Stable, T1: Squiring Yard, T2: Royal Cavalry Keep)
+    // Cobble exit lane on right (+X)
+    ctx.fillStyle = '#685e52';
+    ctx.fillRect(62, c - 13, 24, 26);
+    strokeInk(ctx, 1.3);
+
+    if (tier === 0) {
+      // Lv 1 Stable (1 Knight): Warm pitched timber barn roof with horseshoe crest over dark oak beam doorway
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 20, 22, 46, 52, 5);
+        ctx.fillStyle = '#5c3314';
+        ctx.fill();
+      });
+      // Dark oak beam doorway facing +X
+      ctx.fillStyle = '#381e0c';
+      ctx.fillRect(62, c - 11, 9, 22);
+      strokeInk(ctx, 1.4);
+
+      // Pitched timber barn roof
+      roundedRectPath(ctx, 20, 22, 46, 52, 5);
+      ctx.fillStyle = '#995829';
+      ctx.fill();
+      strokeInk(ctx, 1.85);
+
+      // Shingle/plank lines
+      ctx.strokeStyle = '#6b3a17';
+      ctx.lineWidth = 1.4;
+      for (const py of [31, 40, 56, 65]) {
+        ctx.beginPath();
+        ctx.moveTo(22, py);
+        ctx.lineTo(64, py);
+        ctx.stroke();
+      }
+      // Ridge beam
+      drawGradBarrel(ctx, 19, c, 67, 5.5, '#c47b41', '#874c1f', '#4a260c', 1.4);
+
+      // Horseshoe crest
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(43, c, 7.5, -Math.PI * 0.72, Math.PI * 0.72);
+      ctx.stroke();
+      return;
+    }
+
+    if (tier === 1) {
+      // Lv 2 Squiring Yard (3 Knights): Reinforced stone-and-timber twin-gable stable with royal blue & silver pennants + steel shield
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 18, 18, 50, 60, 5);
+        ctx.fillStyle = '#4e545c';
+        ctx.fill();
+      });
+      // Oak doorway
+      ctx.fillStyle = '#331c0b';
+      ctx.fillRect(64, c - 12, 10, 24);
+      strokeInk(ctx, 1.4);
+
+      // Stone base walls
+      roundedRectPath(ctx, 18, 18, 50, 60, 5);
+      ctx.fillStyle = '#949aa1';
+      ctx.fill();
+      strokeInk(ctx, 1.85);
+
+      // Twin timber gables
+      for (const gy of [22, 51]) {
+        roundedRectPath(ctx, 22, gy, 42, 23, 3.5);
+        ctx.fillStyle = '#874f24';
+        ctx.fill();
+        strokeInk(ctx, 1.6);
+        drawGradBarrel(ctx, 21, gy + 11.5, 65, 4, '#b87138', '#7d471d', '#47250b', 1.2);
+      }
+
+      // Royal blue & silver knight pennants
+      for (const py of [21, 71]) {
+        ctx.fillStyle = '#2255b8';
+        ctx.beginPath();
+        ctx.moveTo(64, py);
+        ctx.lineTo(82, py - 3.5);
+        ctx.lineTo(77, py + 2);
+        ctx.lineTo(82, py + 6.5);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+        ctx.fillStyle = '#dce5f0';
+        ctx.fillRect(66, py + 0.5, 8, 2.2);
+      }
+
+      // Steel shield emblem in center
+      ctx.fillStyle = '#d4dde8';
+      ctx.beginPath();
+      ctx.moveTo(49, c - 7);
+      ctx.lineTo(49, c + 7);
+      ctx.lineTo(39, c);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+      return;
+    }
+
+    // Lv 3 Royal Cavalry (5 Knights): Grand stone fortress stable with royal cobalt-and-gold crenellated gable, twin golden lion banners & gilded lance rack
     withGroundShadow(ctx, () => {
-      polygonPath(ctx, c, c, 20, 8, Math.PI / 8);
-      ctx.fillStyle = '#7e3db8';
+      roundedRectPath(ctx, 16, 16, 54, 64, 6);
+      ctx.fillStyle = '#484f59';
       ctx.fill();
     });
-    polygonPath(ctx, c, c, 20, 8, Math.PI / 8);
-    ctx.fillStyle = '#9752d9';
-    ctx.fill();
-    strokeInk(ctx, 1.85);
+    // Grand archway exit
+    ctx.fillStyle = '#2b180a';
+    ctx.fillRect(66, c - 13, 10, 26);
+    strokeInk(ctx, 1.5);
 
-    const orbs = tier === 0 ? 3 : tier === 1 ? 4 : 5;
-    for (let i = 0; i < orbs; i++) {
-      const a = (i / orbs) * Math.PI * 2;
-      ctx.fillStyle = '#ffd447';
+    // Grand cut-stone fortress roof
+    roundedRectPath(ctx, 16, 16, 54, 64, 6);
+    ctx.fillStyle = '#adb4bd';
+    ctx.fill();
+    strokeInk(ctx, 1.9);
+
+    // Royal cobalt-and-gold pitched inner roof
+    roundedRectPath(ctx, 22, 22, 42, 52, 4);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fill();
+    strokeInk(ctx, 1.6);
+
+    // Crenellated gold trim & ridge
+    ctx.strokeStyle = '#f5c542';
+    ctx.lineWidth = 2.4;
+    ctx.strokeRect(24, 24, 38, 48);
+    drawGradBarrel(ctx, 20, c, 66, 5.5, '#ffe27a', '#f5c542', '#9e7316', 1.4);
+
+    // Twin golden lion banners
+    for (const py of [20, 72]) {
+      ctx.fillStyle = '#1d4ed8';
       ctx.beginPath();
-      ctx.arc(c + Math.cos(a) * 14, c + Math.sin(a) * 14, 4.5, 0, Math.PI * 2);
+      ctx.moveTo(66, py);
+      ctx.lineTo(86, py - 4);
+      ctx.lineTo(80, py + 2);
+      ctx.lineTo(86, py + 7);
+      ctx.closePath();
       ctx.fill();
-      strokeInk(ctx, 1.2);
+      strokeInk(ctx, 1.3);
+      ctx.fillStyle = '#f5c542';
+      ctx.beginPath();
+      ctx.arc(73, py + 1.5, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Gilded lance rack on front-left parapet
+    for (const ly of [33, 41, 55, 63]) {
+      drawGradBarrel(ctx, 14, ly, 36, 2.6, '#fff0a6', '#f2c138', '#8c6311', 1);
     }
   });
 }
 
 function paintMedievalEnemy(key: EnemyKey): Texture {
   if (key === 'dreadnought') {
-    // Siege Troll King Boss (128x128): armored war-troll, horned crown, huge warhammer, crimson war banners
+    // Siege Troll King Boss (128x128): tattered crimson war-banners, leather-strapped armored torso,
+    // layered spiked iron pauldrons, horned spiked golden crown over snarling tusked face, rune-etched warhammer
     return paintCanvas(128, (ctx, size) => {
       const c = size / 2;
+
       withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#2d4727';
-        ctx.beginPath();
-        ctx.ellipse(c - 4, c, 36, 40, 0, 0, Math.PI * 2);
+        roundedRectPath(ctx, c - 34, c - 34, 62, 68, 18);
+        ctx.fillStyle = '#263822';
         ctx.fill();
       }, 7, -3.5, 3.5);
 
-      // Crimson war banners aft
-      for (const by of [c - 28, c + 20]) {
-        ctx.fillStyle = '#c92020';
-        ctx.fillRect(14, by, 22, 9);
+      // Tattered crimson war-banners on back (left)
+      for (const by of [c - 28, c + 17]) {
+        ctx.fillStyle = '#b81d24';
+        ctx.beginPath();
+        ctx.moveTo(34, by);
+        ctx.lineTo(10, by - 2);
+        ctx.lineTo(16, by + 5.5);
+        ctx.lineTo(10, by + 13);
+        ctx.lineTo(34, by + 11);
+        ctx.closePath();
+        ctx.fill();
         strokeInk(ctx, 1.5);
       }
 
-      // Broad troll shoulders & iron plate armor
+      // Colossal rune-etched iron warhammer extending right (+X)
+      drawGradBarrel(ctx, c + 4, c + 16, 114, 7.5, '#b57b3c', '#734a1e', '#38220c', 1.7);
+      roundedRectPath(ctx, 94, c - 3, 22, 38, 4);
+      ctx.fillStyle = '#6c7785';
+      ctx.fill();
+      strokeInk(ctx, 1.9);
+      // Glowing etched runes on warhammer head
+      ctx.strokeStyle = '#ff9d2e';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(100, c + 6);
+      ctx.lineTo(110, c + 16);
+      ctx.lineTo(100, c + 26);
+      ctx.moveTo(105, c + 4);
+      ctx.lineTo(105, c + 28);
+      ctx.stroke();
+
+      // Muscular olive-green arms & neck base
       ctx.fillStyle = '#48733c';
       ctx.beginPath();
-      ctx.ellipse(c - 4, c, 34, 38, 0, 0, Math.PI * 2);
+      ctx.ellipse(c - 2, c, 30, 34, 0, 0, Math.PI * 2);
       ctx.fill();
-      strokeInk(ctx, 2.2);
+      strokeInk(ctx, 2.0);
 
-      // Iron shoulder pauldrons
-      for (const py of [c - 26, c + 26]) {
-        ctx.fillStyle = '#6c7782';
+      // Leather-strapped iron cuirass torso (NOT a plain green oval!)
+      roundedRectPath(ctx, c - 26, c - 26, 48, 52, 12);
+      ctx.fillStyle = '#49525c';
+      ctx.fill();
+      strokeInk(ctx, 1.9);
+      // Crossed leather straps & brass buckle
+      ctx.strokeStyle = '#6e421f';
+      ctx.lineWidth = 5.5;
+      ctx.beginPath();
+      ctx.moveTo(c - 20, c - 21);
+      ctx.lineTo(c + 16, c + 21);
+      ctx.moveTo(c - 20, c + 21);
+      ctx.lineTo(c + 16, c - 21);
+      ctx.stroke();
+      ctx.fillStyle = '#d9a426';
+      ctx.beginPath();
+      ctx.arc(c - 2, c, 5, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+
+      // Layered dark-iron shoulder plates with silver spikes
+      for (const side of [-1, 1] as const) {
+        const py = c + side * 29;
+        // Silver spikes
+        ctx.fillStyle = '#dce5f0';
+        for (const sx of [-7, 5]) {
+          ctx.beginPath();
+          ctx.moveTo(c + sx - 4, py);
+          ctx.lineTo(c + sx, py + side * 17);
+          ctx.lineTo(c + sx + 4, py);
+          ctx.closePath();
+          ctx.fill();
+          strokeInk(ctx, 1.3);
+        }
+        // Layered iron plate
+        ctx.fillStyle = '#535d69';
         ctx.beginPath();
-        ctx.arc(c - 2, py, 14, 0, Math.PI * 2);
+        ctx.ellipse(c - 2, py, 16, 12, 0, 0, Math.PI * 2);
         ctx.fill();
         strokeInk(ctx, 1.7);
+        ctx.fillStyle = '#758291';
+        ctx.beginPath();
+        ctx.ellipse(c + 2, py - side * 2, 11, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.3);
       }
 
-      // Huge warhammer extending right
-      drawGradBarrel(ctx, c + 6, c + 12, 108, 7, '#b57b3c', '#734a1e', '#38220c', 1.6);
-      roundedRectPath(ctx, 96, c - 6, 18, 36, 4);
-      ctx.fillStyle = '#8b96a3';
+      // Snarling tusked troll head + glowing red eyes
+      ctx.fillStyle = '#528544';
+      ctx.beginPath();
+      ctx.ellipse(c + 11, c, 15, 14, 0, 0, Math.PI * 2);
       ctx.fill();
       strokeInk(ctx, 1.8);
 
-      // Horned crown head
+      // Ivory boar tusks jutting forward (+X)
+      for (const ty of [c - 7, c + 7]) {
+        ctx.fillStyle = '#f5ecd5';
+        ctx.beginPath();
+        ctx.moveTo(c + 20, ty - 2.5);
+        ctx.lineTo(c + 32, ty);
+        ctx.lineTo(c + 20, ty + 2.5);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+      }
+
+      // Horned spiked golden crown
       ctx.fillStyle = '#f5c542';
-      ctx.beginPath();
-      ctx.arc(c + 8, c, 15, 0, Math.PI * 2);
+      polygonPath(ctx, c + 7, c, 13, 6, 0);
       ctx.fill();
-      strokeInk(ctx, 1.8);
+      strokeInk(ctx, 1.7);
+      for (const cy of [c - 10, c + 10]) {
+        ctx.fillStyle = '#ffe17d';
+        ctx.beginPath();
+        ctx.moveTo(c + 5, cy);
+        ctx.lineTo(c - 4, cy + (cy < c ? -10 : 10));
+        ctx.lineTo(c + 11, cy);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+      }
+
+      // Glowing red eyes
+      for (const ey of [c - 5, c + 5]) {
+        ctx.fillStyle = '#ff2e2e';
+        ctx.beginPath();
+        ctx.arc(c + 17, ey, 2.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
   }
 
@@ -1683,139 +2013,614 @@ function paintMedievalEnemy(key: EnemyKey): Texture {
     const c = size / 2;
 
     if (key === 'scout') {
-      // Goblin Raider: bright-green goblin with pointed helmet/ears, spear & wooden buckler
-      drawGradBarrel(ctx, c - 4, c + 10, 84, 3.5, '#d19852', '#8a5b26', '#4a2e10', 1.3);
-      ctx.fillStyle = '#dfe8f0';
+      // Goblin Raider (96x96): dark brown leather-armored shoulders/torso, iron-studded round wooden buckler (c - 15),
+      // gleaming steel-tipped spear (+X), crimson-trimmed pointed iron helmet, olive-green head, pointed goblin ears, yellow eyes
+      // Spear shaft + gleaming steel tip on right arm (+X)
+      drawGradBarrel(ctx, c - 8, c + 12, 82, 3.4, '#d19852', '#8a5b26', '#4a2e10', 1.3);
+      ctx.fillStyle = '#e8f1fa';
       ctx.beginPath();
-      ctx.moveTo(88, c + 10);
-      ctx.lineTo(78, c + 6);
-      ctx.lineTo(78, c + 14);
+      ctx.moveTo(91, c + 12);
+      ctx.lineTo(79, c + 7.5);
+      ctx.lineTo(79, c + 16.5);
       ctx.closePath();
       ctx.fill();
-      strokeInk(ctx, 1.2);
+      strokeInk(ctx, 1.3);
 
+      // Dark brown leather-armored shoulders/torso
       withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#4aa638';
-        ctx.beginPath();
-        ctx.arc(c, c, 16, 0, Math.PI * 2);
+        roundedRectPath(ctx, c - 17, c - 17, 28, 34, 9);
+        ctx.fillStyle = '#472a14';
         ctx.fill();
       });
-      ctx.fillStyle = '#5ac744';
-      ctx.beginPath();
-      ctx.arc(c, c, 16, 0, Math.PI * 2);
+      roundedRectPath(ctx, c - 17, c - 17, 28, 34, 9);
+      ctx.fillStyle = '#6b401f';
       ctx.fill();
       strokeInk(ctx, 1.8);
 
-      // Wooden buckler
+      // Leather shoulder straps & brass studs
+      ctx.strokeStyle = '#422510';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(c - 12, c - 15);
+      ctx.lineTo(c + 5, c - 8);
+      ctx.moveTo(c - 12, c + 15);
+      ctx.lineTo(c + 5, c + 8);
+      ctx.stroke();
+
+      // Strapped iron-studded round wooden buckler on left arm (c - 15)
       ctx.fillStyle = '#9c632c';
       ctx.beginPath();
-      ctx.arc(c + 8, c - 13, 8, 0, Math.PI * 2);
+      ctx.arc(c + 5, c - 15, 9.5, 0, Math.PI * 2);
       ctx.fill();
-      strokeInk(ctx, 1.4);
+      strokeInk(ctx, 1.5);
+      ctx.strokeStyle = '#8b96a3';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(c + 5, c - 15, 7.5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#dce5f0';
+      ctx.beginPath();
+      ctx.arc(c + 5, c - 15, 3, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.1);
+
+      // Two crisp pointed olive-green goblin ears sticking out the sides
+      for (const side of [-1, 1] as const) {
+        ctx.fillStyle = '#73b839';
+        ctx.beginPath();
+        ctx.moveTo(c + 1, c + side * 8);
+        ctx.lineTo(c - 5, c + side * 19);
+        ctx.lineTo(c + 8, c + side * 11);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.4);
+      }
+
+      // Olive-green goblin head
+      ctx.fillStyle = '#6ca636';
+      ctx.beginPath();
+      ctx.arc(c + 5, c, 11, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+
+      // Fierce yellow eyes
+      for (const ey of [c - 4, c + 4]) {
+        ctx.fillStyle = '#ffe047';
+        ctx.beginPath();
+        ctx.arc(c + 11, ey, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Crimson-trimmed pointed iron helmet
+      ctx.fillStyle = '#7b8794';
+      ctx.beginPath();
+      ctx.arc(c + 3, c, 9.5, Math.PI * 0.45, Math.PI * 1.55);
+      ctx.lineTo(c + 10, c);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+      ctx.strokeStyle = '#c4273b';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(c + 3, c, 8.5, Math.PI * 0.55, Math.PI * 1.45);
+      ctx.stroke();
       return;
     }
 
     if (key === 'swarmer') {
-      // Goblin Mob: tiny fast bright-lime-green goblin runner with dagger
-      drawGradBarrel(ctx, c + 2, c + 6, 74, 3, '#eef6fc', '#9aa6b2', '#4c545e', 1.2);
-      withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#74db32';
+      // Goblin Swarmer (96x96): tattered dark-red/brown leather hood & cloak shoulders,
+      // sharp pointed lime-green goblin ears poking out from red-banded cowl, glowing golden eyes, two jagged curved steel daggers
+      // Two jagged curved steel daggers thrusting forward (+X)
+      for (const side of [-1, 1] as const) {
+        const dy = c + side * 10;
+        ctx.fillStyle = '#dce6f2';
         ctx.beginPath();
-        ctx.arc(c - 2, c, 12, 0, Math.PI * 2);
+        ctx.moveTo(c + 6, dy - side * 2);
+        ctx.lineTo(c + 26, dy + side * 1);
+        ctx.lineTo(c + 14, dy + side * 4.5);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+      }
+
+      // Tattered dark-red/brown leather cloak shoulders
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#3d1915';
+        ctx.beginPath();
+        ctx.moveTo(c + 6, c - 13);
+        ctx.lineTo(c - 17, c - 15);
+        ctx.lineTo(c - 12, c - 4);
+        ctx.lineTo(c - 19, c);
+        ctx.lineTo(c - 12, c + 4);
+        ctx.lineTo(c - 17, c + 15);
+        ctx.lineTo(c + 6, c + 13);
+        ctx.closePath();
         ctx.fill();
       });
-      ctx.fillStyle = '#84eb38';
+      ctx.fillStyle = '#6e2821';
       ctx.beginPath();
-      ctx.arc(c - 2, c, 12, 0, Math.PI * 2);
+      ctx.moveTo(c + 6, c - 13);
+      ctx.lineTo(c - 17, c - 15);
+      ctx.lineTo(c - 12, c - 4);
+      ctx.lineTo(c - 19, c);
+      ctx.lineTo(c - 12, c + 4);
+      ctx.lineTo(c - 17, c + 15);
+      ctx.lineTo(c + 6, c + 13);
+      ctx.closePath();
       ctx.fill();
       strokeInk(ctx, 1.7);
+
+      // Sharp pointed lime-green goblin ears poking out
+      for (const side of [-1, 1] as const) {
+        ctx.fillStyle = '#8be83c';
+        ctx.beginPath();
+        ctx.moveTo(c, c + side * 7);
+        ctx.lineTo(c - 6, c + side * 18);
+        ctx.lineTo(c + 7, c + side * 9);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+      }
+
+      // Red-banded leather cowl & lime-green face
+      ctx.fillStyle = '#4a251c';
+      ctx.beginPath();
+      ctx.arc(c + 2, c, 10, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+
+      ctx.strokeStyle = '#c4273b';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(c + 2, c, 8.5, -Math.PI * 0.45, Math.PI * 0.45);
+      ctx.stroke();
+
+      // Glowing golden eyes
+      for (const ey of [c - 3.5, c + 3.5]) {
+        ctx.fillStyle = '#ffd836';
+        ctx.beginPath();
+        ctx.arc(c + 8, ey, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
       return;
     }
 
     if (key === 'cruiser') {
-      // Armored Orc Brute: broad hulking dark-green orc in spiked iron pauldrons + huge battleaxe
-      drawGradBarrel(ctx, c + 4, c + 12, 82, 5, '#b57b3c', '#734a1e', '#38220c', 1.4);
-      ctx.fillStyle = '#9ba6b2';
+      // Armored Orc Brute (96x96): fluttering dark crimson war-cape, riveted steel breastplate + spiked bronze-and-iron pauldrons,
+      // horned dark-steel war-helm with glowing red visor eyes & two ivory boar tusks, huge double-bladed steel battleaxe
+      // Huge double-bladed steel battleaxe (+X)
+      drawGradBarrel(ctx, c - 2, c + 15, 84, 5, '#b57b3c', '#734a1e', '#38220c', 1.4);
+      for (const side of [-1, 1] as const) {
+        ctx.fillStyle = '#b4c0cc';
+        ctx.beginPath();
+        ctx.arc(76, c + 15 + side * 4, 11, side === -1 ? -Math.PI * 0.7 : 0, side === -1 ? 0 : Math.PI * 0.7);
+        ctx.lineTo(72, c + 15);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.5);
+      }
+
+      // Fluttering dark crimson war-cape behind (left)
+      ctx.fillStyle = '#8c1720';
       ctx.beginPath();
-      ctx.arc(76, c + 12, 11, -0.9, 0.9);
-      ctx.lineTo(72, c + 12);
+      ctx.moveTo(c - 6, c - 18);
+      ctx.lineTo(13, c - 21);
+      ctx.lineTo(18, c - 6);
+      ctx.lineTo(11, c);
+      ctx.lineTo(18, c + 6);
+      ctx.lineTo(13, c + 21);
+      ctx.lineTo(c - 6, c + 18);
       ctx.closePath();
       ctx.fill();
-      strokeInk(ctx, 1.5);
+      strokeInk(ctx, 1.6);
 
+      // Broad riveted steel breastplate
       withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#336929';
-        ctx.beginPath();
-        ctx.ellipse(c - 2, c, 22, 26, 0, 0, Math.PI * 2);
+        roundedRectPath(ctx, c - 19, c - 22, 36, 44, 10);
+        ctx.fillStyle = '#404852';
         ctx.fill();
       });
-      ctx.fillStyle = '#3d7d31';
-      ctx.beginPath();
-      ctx.ellipse(c - 2, c, 22, 26, 0, 0, Math.PI * 2);
+      roundedRectPath(ctx, c - 19, c - 22, 36, 44, 10);
+      ctx.fillStyle = '#657280';
       ctx.fill();
       strokeInk(ctx, 1.9);
 
-      for (const py of [c - 18, c + 18]) {
-        ctx.fillStyle = '#687380';
+      // Breastplate rivets
+      ctx.fillStyle = '#dce5f0';
+      for (const [rx, ry] of [
+        [c - 12, c - 14],
+        [c - 12, c + 14],
+        [c + 8, c - 14],
+        [c + 8, c + 14],
+      ]) {
         ctx.beginPath();
-        ctx.arc(c, py, 9, 0, Math.PI * 2);
+        ctx.arc(rx, ry, 1.8, 0, Math.PI * 2);
         ctx.fill();
-        strokeInk(ctx, 1.5);
+      }
+
+      // Massive spiked bronze-and-iron pauldrons
+      for (const side of [-1, 1] as const) {
+        const py = c + side * 21;
+        ctx.fillStyle = '#dce5f0';
+        ctx.beginPath();
+        ctx.moveTo(c - 3, py);
+        ctx.lineTo(c, py + side * 13);
+        ctx.lineTo(c + 4, py);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+
+        ctx.fillStyle = '#b37a38';
+        ctx.beginPath();
+        ctx.arc(c, py, 10.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.6);
+        ctx.fillStyle = '#5f6b78';
+        ctx.beginPath();
+        ctx.arc(c + 1, py - side * 1, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+      }
+
+      // Two ivory boar tusks jutting forward (+X)
+      for (const ty of [c - 5.5, c + 5.5]) {
+        ctx.fillStyle = '#f2ebd4';
+        ctx.beginPath();
+        ctx.moveTo(c + 12, ty - 2);
+        ctx.lineTo(c + 22, ty);
+        ctx.lineTo(c + 12, ty + 2);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+      }
+
+      // Horned dark-steel war-helm & glowing red visor eyes
+      ctx.fillStyle = '#3b444f';
+      ctx.beginPath();
+      ctx.arc(c + 5, c, 12, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.7);
+      for (const side of [-1, 1] as const) {
+        ctx.fillStyle = '#e8dfc5';
+        ctx.beginPath();
+        ctx.moveTo(c + 3, c + side * 10);
+        ctx.lineTo(c - 4, c + side * 19);
+        ctx.lineTo(c + 8, c + side * 11);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+      }
+      for (const ey of [c - 4, c + 4]) {
+        ctx.fillStyle = '#ff3030';
+        ctx.beginPath();
+        ctx.arc(c + 12, ey, 2.2, 0, Math.PI * 2);
+        ctx.fill();
       }
       return;
     }
 
     if (key === 'frigate') {
-      // Dark Orc Shaman: hooded purple-and-crimson robed orc mystic holding glowing arcane ward staff
-      drawGradBarrel(ctx, 26, c + 14, 80, 4, '#b57b3c', '#734a1e', '#38220c', 1.3);
-      ctx.fillStyle = '#ff4df0';
+      // Orc Shaman (96x96): dark purple & gold-trimmed hooded robe with ragged mantle hem,
+      // pale bone shoulder spikes, crimson hood with glowing violet eyes, gnarled staff topped with blazing magenta-cyan crystal skull
+      // Gnarled staff + blazing magenta-cyan crystal skull
+      drawGradBarrel(ctx, 24, c + 15, 76, 4, '#8c5a2b', '#593616', '#2e1b0a', 1.3);
+      const skullGlow = ctx.createRadialGradient(78, c + 15, 1.5, 78, c + 15, 11);
+      skullGlow.addColorStop(0, '#ffffff');
+      skullGlow.addColorStop(0.45, '#59f2ff');
+      skullGlow.addColorStop(0.8, '#ff4df0');
+      skullGlow.addColorStop(1, 'rgba(255, 77, 240, 0)');
+      ctx.fillStyle = skullGlow;
       ctx.beginPath();
-      ctx.arc(80, c + 14, 5.5, 0, Math.PI * 2);
+      ctx.arc(78, c + 15, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f2d9ff';
+      ctx.beginPath();
+      ctx.arc(78, c + 15, 5.5, 0, Math.PI * 2);
       ctx.fill();
       strokeInk(ctx, 1.3);
+      ctx.fillStyle = '#1cd9ff';
+      ctx.fillRect(79, c + 12.5, 2, 2);
+      ctx.fillRect(79, c + 15.5, 2, 2);
 
+      // Dark purple & gold-trimmed hooded robe with ragged mantle hem
       withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#5c216b';
+        ctx.fillStyle = '#361245';
         ctx.beginPath();
-        ctx.arc(c, c, 19, 0, Math.PI * 2);
+        ctx.arc(c, c, 20, 0, Math.PI * 2);
         ctx.fill();
       });
-      ctx.fillStyle = '#732985';
+      ctx.fillStyle = '#4f1b63';
       ctx.beginPath();
-      ctx.arc(c, c, 19, 0, Math.PI * 2);
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        const r = i % 2 === 0 ? 22 : 18;
+        const px = c - 2 + Math.cos(a) * r;
+        const py = c + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
       ctx.fill();
-      strokeInk(ctx, 1.85);
+      strokeInk(ctx, 1.8);
 
-      ctx.fillStyle = '#c4273b';
+      // Gold mantle trim
+      ctx.strokeStyle = '#e0b038';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(c + 4, c, 9, 0, Math.PI * 2);
+      ctx.arc(c - 1, c, 15, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Pale bone shoulder spikes
+      for (const side of [-1, 1] as const) {
+        ctx.fillStyle = '#e8dfc5';
+        ctx.beginPath();
+        ctx.moveTo(c - 3, c + side * 14);
+        ctx.lineTo(c - 9, c + side * 26);
+        ctx.lineTo(c + 4, c + side * 16);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+      }
+
+      // Crimson hood & glowing violet eyes
+      ctx.fillStyle = '#b52236';
+      ctx.beginPath();
+      ctx.arc(c + 4, c, 10.5, 0, Math.PI * 2);
       ctx.fill();
-      strokeInk(ctx, 1.4);
+      strokeInk(ctx, 1.5);
+      for (const ey of [c - 3.5, c + 3.5]) {
+        ctx.fillStyle = '#e25cff';
+        ctx.beginPath();
+        ctx.arc(c + 10, ey, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
       return;
     }
 
-    // phase: Wyvern / Gargoyle (NO close shadow)
-    ctx.beginPath();
-    ctx.moveTo(86, c);
-    ctx.lineTo(58, c - 7);
-    ctx.lineTo(36, c - 36);
-    ctx.lineTo(22, c - 26);
-    ctx.lineTo(36, c - 7);
-    ctx.lineTo(10, c);
-    ctx.lineTo(36, c + 7);
-    ctx.lineTo(22, c + 26);
-    ctx.lineTo(36, c + 36);
-    ctx.lineTo(58, c + 7);
-    ctx.closePath();
-    ctx.fillStyle = '#9e2028';
-    ctx.fill();
-    strokeInk(ctx, 1.85);
+    // phase: FIRE-BREATHING DRAGON! (96x96, NO close ground shadow)
+    // Wide scalloped leathery crimson-red bat wings (y: c +/- 40) with dark wing-bones, fiery orange inner membranes, hooked ivory wing-claws
+    for (const side of [-1, 1] as const) {
+      // Fiery orange-crimson inner wing membrane
+      const wingGrad = ctx.createLinearGradient(c, c, c, c + side * 40);
+      wingGrad.addColorStop(0, '#c41d26');
+      wingGrad.addColorStop(0.55, '#ff6a14');
+      wingGrad.addColorStop(1, '#8c141b');
+      ctx.fillStyle = wingGrad;
+      ctx.beginPath();
+      ctx.moveTo(58, c + side * 6);
+      ctx.lineTo(42, c + side * 41);
+      ctx.quadraticCurveTo(32, c + side * 32, 24, c + side * 36);
+      ctx.quadraticCurveTo(22, c + side * 23, 15, c + side * 25);
+      ctx.quadraticCurveTo(22, c + side * 12, 34, c + side * 5);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.7);
 
-    ctx.fillStyle = '#383034';
+      // Dark wing-bones
+      ctx.strokeStyle = '#3d0c10';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(55, c + side * 6);
+      ctx.lineTo(42, c + side * 40);
+      ctx.moveTo(49, c + side * 18);
+      ctx.lineTo(24, c + side * 35);
+      ctx.moveTo(46, c + side * 14);
+      ctx.lineTo(16, c + side * 24);
+      ctx.stroke();
+
+      // Hooked ivory wing-claw at leading wingtip
+      ctx.fillStyle = '#f5ebd0';
+      ctx.beginPath();
+      ctx.moveTo(44, c + side * 38);
+      ctx.lineTo(50, c + side * 44);
+      ctx.lineTo(39, c + side * 41);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.2);
+    }
+
+    // Long sinuous barbed tail trailing left (x = 6..26)
+    ctx.strokeStyle = INK_OUTLINE;
+    ctx.lineWidth = 7.5;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.ellipse(50, c, 16, 7, 0, 0, Math.PI * 2);
+    ctx.moveTo(32, c);
+    ctx.quadraticCurveTo(20, c - 6, 8, c + 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#9e1920';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.moveTo(32, c);
+    ctx.quadraticCurveTo(20, c - 6, 8, c + 2);
+    ctx.stroke();
+    // Barbed tail spade
+    ctx.fillStyle = '#f5c542';
+    ctx.beginPath();
+    ctx.moveTo(5, c + 2);
+    ctx.lineTo(13, c - 3.5);
+    ctx.lineTo(11, c + 2);
+    ctx.lineTo(13, c + 7.5);
+    ctx.closePath();
+    ctx.fill();
+    strokeInk(ctx, 1.2);
+
+    // Muscular scaled crimson body
+    ctx.fillStyle = '#b81f27';
+    ctx.beginPath();
+    ctx.ellipse(50, c, 20, 9.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.8);
+
+    // Golden spine ridges along back
+    ctx.fillStyle = '#f5c542';
+    for (const sx of [36, 44, 52, 60]) {
+      ctx.beginPath();
+      ctx.moveTo(sx - 3, c);
+      ctx.lineTo(sx, c - 3);
+      ctx.lineTo(sx + 3, c);
+      ctx.lineTo(sx, c + 3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Glowing molten-orange jaws ready to breathe fire at right (x = 70..90)
+    const fireGlow = ctx.createRadialGradient(87, c, 1, 87, c, 7);
+    fireGlow.addColorStop(0, '#fff5a8');
+    fireGlow.addColorStop(0.55, '#ff7b14');
+    fireGlow.addColorStop(1, 'rgba(255, 80, 10, 0)');
+    ctx.fillStyle = fireGlow;
+    ctx.beginPath();
+    ctx.arc(87, c, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fierce elongated horned dragon head (x = 70..90)
+    ctx.fillStyle = '#c9222b';
+    ctx.beginPath();
+    ctx.moveTo(90, c);
+    ctx.lineTo(74, c - 7.5);
+    ctx.lineTo(68, c);
+    ctx.lineTo(74, c + 7.5);
+    ctx.closePath();
+    ctx.fill();
+    strokeInk(ctx, 1.6);
+
+    // Swept ivory horns & bright amber eyes
+    for (const side of [-1, 1] as const) {
+      ctx.fillStyle = '#f2e6c8';
+      ctx.beginPath();
+      ctx.moveTo(74, c + side * 5.5);
+      ctx.lineTo(63, c + side * 12);
+      ctx.lineTo(70, c + side * 4);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.2);
+
+      ctx.fillStyle = '#ffcc29';
+      ctx.beginPath();
+      ctx.arc(80, c + side * 3.2, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+function paintMedievalKnight(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+
+    // Flowing horse tail aft (x = 6..18)
+    ctx.strokeStyle = INK_OUTLINE;
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(18, c);
+    ctx.quadraticCurveTo(11, c - 3, 6, c + 1);
+    ctx.stroke();
+    ctx.strokeStyle = '#3d1e0d';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(18, c);
+    ctx.quadraticCurveTo(11, c - 3, 6, c + 1);
+    ctx.stroke();
+
+    // Warhorse body (rich chestnut coat + royal cobalt & gold barding)
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#4a2511';
+      ctx.beginPath();
+      ctx.ellipse(c, c, 17, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = '#7a3f1d';
+    ctx.beginPath();
+    ctx.ellipse(c, c, 17, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.6);
+
+    // Royal cobalt & gold caparison barding over horse flanks
+    roundedRectPath(ctx, c - 13, c - 8.5, 22, 17, 5);
+    ctx.fillStyle = '#1f4fb8';
     ctx.fill();
     strokeInk(ctx, 1.4);
+    ctx.strokeStyle = '#f2c138';
+    ctx.lineWidth = 1.6;
+    ctx.strokeRect(c - 11, c - 6.5, 18, 13);
+
+    // Armored warhorse head & gold chamfron facing +X
+    ctx.fillStyle = '#7a3f1d';
+    ctx.beginPath();
+    ctx.ellipse(c + 18, c, 6.5, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.5);
+    ctx.fillStyle = '#d6e0eb';
+    ctx.beginPath();
+    ctx.moveTo(c + 24, c);
+    ctx.lineTo(c + 16, c - 3);
+    ctx.lineTo(c + 16, c + 3);
+    ctx.closePath();
+    ctx.fill();
+    strokeInk(ctx, 1.2);
+
+    // Long gleaming steel jousting lance couched forward along +X (right side, y = c + 10)
+    drawGradBarrel(ctx, 22, c + 10, 56, 3.2, '#eef5fc', '#a8b6c7', '#4f5a66', 1.2);
+    ctx.fillStyle = '#f2c138';
+    ctx.beginPath();
+    ctx.moveTo(31, c + 6.5);
+    ctx.lineTo(36, c + 10);
+    ctx.lineTo(31, c + 13.5);
+    ctx.closePath();
+    ctx.fill();
+    strokeInk(ctx, 1.1);
+    ctx.fillStyle = '#f5f9ff';
+    ctx.beginPath();
+    ctx.moveTo(61, c + 10);
+    ctx.lineTo(54, c + 7.5);
+    ctx.lineTo(54, c + 12.5);
+    ctx.closePath();
+    ctx.fill();
+    strokeInk(ctx, 1.1);
+
+    // Kite shield (cobalt with gold cross) on left side (y = c - 11)
+    ctx.fillStyle = '#1f4fb8';
+    ctx.beginPath();
+    ctx.moveTo(c + 6, c - 15);
+    ctx.lineTo(c - 7, c - 13);
+    ctx.lineTo(c - 7, c - 8);
+    ctx.lineTo(c + 6, c - 6);
+    ctx.closePath();
+    ctx.fill();
+    strokeInk(ctx, 1.4);
+    ctx.strokeStyle = '#f2c138';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(c - 5, c - 10.5);
+    ctx.lineTo(c + 4, c - 10.5);
+    ctx.moveTo(c - 1, c - 14);
+    ctx.lineTo(c - 1, c - 7);
+    ctx.stroke();
+
+    // Knight in gleaming silver plate armor seated in saddle
+    ctx.fillStyle = '#b4c2d1';
+    ctx.beginPath();
+    ctx.ellipse(c - 1, c, 7.5, 9.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.6);
+
+    // Plumed silver great-helm
+    ctx.fillStyle = '#e2ebf5';
+    ctx.beginPath();
+    ctx.arc(c + 2, c, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.5);
+
+    // Cobalt & gold helmet plume trailing aft
+    ctx.fillStyle = '#2358c9';
+    ctx.beginPath();
+    ctx.ellipse(c - 4, c, 4.5, 2.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.1);
+    ctx.fillStyle = '#f2c138';
+    ctx.beginPath();
+    ctx.arc(c + 1, c, 2, 0, Math.PI * 2);
+    ctx.fill();
   });
 }
 
@@ -3086,6 +3891,9 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     if (theme === 'lawn') {
       result.moleMound = Texture.EMPTY;
     }
+    if (theme === 'medieval') {
+      result.knight = Texture.EMPTY;
+    }
     return result;
   }
 
@@ -3140,6 +3948,7 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     result.boost = track(paintMarsBoost());
   } else if (theme === 'medieval') {
     result.boost = track(paintMedievalBoost());
+    result.knight = track(paintMedievalKnight());
   } else if (theme === 'kitchen') {
     result.boost = track(paintKitchenBoost());
     result.base = track(paintKitchenCoreBase());

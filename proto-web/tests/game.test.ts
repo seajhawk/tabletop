@@ -1297,3 +1297,163 @@ describe('overtime (add more waves)', () => {
     expect(otEnemy.speedScale).toBeCloseTo(1 + 5 * 0.035, 8);
   });
 });
+
+describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
+  it('wallCells allow tower placement and grant +15% range (onWall === true)', () => {
+    const g = newGame(2);
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    expect(keepIdx).toBeGreaterThanOrEqual(0);
+    g.setMap(keepIdx);
+
+    expect(g.currentMap.wallCells?.length).toBe(12);
+    expect(g.tryPlace(0, 'pulse', 21, 5).ok).toBe(true);
+    expect(g.tryPlace(1, 'pulse', 12, 7).ok).toBe(true);
+
+    const wallTower = g.towers[0];
+    const groundTower = g.towers[1];
+    expect(wallTower.onWall).toBe(true);
+    expect(groundTower.onWall).toBe(false);
+    expect(g.towerStats(wallTower).range).toBeCloseTo(g.towerStats(groundTower).range * 1.15, 6);
+  });
+
+  it('fire-breathing dragon locks onto online tower, slows down, damages/disables HP, and tower can be repaired', () => {
+    const g = newGame(2);
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    g.setMap(keepIdx);
+
+    expect(g.tryPlace(0, 'pulse', 12, 7).ok).toBe(true);
+    const t = g.towers[0];
+    g.launchWave();
+    g.spawners = [];
+
+    const dragon = makeEnemy(g, 9601, 'phase', 10.5, 7.5, {
+      hp: 5000,
+      maxHp: 5000,
+      breathCooldown: 0.1,
+      breathT: 0,
+      breathTargetId: 0,
+    });
+    g.enemies = [dragon];
+    g.drainEvents();
+
+    run(g, 0.25);
+    expect(dragon.breathTargetId).toBe(t.id);
+    expect(dragon.breathT).toBeGreaterThan(0);
+    expect(t.hp).toBeLessThan(100);
+    expect(g.drainEvents()).toContain('dragon-breath');
+    const dragonSpd = Math.hypot(dragon.vx, dragon.vy);
+    expect(dragonSpd).toBeCloseTo(dragon.def.speed * 0.38, 3);
+
+    // Drain tower to 0 HP -> disabled, then repair with credits
+    t.hp = 5;
+    run(g, 0.35);
+    expect(t.hp).toBe(0);
+
+    const rep = g.repairTower(t.id);
+    expect(rep.ok).toBe(true);
+    expect(t.hp).toBe(t.maxHp);
+  });
+
+  it('knight stable deploys 1/3/5 knights at T0/T1/T2 on slow recharge (>= 7s) and knights clash with ground invaders', () => {
+    const g = newGame(2);
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    g.setMap(keepIdx);
+    g.credits[0] += 1000;
+
+    expect(g.tryPlace(0, 'swarm', 10, 8).ok).toBe(true);
+    const stable = g.towers[0];
+    g.launchWave();
+    g.spawners = [];
+
+    const cruiser = makeEnemy(g, 9701, 'cruiser', 12.5, 8.5, {
+      hp: 2000,
+      maxHp: 2000,
+      cx: 12,
+      cy: 8,
+      nx: 13,
+      ny: 8,
+      rem: 15,
+    });
+    g.enemies = [cruiser];
+    g.drainEvents();
+
+    // T0: deploys 1 Knight on 8.0s recharge, no missiles
+    run(g, 0.3);
+    expect(stable.stableMaxCd).toBeGreaterThanOrEqual(7);
+    expect(stable.cooldown).toBeGreaterThan(7);
+    expect(g.knights.filter(k => k.active && k.towerId === stable.id).length).toBe(1);
+    expect(g.projectiles.filter(p => p.active && p.kind === 'missile').length).toBe(0);
+    expect(g.drainEvents()).toContain('knight-charge');
+
+    // Knight marches and clashes with ground cruiser
+    run(g, 1.2);
+    expect(cruiser.hp).toBeLessThan(2000);
+    expect(g.drainEvents()).toContain('knight-clash');
+
+    // T1: deploys 3 Knights
+    expect(g.upgradeTower(stable.id).ok).toBe(true);
+    for (const k of g.knights) k.active = false;
+    stable.cooldown = 0.05;
+    run(g, 0.1);
+    expect(stable.stableMaxCd).toBe(7.5);
+    expect(g.knights.filter(k => k.active && k.towerId === stable.id).length).toBe(3);
+
+    // T2: deploys 5 Knights
+    expect(g.upgradeTower(stable.id).ok).toBe(true);
+    for (const k of g.knights) k.active = false;
+    stable.cooldown = 0.05;
+    run(g, 0.1);
+    expect(stable.stableMaxCd).toBe(7.0);
+    expect(g.knights.filter(k => k.active && k.towerId === stable.id).length).toBe(5);
+  });
+
+  it('max-power trebuchet (plasma T2) fires flaming projectile that spawns persistent FireZone damaging subsequent invaders', () => {
+    const g = newGame(2);
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    g.setMap(keepIdx);
+    g.credits[0] += 1000;
+
+    expect(g.tryPlace(0, 'plasma', 10, 8).ok).toBe(true);
+    const treb = g.towers[0];
+    expect(g.upgradeTower(treb.id).ok).toBe(true);
+    expect(g.upgradeTower(treb.id).ok).toBe(true);
+    expect(treb.tier).toBe(2);
+
+    g.launchWave();
+    g.spawners = [];
+    const target = makeEnemy(g, 9801, 'cruiser', 13.5, 8.5, {
+      hp: 2000,
+      maxHp: 2000,
+      cx: 13,
+      cy: 8,
+      nx: 14,
+      ny: 8,
+      rem: 15,
+    });
+    g.enemies = [target];
+
+    run(g, 0.35);
+    const flamingShot = g.projectiles.find(p => p.active && p.kind === 'plasma');
+    expect(flamingShot?.flaming).toBe(true);
+
+    // Advance until impact spawns FireZone
+    run(g, 1.0);
+    const zone = g.fireZones.find(fz => fz.active);
+    expect(zone).toBeDefined();
+
+    // Place a subsequent ground attacker walking across the FireZone
+    const follower = makeEnemy(g, 9802, 'scout', zone!.x, zone!.y, {
+      hp: 500,
+      maxHp: 500,
+      cx: Math.floor(zone!.x),
+      cy: Math.floor(zone!.y),
+      nx: Math.floor(zone!.x) + 1,
+      ny: Math.floor(zone!.y),
+      rem: 15,
+    });
+    g.enemies = [follower];
+    run(g, 0.5);
+    expect(follower.hp).toBeLessThan(500);
+    expect(follower.burnT).toBeGreaterThan(0);
+  });
+});

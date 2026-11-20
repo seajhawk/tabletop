@@ -1,6 +1,6 @@
 # Coordination handoff
 
-Updated: 2026-11-20 10:43 AM Pacific. Pass 12 complete: **"+ Add 5 More Waves?"** Overtime continuation on Victory with rapidly escalating exponential difficulty; pushed to `seajhawk/tabletop` and republished to `https://seajhawk.github.io/TTDefense/`.
+Updated: 2026-11-20 12:05 PM Pacific. Pass 13 complete: **Ironhold Keep Overhaul** (Fire-Breathing Dragons + Credit Repair, Keep Wall Mounts, Cleaned-up Goblin/Orc/Dragon Sprites, Knight Stable 1/3/5 Cavalry, and Max-Power Flaming Trebuchet Ground Fire); pushed to `seajhawk/tabletop` and republished to `https://seajhawk.github.io/TTDefense/`.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative 5-hour interval; rearmed
@@ -16,19 +16,20 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
 - **GitHub & Live Pages**:
   - Main repo: `https://github.com/seajhawk/tabletop` (`main`, Node 22 CI + Pages at `https://seajhawk.github.io/tabletop/`).
   - Shareable Pages site: **`https://seajhawk.github.io/TTDefense/`** (`seajhawk/TTDefense`, subpath-safe PWA/SW).
-- **Rebrand (`Galactic Defense`)**: Renamed product/title/packages/storage key/docs/Godot config/benchmark/repo description (preserving only external Codex heartbeat ID `continue-galactic-alliance`).
-- **9 Maps across 7 Themes** (`shared-data/maps.json`), **7 Adaptive Layouts** (vertical +90° phone court on `2P phone` & `1P phone`), **Configurable Waves** (`5 | 10 | 15 | 20 | 30`), **Mars Meteor Showers & Radial Credit Repair**, local best scores, offline PWA.
-- **Pass 12 — "+ Add 5 More Waves?" Overtime Continuation**:
-  - **Victory Card (`over === 'won'`)**: Added prominent gold-highlighted **`+ Add 5 More Waves?`** button above `▶ Play Again` and `Next Map ▸` (desktop `500×296`, phone `480×540` with all targets `>= 44 CSS px`; hidden and unclickable on defeat/stress).
-  - **State Preservation & Repeat Overtime**: Clicking `+ Add 5 More Waves?` (`game.addMoreWaves(5)`) keeps all towers, upgrades, credits, lives, and kills intact, pauses for a planning breather, appends 5 late-game waves (ending every +5 block on a Boss wave, tagged `OT` / `OT2`...), and allows chaining again if cleared.
-  - **Rapidly Escalating Overtime Difficulty**: Past the configured wave count (`overtimeStartWave`), enemy HP escalates exponentially at **`1.16^ot`** per overtime wave (vs `+5%/wave` linear base), speed increases **`+3.5%/wave`** (up to `+45%`), non-boss group counts grow **`1.20^batch`**, and spawn intervals tighten (`-10%/batch`, min `0.55×`).
+- **Rebrand (`Galactic Defense`)**, **9 Maps across 7 Themes**, **7 Adaptive Layouts** (vertical +90° phone court), **Configurable Waves (`5–30`) + Overtime (`+ Add 5 More Waves?`)**, **Mars Meteor Showers & Radial Credit Repair**, local best scores, offline PWA.
+- **Pass 13 — Ironhold Keep Medieval Overhaul**:
+  - **Fire-Breathing Dragons (`phase` on `medieval-frenzy`)**: Crimson & gold winged dragons lock onto online towers (`<= 2.8` cells), slow to `0.38×` speed while unleashing a roaring 3-layer flame cone (`1.35s`, `28 DPS`, `'dragon-breath'` SFX), damaging/disabling defenses until repaired with credits via the 4-button radial menu.
+  - **Keep Wall Mounts (`wallCells`)**: 12 highlighted stone battlement cells on `ironhold-keep` (`[21,5..6],[21,9..10],[22..25,5],[22..25,10]`, gold brackets + `WALL` tags) let players mount defenses directly on the castle ramparts for `+15%` range (`t.onWall`).
+  - **Upgraded Medieval Attacker Sprites**: Replaced green-blob silhouettes in `theaterSprites.ts` with detailed top-down armored Goblins (pointed ears, spears/daggers/bucklers), spiked-steel horned Orc Brutes, crystal-skull Orc Shamans, winged Fire Dragons, and Siege Troll King.
+  - **Knight Stable Defense (`swarm` on `medieval-frenzy`)**: Deploys friendly armored mounted Knights (`1` at Lv 1, `3` at Lv 2, `5` at Lv 3) on a slow recharge (`8.0s / 7.5s / 7.0s` + blue recharge bar) that gallop out to duel & stall ground invaders (`'knight-charge'` / `'knight-clash'` SFX; `AA` pill hidden on Stable card).
+  - **Max-Power Flaming Trebuchet (`plasma` Tier 2)**: Fires blazing pitch fireballs (`p.flaming`) that ignite a persistent `4.5s` `FireZone` (`radius 1.35`, `22 DPS` + burn) scorching subsequent attackers on the road.
 
 ## Verified (2026-11-20)
-- `node scripts/validate-data.mjs` -> PASS (5 turrets, 6 enemies, 9 maps, 11 waves).
+- `node scripts/validate-data.mjs` -> PASS (5 turrets, 6 enemies, 9 maps, 11 waves; `wallCells` validated).
 - `npm --prefix proto-web run typecheck` -> PASS (0 errors).
-- `npm --prefix proto-web test` -> PASS (**326/326** across 12 suites, incl. overtime guards, chaining, exponential HP/speed scaling, 3-button summary fit `>= 44 CSS px` on phone, and victory/defeat hit gating).
+- `npm --prefix proto-web test` -> PASS (**330/330** across 12 suites, incl. Keep wall range, Dragon breath/slow/repair, Stable 1/3/5 Knight deployment & combat, T2 Trebuchet FireZone, and 33 `SoundEvent`s).
 - Production builds (`/` and `VITE_BASE=/TTDefense/`) -> PASS (22 precached files).
-- Live Chromium `http://localhost:5173/` (`1280×800`) -> PASS (`0` console/page/network errors; cleared 5-wave Easy match -> inspected `EARTH IS SAFE` Victory card with `+ Add 5 More Waves?` -> clicked -> verified `+5 Overtime Waves! (W6–10)`, preserved towers/credits/lives, and launched `W6/10 • Combined Arms OT`). Archived in `.tasks/pass12-*.png`.
+- Live Chromium `http://localhost:5173/` (`1280×800`) -> PASS (`0` console/page/network errors; verified Keep `WALL` mounting, `Stable` dock card without `AA`, cleaned-up Goblin/Orc/Dragon art, Dragon roaring flame cones + radial `REPAIR`, mounted Knight cavalry squads, and max-power Trebuchet ground fire patches). Archived in `.tasks/pass13-*.png`.
 - Unverified: physical device multi-touch/DPI/thermal feel and native OS PWA installation.
 
 ## Runtime
@@ -36,5 +37,5 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
 - Live Pages: `https://seajhawk.github.io/TTDefense/` & `https://seajhawk.github.io/tabletop/`.
 
 ## Next
-1. Playtest Overtime (`+ Add 5 More Waves?`) and Mars Meteors at `http://localhost:5173/` or `https://seajhawk.github.io/TTDefense/` (tap **Settings → Update app** if already cached on phone).
+1. Playtest the upgraded **Ironhold Keep** locally (`http://localhost:5173/`) or live at `https://seajhawk.github.io/TTDefense/` (tap **Settings → Update app** if already cached on phone).
 2. Verify physical multi-touch, DPI comfort, and sustained-load perf on target hardware.

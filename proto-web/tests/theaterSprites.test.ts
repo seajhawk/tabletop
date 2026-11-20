@@ -62,6 +62,12 @@ describe('buildTheaterTextures', () => {
         expect(set.moleMound).toBeUndefined();
       }
 
+      if (theme === 'medieval') {
+        expect(set.knight).toBe(Texture.EMPTY);
+      } else {
+        expect(set.knight).toBeUndefined();
+      }
+
       expect(() => set.destroy()).not.toThrow();
     },
   );

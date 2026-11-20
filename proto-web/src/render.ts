@@ -268,6 +268,7 @@ export class Renderer {
   private milTowerLayer = new Container();
   private enemyShadowG = new Graphics();
   private enemyLayer = new Container();
+  private knightLayer = new Container();
   private onMapHudLayer = new Container();
   private fxGlow = new Graphics();
   private fx = new Graphics();
@@ -289,6 +290,7 @@ export class Renderer {
 
   private sprites: Sprite[] = [];
   private hpBars: Graphics[] = [];
+  private knightPool: { container: Container; sprite: Sprite; hpBar: Graphics }[] = [];
   private chipG = new Graphics();
   private textures = new Map<string, Texture>();
   private dockViews: DockView[] = [];
@@ -371,7 +373,7 @@ export class Renderer {
     this.boardRoot.addChild(
       this.bg, this.craterLayer, this.routeG, this.routePulseG, this.mineLayer,
       this.towerBaseG, this.towerHeadG, this.milTowerLayer,
-      this.enemyShadowG, this.enemyLayer, this.fxGlow, this.fx, this.stormG,
+      this.enemyShadowG, this.enemyLayer, this.knightLayer, this.fxGlow, this.fx, this.stormG,
     );
     this.world.addChild(
       this.stageBg, this.boardRoot, this.onMapHudLayer, this.ghostG,
@@ -802,6 +804,39 @@ export class Renderer {
       }
     }
 
+    // Keep Wall battlement mount markers (Medieval Ironhold Keep)
+    if (map.wallCells?.length) {
+      const wallCol = 0xf4c86a;
+      const wallG = new Graphics();
+      this.bg.addChild(wallG);
+      for (const [wx, wy] of map.wallCells) {
+        const x0 = wx * CELL, y0 = wy * CELL;
+        const x1 = x0 + CELL, y1 = y0 + CELL;
+        const pad = 3, arm = 6;
+        wallG
+          .moveTo(x0 + pad, y0 + pad + arm).lineTo(x0 + pad, y0 + pad).lineTo(x0 + pad + arm, y0 + pad)
+          .moveTo(x1 - pad - arm, y0 + pad).lineTo(x1 - pad, y0 + pad).lineTo(x1 - pad, y0 + pad + arm)
+          .moveTo(x1 - pad, y1 - pad - arm).lineTo(x1 - pad, y1 - pad).lineTo(x1 - pad - arm, y1 - pad)
+          .moveTo(x0 + pad + arm, y1 - pad).lineTo(x0 + pad, y1 - pad).lineTo(x0 + pad, y1 - pad - arm)
+          .stroke({ width: 1.6, color: wallCol, alpha: 0.55 });
+        if (wx === 21 && (wy === 5 || wy === 6 || wy === 9 || wy === 10)) {
+          const cx = x0 + CELL * 0.5, cy = y0 + CELL * 0.5;
+          const tag = mkText('WALL', 7, wallCol, { bold: true });
+          tag.anchor.set(0.5);
+          const pw = Math.max(26, Math.ceil(tag.width) + 7);
+          const pillG = new Graphics();
+          pillG.roundRect(-pw / 2, -4.5, pw, 9, 3)
+            .fill({ color: 0x0b0f14, alpha: 0.78 })
+            .stroke({ width: 0.8, color: wallCol, alpha: 0.65 });
+          const tagC = new Container();
+          tagC.addChild(pillG, tag);
+          tagC.rotation = rotated ? -Math.PI / 2 : 0;
+          tagC.position.set(cx + (rotated ? CELL * 0.24 + 5 : 0), cy + (rotated ? 0 : CELL * 0.24 + 5));
+          this.bg.addChild(tagC);
+        }
+      }
+    }
+
     // portals / beachheads + objective gates
     const por = new Graphics();
     this.bg.addChild(por);
@@ -1080,7 +1115,8 @@ export class Renderer {
         cost.anchor.set(0.5, 0); cost.position.set(r.w / 2, 68);
         sc.addChild(nm, cost);
 
-        if (def.targetsAir) {
+        const canHitAir = def.targetsAir && !(theme.id === 'medieval' && id === 'swarm');
+        if (canHitAir) {
           const badge = new Graphics();
           const airCol = hasSprites ? 0x8be0ae : C.cyan;
           badge.roundRect(r.w - 28, 4, 24, 13, 4).fill({ color: airCol, alpha: hasSprites ? 0.16 : 0.22 }).stroke({ width: 1, color: airCol, alpha: 0.75 });
@@ -1501,6 +1537,7 @@ export class Renderer {
     this.syncRoute();
     this.animateRoute(dtSec);
     this.syncEnemies();
+    this.syncKnights();
     this.drawFx(dtSec);
     this.updateStormOverlay(dtSec);
     this.drawGhosts(dtSec);
@@ -1601,6 +1638,9 @@ export class Renderer {
             : theme.id === 'mars' ? 0xffa64d
             : 0x62f2ff;
           bg.circle(0, 0, CELL * 0.45).stroke({ width: 1.8, color: boostCol, alpha: 0.82 });
+        }
+        if (t.onWall) {
+          bg.circle(0, 0, CELL * 0.49).stroke({ width: 1.7, color: 0xf4c86a, alpha: 0.78 });
         }
         bg.rect(-10, CELL * 0.36, 12, 3).fill(PLAYER_COLORS[t.owner] ?? C.cyan);
         bg.rect(3, CELL * 0.36, 7, 3).fill(this.turretColor(t.def.id));
@@ -1763,6 +1803,54 @@ export class Renderer {
     }
   }
 
+  private syncKnights(): void {
+    const sprites = this.activeSprites(this.theme().id);
+    const knightTex = sprites?.knight;
+    const knights = this.game.knights;
+    if (!knightTex) {
+      for (const item of this.knightPool) {
+        if (item.container.visible) item.container.visible = false;
+      }
+      return;
+    }
+    const rotated = !!this.getLayout().boardRotated;
+    let idx = 0;
+    for (const k of knights) {
+      if (!k.active) continue;
+      if (idx >= this.knightPool.length) {
+        const container = new Container();
+        const sprite = new Sprite(knightTex);
+        sprite.anchor.set(0.5);
+        const hpBar = new Graphics();
+        container.addChild(sprite, hpBar);
+        this.knightLayer.addChild(container);
+        this.knightPool.push({ container, sprite, hpBar });
+      }
+      const item = this.knightPool[idx++];
+      item.container.visible = true;
+      item.container.position.set(k.x * CELL, k.y * CELL);
+      if (item.sprite.texture !== knightTex) item.sprite.texture = knightTex;
+      const sz = k.tier >= 2 ? 32 : 28;
+      item.sprite.width = sz;
+      item.sprite.height = sz;
+      const speedSq = k.vx * k.vx + k.vy * k.vy;
+      item.sprite.rotation = speedSq > 1e-4 ? Math.atan2(k.vy, k.vx) : Math.PI;
+
+      const hb = item.hpBar;
+      hb.rotation = rotated ? -Math.PI / 2 : 0;
+      const bw = 20, bh = 3;
+      const bx = -bw / 2, by = -18;
+      const frac = Math.max(0, Math.min(1, k.hp / Math.max(1, k.maxHp)));
+      hb.clear();
+      hb.rect(bx, by, bw, bh).fill({ color: 0x0a1420, alpha: 0.78 });
+      if (frac > 0) hb.rect(bx, by, bw * frac, bh).fill({ color: 0x38bdf8 });
+      hb.rect(bx, by, bw, bh).stroke({ width: 0.9, color: 0xffd166, alpha: 0.9 });
+    }
+    for (let i = idx; i < this.knightPool.length; i++) {
+      if (this.knightPool[i].container.visible) this.knightPool[i].container.visible = false;
+    }
+  }
+
   private drawFx(dt: number): void {
     const g = this.fx.clear();
     const glow = this.fxGlow.clear();
@@ -1789,6 +1877,49 @@ export class Renderer {
       const mx = m.x * CELL, my = m.y * CELL;
       const blink = Math.sin(gm.time * 8 + m.x * 3 + m.y * 5) > 0;
       g.circle(mx, my, blink ? 2.8 : 1.7).fill({ color: blink ? 0xff4242 : 0x991f1f, alpha: blink ? 0.95 : 0.72 });
+    }
+
+    // Medieval Knight Stable slow-recharge bar
+    if (themeId === 'medieval') {
+      for (const t of gm.towers) {
+        if (t.def.id === 'swarm' && t.hp > 0 && t.stableMaxCd && t.stableMaxCd > 0) {
+          const fill = Math.max(0, Math.min(1, 1 - t.cooldown / t.stableMaxCd));
+          const bx = (t.x + 0.5) * CELL - 11;
+          const by = t.y * CELL + 2;
+          g.rect(bx, by, 22, 3).fill({ color: 0x0b1526, alpha: 0.78 });
+          if (fill > 0) g.rect(bx, by, 22 * fill, 3).fill({ color: 0x3b82f6, alpha: 0.95 });
+          g.rect(bx, by, 22, 3).stroke({ width: 0.7, color: 0x93c5fd, alpha: 0.65 });
+        }
+      }
+    }
+
+    // Persistent FireZone ground flames (max-power Flaming Trebuchet)
+    for (const fz of gm.fireZones) {
+      if (!fz.active) continue;
+      const fade = Math.max(0, Math.min(1, fz.ttl / 1.0));
+      const fx = fz.x * CELL, fy = fz.y * CELL;
+      const rad = fz.radius * CELL;
+      glow.circle(fx, fy, rad).fill({ color: 0xff4518, alpha: 0.22 * fade });
+      g.circle(fx, fy, rad).stroke({ width: 1.4, color: 0xff9f43, alpha: 0.5 * fade });
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2 + Math.sin(gm.time * 4 + i) * 0.12;
+        const wave = Math.sin(gm.time * 13 + i * 1.9);
+        const dist = rad * (0.35 + (i % 3) * 0.22);
+        const tx = fx + Math.cos(ang) * dist;
+        const ty = fy + Math.sin(ang) * dist;
+        const h = (7 + wave * 3) * fade;
+        const w = (3.5 + (i % 2) * 1.2) * fade;
+        const sway = wave * 2;
+        g.poly([tx - w, ty, tx + sway, ty - h, tx + w, ty]).fill({ color: 0xff4d1a, alpha: 0.85 * fade });
+        g.poly([tx - w * 0.65, ty, tx + sway * 0.8, ty - h * 0.7, tx + w * 0.65, ty]).fill({ color: 0xffaa2b, alpha: 0.9 * fade });
+        g.poly([tx - w * 0.35, ty, tx + sway * 0.5, ty - h * 0.42, tx + w * 0.35, ty]).fill({ color: 0xfff3b0, alpha: 0.92 * fade });
+      }
+      for (let i = 0; i < 4; i++) {
+        const spPhase = (gm.time * 1.8 + i * 0.27) % 1;
+        const sx = fx + Math.cos(i * 2.1 + gm.time * 2) * rad * 0.65;
+        const sy = fy - spPhase * 16;
+        glow.circle(sx, sy, 2.2 * (1 - spPhase)).fill({ color: 0xffc145, alpha: (1 - spPhase) * 0.85 * fade });
+      }
     }
 
     for (const b of gm.beams) {
@@ -1953,7 +2084,16 @@ export class Renderer {
     for (const p of gm.projectiles) {
       if (!p.active) continue;
       const px = p.x * CELL, py = p.y * CELL;
-      if (themeId === 'military' || themeId === 'naval') {
+      if (p.flaming) {
+        const spd = Math.hypot(p.vx, p.vy) || 1;
+        const ux = p.vx / spd, uy = p.vy / spd;
+        glow.circle(px, py, 11).fill({ color: 0xff5a18, alpha: 0.65 });
+        glow.moveTo(px - ux * 16, py - uy * 16).lineTo(px, py).stroke({ width: 7, color: 0xff6b1a, alpha: 0.6 });
+        g.moveTo(px - ux * 11, py - uy * 11).lineTo(px, py).stroke({ width: 3.5, color: 0xffcc4d, alpha: 0.92 });
+        g.circle(px, py, 5.2).fill({ color: 0xff9f1c, alpha: 0.95 });
+        g.circle(px, py, 3.6).fill({ color: 0xfff3b0, alpha: 0.95 });
+        g.circle(px, py, 2.1).fill({ color: 0x3b2314, alpha: 0.92 });
+      } else if (themeId === 'military' || themeId === 'naval') {
         if (p.kind === 'missile') {
           const sx = (p.x - p.vx * 0.085) * CELL;
           const sy = (p.y - p.vy * 0.085) * CELL;
@@ -2044,6 +2184,45 @@ export class Renderer {
     for (const e of gm.enemies) {
       if (e.dead) continue;
       const ex = (e.x + e.ox) * CELL, ey = (e.y + e.oy) * CELL;
+      if ((e.breathT ?? 0) > 0) {
+        const tx = (e.breathTx ?? e.x) * CELL;
+        const ty = (e.breathTy ?? e.y) * CELL;
+        const dx = tx - ex, dy = ty - ey;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const sx = ex + ux * Math.min(10, len * 0.35);
+        const sy = ey + uy * Math.min(10, len * 0.35);
+        const pxv = -uy, pyv = ux;
+        const flick = 0.5 + 0.5 * Math.sin(gm.time * 42 + e.id * 3.1);
+        const w0 = 3.5, w1 = 15 + flick * 3;
+        glow.poly([
+          sx + pxv * w0, sy + pyv * w0,
+          tx + pxv * w1, ty + pyv * w1,
+          tx - pxv * w1, ty - pyv * w1,
+          sx - pxv * w0, sy - pyv * w0,
+        ]).fill({ color: 0xff3b18, alpha: 0.42 + flick * 0.16 });
+        glow.poly([
+          sx + pxv * (w0 * 0.65), sy + pyv * (w0 * 0.65),
+          tx + pxv * (w1 * 0.65), ty + pyv * (w1 * 0.65),
+          tx - pxv * (w1 * 0.65), ty - pyv * (w1 * 0.65),
+          sx - pxv * (w0 * 0.65), sy - pyv * (w0 * 0.65),
+        ]).fill({ color: 0xff9f1c, alpha: 0.65 });
+        g.poly([
+          sx + pxv * (w0 * 0.35), sy + pyv * (w0 * 0.35),
+          tx + pxv * (w1 * 0.35), ty + pyv * (w1 * 0.35),
+          tx - pxv * (w1 * 0.35), ty - pyv * (w1 * 0.35),
+          sx - pxv * (w0 * 0.35), sy - pyv * (w0 * 0.35),
+        ]).fill({ color: 0xfff3b0, alpha: 0.85 });
+        glow.circle(tx, ty, 13 + flick * 4).fill({ color: 0xff5a1f, alpha: 0.42 });
+        g.circle(tx, ty, 6.5 + flick * 2).fill({ color: 0xfff3b0, alpha: 0.72 });
+        for (let i = 0; i < 5; i++) {
+          const t = 0.22 + i * 0.19;
+          const jit = Math.sin(gm.time * 28 + i * 2.3 + e.id) * (w0 + (w1 - w0) * t) * 0.75;
+          const mx = sx + (tx - sx) * t + pxv * jit;
+          const my = sy + (ty - sy) * t + pyv * jit;
+          g.circle(mx, my, 1.5 + (i % 2) * 0.6).fill({ color: i % 2 === 0 ? 0xffd166 : 0xff5a1f, alpha: 0.85 });
+        }
+      }
       if (e.submerged) {
         if (e.revealedT <= 0) {
           const pulse = 13 + Math.sin(gm.time * 5 + e.id) * 2;

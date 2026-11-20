@@ -170,6 +170,18 @@ for (const map of maps) {
       boostSet.add(k);
     }
   }
+  if (map.wallCells !== undefined) {
+    assert.ok(Array.isArray(map.wallCells), `${map.id}: wallCells must be an array`);
+    const wallSet = new Set();
+    for (const c of map.wallCells) {
+      assert.ok(c.length === 2 && c.every(Number.isInteger) && c[0] >= 0 && c[0] < w && c[1] >= 0 && c[1] < h, `${map.id}: invalid wallCell`);
+      const k = key(c);
+      assert.ok(!wallSet.has(k), `${map.id}: duplicate wallCell`);
+      assert.ok(!blocked.has(k), `${map.id}: wallCell on asteroid`);
+      assert.ok(![...spawns, ...exits].some((p) => key(p) === k), `${map.id}: wallCell on portal`);
+      wallSet.add(k);
+    }
+  }
 
   checkReachable(w, h, spawns, exits, blocked, `${map.id} (base)`);
 

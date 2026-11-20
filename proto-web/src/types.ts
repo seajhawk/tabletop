@@ -41,6 +41,9 @@ export type SoundEvent =
   | 'mole-flush'
   | 'meteor-warn'
   | 'meteor-impact'
+  | 'dragon-breath'
+  | 'knight-charge'
+  | 'knight-clash'
   | 'kill'
   | 'boss-phase'
   | 'leak'
@@ -138,6 +141,7 @@ export interface MapDef {
   exits: [number, number][];
   asteroids: [number, number][];
   boostCells?: [number, number][];
+  wallCells?: [number, number][];
   startingCredits: number;
   startingLives: number;
   /** Canonical stress fixture: exactly 20 [x, y, turretId]; owner = index % players. */

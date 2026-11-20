@@ -175,27 +175,38 @@ describe('theater themes', () => {
 
     expect(med.turrets.pulse.shortName).toBe('Archers');
     expect(med.turrets.plasma.shortName).toBe('Trebuchet');
+    expect(med.turrets.plasma.upgrades).toEqual(['Heavy Stones', 'Flaming Pitch']);
     expect(med.turrets.stasis.shortName).toBe('Frost Mage');
     expect(med.turrets.railgun.shortName).toBe('Ballista');
-    expect(med.turrets.swarm.shortName).toBe('Arcane');
+    expect(med.turrets.swarm.shortName).toBe('Stable');
+    expect(med.turrets.swarm.fullName).toBe('Knight Stable');
+    expect(med.turrets.swarm.upgrades).toEqual(['3 Knights', '5 Royal Knights']);
+    expect(med.turrets.swarm.color).toBe(0x60a5fa);
 
     expect(med.roleTags).toEqual({
       pulse: 'ARCH',
-      plasma: 'CAT',
+      plasma: 'SIEGE',
       stasis: 'FROST',
       railgun: 'BOLT',
-      swarm: 'MAGIC',
+      swarm: 'KNIGHT',
     });
 
     expect(med.enemies.scout.name).toBe('Goblin Raider');
     expect(med.enemies.swarmer.name).toBe('Goblin Mob');
     expect(med.enemies.cruiser.name).toBe('Orc Brute');
     expect(med.enemies.frigate.name).toBe('Orc Shaman');
-    expect(med.enemies.phase.name).toBe('Wyvern');
+    expect(med.enemies.phase.name).toBe('Fire Dragon');
+    expect(med.enemies.phase.color).toBe(0xe63946);
     expect(med.enemies.dreadnought.name).toBe('Siege Troll King');
 
     expect(med.waveNames[1]).toBe('Goblin Scouting');
+    expect(med.waveNames[5]).toBe('Dragon Raid');
     expect(med.waveNames[10]).toBe('Siege Troll King');
+    expect(med.helpText).toContain('Keep Walls');
+    expect(med.helpText).toContain('Fire Dragon');
+    expect(med.helpText).toContain('Knight Stable');
+    expect(med.helpText).toContain('Flaming Trebuchet');
+    expect(med.helpText).toContain('Repair');
   });
 
   it('defines Pantry/Fridge labels, defenses, boost label, and wave progression in kitchen theme', () => {

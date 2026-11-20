@@ -281,30 +281,32 @@ const MEDIEVAL_THEME: TheaterTheme = {
   defeatTitle: 'CASTLE FALLEN',
   helpText:
     'Deploy kingdom defenses from YOUR dock to protect Ironhold Keep. ' +
-    'Tap unit for radial Upgrade / Priority / Sell. ' +
-    'Drag or flick ◆ credits to share with teammates. Start paused: plan, then Launch wave.',
+    'Mount defenses on Keep Walls (+15% range). ' +
+    'Knight Stables muster knights (1/3/5 knights) to charge attackers, while max-level Flaming Trebuchets scorch the earth. ' +
+    'Watch for flying Fire Dragons scorching defenses — tap a damaged turret to Repair with credits! ' +
+    'Start paused: plan, then Launch wave.',
   obstacleLabel: 'Dark Forest',
   boostLabel: 'Arcane Rune',
   roleTags: {
     pulse: 'ARCH',
-    plasma: 'CAT',
+    plasma: 'SIEGE',
     stasis: 'FROST',
     railgun: 'BOLT',
-    swarm: 'MAGIC',
+    swarm: 'KNIGHT',
   },
   turrets: {
     pulse: { shortName: 'Archers', fullName: 'Archer Tower', upgrades: ['Twin Volleys', 'Elven Longbows'], color: 0xe8c866 },
-    plasma: { shortName: 'Trebuchet', fullName: 'Flaming Trebuchet', upgrades: ['Heavy Stones', 'Greek Fire'], color: 0xf0853e },
+    plasma: { shortName: 'Trebuchet', fullName: 'Flaming Trebuchet', upgrades: ['Heavy Stones', 'Flaming Pitch'], color: 0xf0853e },
     stasis: { shortName: 'Frost Mage', fullName: 'Frost Mage Spire', upgrades: ['Blizzard', 'Dispel Ward'], color: 0x6ce3ff },
     railgun: { shortName: 'Ballista', fullName: 'Heavy Ballista', upgrades: ['Windlass', 'Dragon-Piercer'], color: 0xd9be8a },
-    swarm: { shortName: 'Arcane', fullName: 'Arcane Spire', upgrades: ['Star Volley', 'Meteor Sparks'], color: 0xc784ff },
+    swarm: { shortName: 'Stable', fullName: 'Knight Stable', upgrades: ['3 Knights', '5 Royal Knights'], color: 0x60a5fa },
   },
   enemies: {
     scout: { name: 'Goblin Raider', color: 0x6ca34e },
     swarmer: { name: 'Goblin Mob', color: 0x82b846 },
     cruiser: { name: 'Orc Brute', color: 0x476b3c },
     frigate: { name: 'Orc Shaman', color: 0x7a4fa3 },
-    phase: { name: 'Wyvern', color: 0x9e3838 },
+    phase: { name: 'Fire Dragon', color: 0xe63946 },
     dreadnought: { name: 'Siege Troll King', color: 0x8a2c2c },
   },
   waveNames: {
@@ -312,7 +314,7 @@ const MEDIEVAL_THEME: TheaterTheme = {
     2: 'Goblin Horde',
     3: 'Orc Warband',
     4: 'Dark Shamans',
-    5: 'Wyvern Swoop',
+    5: 'Dragon Raid',
     6: 'Iron & Magic',
     7: 'Green Tide',
     8: 'Berserker Vanguard',

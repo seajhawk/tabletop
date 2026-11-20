@@ -43,8 +43,10 @@ export interface Tower {
   aimAngle: number;
   kills: number;
   boosted: boolean;
+  onWall: boolean;
   hp: number;
   maxHp: number;
+  stableMaxCd?: number;
 }
 
 export interface Meteor {
@@ -110,6 +112,11 @@ export interface Enemy {
   enraged: boolean;
   isSplitChild: boolean;
   speedScale?: number;
+  breathCooldown?: number;
+  breathT?: number;
+  breathTargetId?: number;
+  breathTx?: number;
+  breathTy?: number;
 }
 
 export interface SeaMine {
@@ -145,6 +152,37 @@ export interface Projectile {
   burnDuration: number;
   shieldMultiplier: number;
   towerId?: number;
+  flaming?: boolean;
+}
+
+export interface Knight {
+  active: boolean;
+  id: number;
+  owner: number;
+  towerId: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  hp: number;
+  maxHp: number;
+  damage: number;
+  attackCd: number;
+  speed: number;
+  tier: number;
+  life: number;
+}
+
+export interface FireZone {
+  active: boolean;
+  x: number;
+  y: number;
+  radius: number;
+  dps: number;
+  ttl: number;
+  max: number;
+  owner: number;
+  towerId: number;
 }
 
 export interface Beam {
@@ -244,12 +282,15 @@ export class Game {
   reserved: Uint8Array;
   blocked: Uint8Array;
   boostMask: Uint8Array;
+  wallMask: Uint8Array;
   towerAt: (Tower | null)[];
   towers: Tower[] = [];
   enemies: Enemy[] = [];
   spawners: Spawner[] = [];
   projectiles: Projectile[] = [];
   mines: SeaMine[] = [];
+  knights: Knight[] = [];
+  fireZones: FireZone[] = [];
   beams: Beam[] = [];
   rings: Ring[] = [];
   particles: Particle[] = [];
@@ -277,6 +318,7 @@ export class Game {
   stormTimer = 22;
   meteorTimer = 3.2;
   private nextMeteorId = 1;
+  private nextKnightId = 1;
   private recentMeteors: { x: number; y: number }[] = [];
   rushActive = false;
   rushTimer = 0;
@@ -303,6 +345,7 @@ export class Game {
     this.reserved = new Uint8Array(n);
     this.blocked = new Uint8Array(n);
     this.boostMask = new Uint8Array(n);
+    this.wallMask = new Uint8Array(n);
     this.towerAt = new Array(n).fill(null);
     this.dist = new Int16Array(n);
     this.queue = new Int32Array(n);
@@ -452,6 +495,7 @@ export class Game {
       this.reserved = new Uint8Array(n);
       this.blocked = new Uint8Array(n);
       this.boostMask = new Uint8Array(n);
+      this.wallMask = new Uint8Array(n);
       this.towerAt = new Array(n).fill(null);
       this.dist = new Int16Array(n);
       this.queue = new Int32Array(n);
@@ -460,6 +504,7 @@ export class Game {
       this.reserved.fill(0);
       this.blocked.fill(0);
       this.boostMask.fill(0);
+      this.wallMask.fill(0);
       this.towerAt.fill(null);
     }
 
@@ -473,16 +518,22 @@ export class Game {
     for (const [x, y] of m.boostCells ?? []) {
       if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.boostMask[this.idx(x, y)] = 1;
     }
+    for (const [x, y] of m.wallCells ?? []) {
+      if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.wallMask[this.idx(x, y)] = 1;
+    }
 
     this.towers = [];
     this.enemies = [];
     this.spawners = [];
     for (const p of this.projectiles) p.active = false;
     for (const mine of this.mines) mine.active = false;
+    for (const k of this.knights) k.active = false;
+    for (const fz of this.fireZones) fz.active = false;
     for (const b of this.beams) b.active = false;
     for (const r of this.rings) r.active = false;
     for (const pt of this.particles) pt.active = false;
     for (const pop of this.popups) pop.active = false;
+    this.nextKnightId = 1;
     this.meteors = [];
     this.recentMeteors = [];
     this.stormActive = false;
@@ -606,6 +657,7 @@ export class Game {
       aimAngle: 0,
       kills: 0,
       boosted: this.boostMask[i] === 1,
+      onWall: this.wallMask[i] === 1,
       hp: 100,
       maxHp: 100,
     };
@@ -666,6 +718,9 @@ export class Game {
         stats.burnDps = Math.max(stats.burnDps, 10);
         stats.burnDuration = Math.max(stats.burnDuration, 2.5);
       }
+    }
+    if (t.onWall) {
+      stats.range *= 1.15;
     }
     if (this.currentMap.mechanic === 'mars-storms' && this.stormActive && !t.boosted && t.tier < 2) {
       stats.range *= 0.80;
@@ -962,6 +1017,8 @@ export class Game {
     this.fireTowers(dt);
     this.updateProjectiles(dt);
     this.updateMines(dt);
+    this.updateKnights(dt);
+    this.updateFireZones(dt);
     this.updateMeteors(dt);
     this.updateEffects(dt);
     this.compactEnemies();
@@ -1038,6 +1095,11 @@ export class Game {
       enraged: false,
       isSplitChild: false,
       speedScale: spdScale,
+      breathCooldown: 1.2,
+      breathT: 0,
+      breathTargetId: 0,
+      breathTx: 0,
+      breathTy: 0,
     };
     if (def.flying) this.pickNextFlying(e);
     else this.pickNext(e);
@@ -1115,13 +1177,62 @@ export class Game {
 
       if (e.revealedT > 0) e.revealedT = Math.max(0, e.revealedT - dt);
 
+      if (this.currentMap.mechanic === 'medieval-frenzy' && e.def.flying && e.def.id === 'phase') {
+        const curBreathT = e.breathT ?? 0;
+        if (curBreathT > 0) {
+          const target = this.towerById(e.breathTargetId ?? 0);
+          if (!target || target.hp <= 0 || Math.hypot(target.x + 0.5 - e.x, target.y + 0.5 - e.y) > 3.4) {
+            e.breathT = 0;
+            e.breathTargetId = 0;
+          } else {
+            e.breathT = Math.max(0, curBreathT - dt);
+            e.breathTx = target.x + 0.5;
+            e.breathTy = target.y + 0.5;
+            const wasAlive = target.hp > 0;
+            target.hp = Math.max(0, target.hp - 28 * dt);
+            if (wasAlive && target.hp <= 0) {
+              this.towerVersion++;
+              this.spawnPopup(target.x + 0.5, target.y + 0.2, 'OFFLINE!', 0xff4d5a);
+            } else if (Math.floor(curBreathT * 6) !== Math.floor(e.breathT * 6)) {
+              this.towerVersion++;
+              this.spawnParticles(target.x + 0.5, target.y + 0.5, 1, 0xff6b2b, 1.8, 2.0);
+            }
+          }
+        } else {
+          e.breathCooldown = (e.breathCooldown ?? 1.2) - dt;
+          if (e.breathCooldown <= 0) {
+            let best: Tower | null = null;
+            let bestD = 2.8;
+            for (const t of this.towers) {
+              if (t.hp <= 0) continue;
+              const d = Math.hypot(t.x + 0.5 - e.x, t.y + 0.5 - e.y);
+              if (d <= bestD) {
+                bestD = d;
+                best = t;
+              }
+            }
+            if (best) {
+              e.breathTargetId = best.id;
+              e.breathTx = best.x + 0.5;
+              e.breathTy = best.y + 0.5;
+              e.breathT = 1.35;
+              e.breathCooldown = 3.6;
+              this.emitSound('dragon-breath');
+              this.spawnParticles(best.x + 0.5, best.y + 0.5, 6, 0xff6b2b, 2.5, 2.6);
+              this.spawnPopup(e.x, e.y - 0.3, 'DRAGON FIRE!', 0xff6b2b, 0.9, -0.8);
+            }
+          }
+        }
+      }
+
       const speedMult = (this.mode === 'normal' ? DIFFICULTIES[this.difficulty].speedMultiplier : 1) * (e.speedScale ?? 1);
       const enragedMult = e.enraged ? 1.35 : 1;
       const rushMult =
         this.currentMap.mechanic === 'kitchen-rush' && this.rushActive
           ? (e.slowT > 0 ? 0.80 : 1.30)
           : 1;
-      const spd = e.def.speed * speedMult * enragedMult * rushMult * (e.slowT > 0 ? e.slowF : 1);
+      const dragonBreathMult = (e.breathT ?? 0) > 0 ? 0.38 : 1;
+      const spd = e.def.speed * speedMult * enragedMult * rushMult * dragonBreathMult * (e.slowT > 0 ? e.slowF : 1);
       if (e.slowT > 0) {
         e.slowT -= dt;
         if (e.slowT <= 0) { e.slowT = 0; e.slowF = 1; }
@@ -1402,8 +1513,66 @@ export class Game {
   private fireTowers(dt: number): void {
     const isNaval = this.currentMap.mechanic === 'naval-subs-mines';
     const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
+    const isMedieval = this.currentMap.mechanic === 'medieval-frenzy';
     for (const t of this.towers) {
       if (t.hp <= 0) continue;
+      if (isMedieval && t.def.id === 'swarm') {
+        const baseCd = t.tier === 0 ? 8.0 : t.tier === 1 ? 7.5 : 7.0;
+        const cd = t.boosted ? baseCd / 1.25 : baseCd;
+        t.stableMaxCd = cd;
+        t.cooldown -= dt;
+        if (t.cooldown > 0) continue;
+
+        const knightCount = t.tier === 0 ? 1 : t.tier === 1 ? 3 : 5;
+        let owned = 0;
+        for (const k of this.knights) {
+          if (k.active && k.towerId === t.id) owned++;
+        }
+        const tx = t.x + 0.5;
+        const ty = t.y + 0.5;
+        let hasGroundEnemy = false;
+        for (const e of this.enemies) {
+          if (e.dead || e.def.flying || e.hp <= 0) continue;
+          if (this.launched || Math.hypot(e.x - tx, e.y - ty) <= 9.5) {
+            hasGroundEnemy = true;
+            break;
+          }
+        }
+        if (hasGroundEnemy && owned < knightCount * 2) {
+          const maxHp = 75 + t.tier * 25;
+          const damage = 28 + t.tier * 12;
+          for (let i = 0; i < knightCount; i++) {
+            const ox = knightCount === 1 ? 0 : ((i - (knightCount - 1) / 2) / ((knightCount - 1) / 2)) * 0.25;
+            const oy = knightCount === 1 ? 0 : (i % 2 === 0 ? -0.15 : 0.15);
+            const k = acquire<Knight>(this.knights, () => ({
+              active: false, id: 0, owner: 0, towerId: 0, x: 0, y: 0, vx: 0, vy: 0,
+              hp: 0, maxHp: 0, damage: 0, attackCd: 0, speed: 0, tier: 0, life: 0,
+            }));
+            Object.assign(k, {
+              active: true,
+              id: this.nextKnightId++,
+              owner: t.owner,
+              towerId: t.id,
+              x: tx + ox,
+              y: ty + oy,
+              vx: 0,
+              vy: 0,
+              hp: maxHp,
+              maxHp,
+              damage,
+              attackCd: 0,
+              speed: 3.2,
+              tier: t.tier,
+              life: 16,
+            });
+          }
+          t.cooldown = cd;
+          this.emitSound('knight-charge');
+        } else {
+          t.cooldown = 0;
+        }
+        continue;
+      }
       t.cooldown -= dt;
       if (t.cooldown > 0) continue;
 
@@ -1615,6 +1784,7 @@ export class Game {
         burnDuration: s.burnDuration,
         shieldMultiplier: s.shieldMultiplier,
         towerId: t.id,
+        flaming: isMedieval && t.tier >= 2,
       });
     }
   }
@@ -1726,6 +1896,22 @@ export class Game {
       Object.assign(ring, { active: true, x: p.tx, y: p.ty, r: p.splash, ttl: 0.25, max: 0.25, color: p.color });
       this.spawnParticles(p.tx, p.ty, 5, p.color, 2.2, 2.4);
       this.emitSound('impact-plasma');
+      if (p.flaming) {
+        const fz = acquire<FireZone>(this.fireZones, () => ({
+          active: false, x: 0, y: 0, radius: 0, dps: 0, ttl: 0, max: 0, owner: 0, towerId: 0,
+        }));
+        Object.assign(fz, {
+          active: true,
+          x: p.tx,
+          y: p.ty,
+          radius: 1.35,
+          dps: 22,
+          ttl: 4.5,
+          max: 4.5,
+          owner: p.owner,
+          towerId: p.towerId ?? 0,
+        });
+      }
     }
   }
 
@@ -1980,6 +2166,99 @@ export class Game {
             burnDps: 0,
             burnDuration: 0,
           });
+        }
+      }
+    }
+  }
+
+  private updateKnights(dt: number): void {
+    for (const k of this.knights) {
+      if (!k.active) continue;
+      k.life -= dt;
+      if (k.life <= 0 || k.hp <= 0) {
+        k.active = false;
+        continue;
+      }
+
+      let enemy: Enemy | null = null;
+      let bestD2 = Infinity;
+      for (const e of this.enemies) {
+        if (e.dead || e.def.flying || e.hp <= 0) continue;
+        const dx = e.x - k.x;
+        const dy = e.y - k.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestD2) {
+          bestD2 = d2;
+          enemy = e;
+        }
+      }
+
+      if (!enemy) {
+        k.vx = 0;
+        k.vy = 0;
+        continue;
+      }
+
+      const dx = enemy.x - k.x;
+      const dy = enemy.y - k.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 0.58) {
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const move = Math.min(k.speed * dt, dist - 0.58);
+        k.vx = ux * k.speed;
+        k.vy = uy * k.speed;
+        k.x += ux * move;
+        k.y += uy * move;
+      } else if (dist > 1e-6) {
+        k.vx = (dx / dist) * 0.01;
+        k.vy = (dy / dist) * 0.01;
+      }
+
+      k.attackCd = Math.max(0, k.attackCd - dt);
+      if (dist <= 0.68 && k.attackCd <= 0) {
+        const tower = this.towerById(k.towerId) ?? undefined;
+        this.damageEnemy(enemy, k.damage, k.owner, {
+          armorPierce: k.tier >= 2,
+          shieldMultiplier: 1,
+          shieldStrip: 0,
+          burnDps: 0,
+          burnDuration: 0,
+        }, tower);
+        k.attackCd = 0.65;
+        this.emitSound('knight-clash');
+        this.spawnParticles(enemy.x, enemy.y, 4, 0xe2e8f0, 2.2, 2.0);
+        enemy.slowT = Math.max(enemy.slowT, 0.45);
+        enemy.slowF = Math.min(enemy.slowF, 0.45);
+        const counterDmg = enemy.def.boss ? 28 : enemy.def.id === 'cruiser' ? 18 : 11;
+        k.hp = Math.max(0, k.hp - counterDmg);
+        if (k.hp <= 0) k.active = false;
+      }
+    }
+  }
+
+  private updateFireZones(dt: number): void {
+    for (const fz of this.fireZones) {
+      if (!fz.active) continue;
+      fz.ttl -= dt;
+      if (fz.ttl <= 0) {
+        fz.active = false;
+        continue;
+      }
+      const r2 = fz.radius * fz.radius;
+      const tower = fz.towerId ? (this.towerById(fz.towerId) ?? undefined) : undefined;
+      for (const e of this.enemies) {
+        if (e.dead || e.def.flying || e.hp <= 0) continue;
+        const dx = e.x - fz.x;
+        const dy = e.y - fz.y;
+        if (dx * dx + dy * dy <= r2) {
+          this.damageEnemy(e, fz.dps * dt, fz.owner, {
+            armorPierce: false,
+            shieldMultiplier: 1,
+            shieldStrip: 0,
+            burnDps: 8,
+            burnDuration: 1.5,
+          }, tower);
         }
       }
     }

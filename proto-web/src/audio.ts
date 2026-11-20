@@ -22,6 +22,9 @@ export const SOUND_COOLDOWNS: Record<SoundEvent, number> = {
   'mole-flush': 100,
   'meteor-warn': 200,
   'meteor-impact': 120,
+  'dragon-breath': 350,
+  'knight-charge': 250,
+  'knight-clash': 90,
   'kill': 60,
   'boss-phase': 25,
   'leak': 25,
@@ -735,6 +738,21 @@ export class SoundEngine {
           break;
         }
 
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // space ion surge: low drone sweep (110 -> 80 Hz, 250ms)
           const osc = ctx.createOscillator();
@@ -998,6 +1016,170 @@ export class SoundEngine {
       osc.stop(noteT + step * 1.3);
     }
     setTimeout(releaseVoice, 230);
+  }
+
+  private synthesizeDragonBreath(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // deep roaring dragon flame whoosh (bandpass-filtered noise sweeping 900Hz -> 280Hz + low growling sawtooth 95Hz -> 60Hz over ~0.48s)
+    const duration = 0.48;
+
+    // Low growling sawtooth 95Hz -> 60Hz
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(95, t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + duration);
+
+    oscGain.gain.setValueAtTime(0.38, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+    osc.connect(oscGain);
+    oscGain.connect(destination);
+
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
+
+    // Bandpass-filtered noise sweeping 900Hz -> 280Hz
+    try {
+      if (ctx.createBuffer && ctx.createBufferSource) {
+        const sampleRate = ctx.sampleRate || 44100;
+        const bufferSize = Math.max(1, Math.floor(sampleRate * duration));
+        const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter ? ctx.createBiquadFilter() : null;
+        const noiseGain = ctx.createGain();
+
+        noiseGain.gain.setValueAtTime(0.45, t);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+        if (filter) {
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(900, t);
+          filter.frequency.exponentialRampToValueAtTime(280, t + duration);
+          if (filter.Q) {
+            filter.Q.setValueAtTime(1.8, t);
+          }
+          whiteNoise.connect(filter);
+          filter.connect(noiseGain);
+        } else {
+          whiteNoise.connect(noiseGain);
+        }
+
+        noiseGain.connect(destination);
+        whiteNoise.start(t);
+        whiteNoise.stop(t + duration);
+      }
+    } catch {
+      // Noise fallback
+    }
+
+    setTimeout(releaseVoice, 500);
+  }
+
+  private synthesizeKnightCharge(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // crisp brass warhorn fifth (330Hz -> 495Hz) + 3 quick rhythmic hoofbeat taps (~0.32s)
+    const hornDuration = 0.28;
+    const horn = ctx.createOscillator();
+    const hornGain = ctx.createGain();
+    horn.type = 'sawtooth';
+    horn.frequency.setValueAtTime(330, t);
+    horn.frequency.exponentialRampToValueAtTime(495, t + 0.08);
+
+    hornGain.gain.setValueAtTime(0.001, t);
+    hornGain.gain.linearRampToValueAtTime(0.35, t + 0.02);
+    hornGain.gain.exponentialRampToValueAtTime(0.001, t + hornDuration);
+
+    const hornFilter = ctx.createBiquadFilter ? ctx.createBiquadFilter() : null;
+    if (hornFilter) {
+      hornFilter.type = 'lowpass';
+      hornFilter.frequency.setValueAtTime(1400, t);
+      horn.connect(hornFilter);
+      hornFilter.connect(hornGain);
+    } else {
+      horn.connect(hornGain);
+    }
+    hornGain.connect(destination);
+
+    horn.start(t);
+    horn.stop(t + hornDuration + 0.01);
+
+    // 3 quick rhythmic hoofbeat taps (~0.32s)
+    const tapOffsets = [0.08, 0.17, 0.26];
+    for (let i = 0; i < tapOffsets.length; i++) {
+      const tapT = t + tapOffsets[i];
+      const tapOsc = ctx.createOscillator();
+      const tapGain = ctx.createGain();
+      tapOsc.type = 'sine';
+      tapOsc.frequency.setValueAtTime(140, tapT);
+      tapOsc.frequency.exponentialRampToValueAtTime(45, tapT + 0.045);
+
+      tapGain.gain.setValueAtTime(0.35, tapT);
+      tapGain.gain.exponentialRampToValueAtTime(0.001, tapT + 0.045);
+
+      tapOsc.connect(tapGain);
+      tapGain.connect(destination);
+      tapOsc.start(tapT);
+      tapOsc.stop(tapT + 0.05);
+
+      this.playNoiseBurst(ctx, destination, tapT, 0.028, 550, 0.22, 'bandpass', 1.5);
+    }
+
+    setTimeout(releaseVoice, 340);
+  }
+
+  private synthesizeKnightClash(
+    ctx: AudioContext,
+    destination: AudioNode,
+    t: number,
+    releaseVoice: () => void,
+  ): void {
+    // sharp metallic steel sword ring (high-Q triangle/sine harmonic ping 1450Hz & 2200Hz + short metallic noise burst ~0.12s)
+    const duration = 0.12;
+
+    // Harmonic ping 1 (1450 Hz, high-Q triangle)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(1450, t);
+    gain1.gain.setValueAtTime(0.38, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc1.connect(gain1);
+    gain1.connect(destination);
+    osc1.start(t);
+    osc1.stop(t + duration + 0.01);
+
+    // Harmonic ping 2 (2200 Hz, sine)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(2200, t);
+    gain2.gain.setValueAtTime(0.30, t);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + duration * 0.9);
+    osc2.connect(gain2);
+    gain2.connect(destination);
+    osc2.start(t);
+    osc2.stop(t + duration + 0.01);
+
+    // Short metallic noise burst ~0.12s
+    this.playNoiseBurst(ctx, destination, t, duration, 3200, 0.35, 'bandpass', 3.0);
+
+    setTimeout(releaseVoice, 130);
   }
 
   private synthesizeMilitary(ev: SoundEvent): void {
@@ -1662,6 +1844,21 @@ export class SoundEngine {
           break;
         }
 
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // desert combat wind gust (100 -> 70 Hz, 240ms)
           const osc = ctx.createOscillator();
@@ -2035,6 +2232,21 @@ export class SoundEngine {
         case 'meteor-impact': {
           // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
           this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
           break;
         }
 
@@ -2646,6 +2858,21 @@ export class SoundEngine {
           break;
         }
 
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Sweeping filtered dust-storm wind (howling resonant wind 80 -> 140 -> 65 Hz + sweeping bandpass noise, 350ms)
           const osc = ctx.createOscillator();
@@ -3247,6 +3474,21 @@ export class SoundEngine {
           break;
         }
 
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Howling castle blizzard / dark magic gale (110 -> 80 Hz + wind noise, 300ms)
           const osc = ctx.createOscillator();
@@ -3830,6 +4072,21 @@ export class SoundEngine {
           break;
         }
 
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
+          break;
+        }
+
         case 'dust-storm': {
           // Range hood exhaust whoosh / stove burner flare (warm rushing air, 260ms)
           const osc = ctx.createOscillator();
@@ -4409,6 +4666,21 @@ export class SoundEngine {
         case 'meteor-impact': {
           // Deep low-end thud (110Hz -> 36Hz pitch drop) layered with brief crunchy bandpass rock-shatter noise burst (~0.32s)
           this.synthesizeMeteorImpact(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'dragon-breath': {
+          this.synthesizeDragonBreath(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-charge': {
+          this.synthesizeKnightCharge(ctx, destination, t, releaseVoice);
+          break;
+        }
+
+        case 'knight-clash': {
+          this.synthesizeKnightClash(ctx, destination, t, releaseVoice);
           break;
         }
 
