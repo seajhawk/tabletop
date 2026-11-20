@@ -931,7 +931,9 @@ describe('new theater maps & mechanics', () => {
   it('lawn: Giant Centipede (cruiser) splits into 2 non-recursive halves on death and emits centipede-split', () => {
     const g = newGame(2);
     g.setMap(6); // backyard-lawn
+    g.grant(0, 200);
     expect(g.tryPlace(0, 'railgun', 3, 4).ok).toBe(true);
+    expect(g.tryPlace(0, 'railgun', 6, 8).ok).toBe(true);
     g.launchWave();
     g.spawners = [];
 
@@ -955,6 +957,146 @@ describe('new theater maps & mechanics', () => {
     run(g, 8);
     expect(g.enemies.length).toBe(0);
     expect(g.totalCredits()).toBeCloseTo(g.expectedCredits(), 6);
+  });
+
+  it('lawn: centipede split parts turn ±90° to horizontal travel, move 3 squares, then turn toward the House', () => {
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn
+    g.launchWave();
+    g.spawners = [];
+
+    // Kill East-moving centipede at open grass cell (8, 8) via burn DoT so no turret interferes
+    const centipede = makeEnemy(g, 2210, 'cruiser', 8.5, 8.5, {
+      hp: 1, maxHp: 240, shield: 0, maxShield: 0, cx: 8, cy: 8, nx: 9, ny: 8, vx: 1.4, vy: 0,
+      burnT: 0.2, burnDps: 120, rem: 15,
+    });
+    g.enemies = [centipede];
+
+    g.step(1 / 60);
+    expect(g.enemies.length).toBe(2);
+    const north = g.enemies.find(e => e.divertDy === -1);
+    const south = g.enemies.find(e => e.divertDy === 1);
+    expect(north).toBeDefined();
+    expect(south).toBeDefined();
+    expect(north!.divertDx).toBe(0);
+    expect(south!.divertDx).toBe(0);
+    // Immediately headed 1st square perpendicular (±90° from East)
+    expect([north!.nx, north!.ny]).toEqual([8, 7]);
+    expect([south!.nx, south!.ny]).toEqual([8, 9]);
+
+    const northPath: [number, number][] = [[north!.cx, north!.cy]];
+    const southPath: [number, number][] = [[south!.cx, south!.cy]];
+    for (let i = 0; i < 60 * 4; i++) {
+      g.step(1 / 60);
+      const lastN = northPath[northPath.length - 1];
+      if (north!.cx !== lastN[0] || north!.cy !== lastN[1]) northPath.push([north!.cx, north!.cy]);
+      const lastS = southPath[southPath.length - 1];
+      if (south!.cx !== lastS[0] || south!.cy !== lastS[1]) southPath.push([south!.cx, south!.cy]);
+    }
+
+    // 3 squares perpendicular, then turn East toward the House ([23, 7] / [23, 8])
+    expect(northPath.slice(0, 5)).toEqual([[8, 8], [8, 7], [8, 6], [8, 5], [9, 5]]);
+    expect(southPath.slice(0, 5)).toEqual([[8, 8], [8, 9], [8, 10], [8, 11], [9, 11]]);
+  });
+
+  it('lawn: vertically travelling centipede splits ±90° horizontally (West/East) for 3 squares before resuming', () => {
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn
+    g.launchWave();
+    g.spawners = [];
+
+    // South-moving centipede at (8, 6): row 6 is open from col 5..12
+    const centipede = makeEnemy(g, 2211, 'cruiser', 8.5, 6.5, {
+      hp: 1, maxHp: 240, shield: 0, maxShield: 0, cx: 8, cy: 6, nx: 8, ny: 7, vx: 0, vy: 1.4,
+      burnT: 0.2, burnDps: 120, rem: 15,
+    });
+    g.enemies = [centipede];
+
+    g.step(1 / 60);
+    expect(g.enemies.length).toBe(2);
+    const east = g.enemies.find(e => e.divertDx === 1);
+    const west = g.enemies.find(e => e.divertDx === -1);
+    expect(east).toBeDefined();
+    expect(west).toBeDefined();
+    expect(east!.divertDy).toBe(0);
+    expect(west!.divertDy).toBe(0);
+
+    const eastPath: [number, number][] = [[east!.cx, east!.cy]];
+    const westPath: [number, number][] = [[west!.cx, west!.cy]];
+    for (let i = 0; i < 60 * 4; i++) {
+      g.step(1 / 60);
+      const lastE = eastPath[eastPath.length - 1];
+      if (east!.cx !== lastE[0] || east!.cy !== lastE[1]) eastPath.push([east!.cx, east!.cy]);
+      const lastW = westPath[westPath.length - 1];
+      if (west!.cx !== lastW[0] || west!.cy !== lastW[1]) westPath.push([west!.cx, west!.cy]);
+    }
+
+    // East half advances 3 squares East before turning around pond toward House; West half goes 3 squares West then back East
+    expect(eastPath.slice(0, 4)).toEqual([[8, 6], [9, 6], [10, 6], [11, 6]]);
+    expect(westPath.slice(0, 5)).toEqual([[8, 6], [7, 6], [6, 6], [5, 6], [6, 6]]);
+  });
+
+  it('lawn: centipede split parts stop 90° diversion early when blocked by a turret or board edge', () => {
+    // Subcase A: blocked immediately North (0 squares) and after 1 square South by towers
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn
+    g.credits[0] = 500;
+    expect(g.tryPlace(0, 'pulse', 8, 7).ok).toBe(true);
+    expect(g.tryPlace(0, 'pulse', 8, 10).ok).toBe(true);
+    // Disable towers so they only act as impassable blockers without killing the split halves
+    for (const t of g.towers) t.hp = 0;
+    g.launchWave();
+    g.spawners = [];
+
+    const c1 = makeEnemy(g, 2212, 'cruiser', 8.5, 8.5, {
+      hp: 1, maxHp: 240, shield: 0, maxShield: 0, cx: 8, cy: 8, nx: 9, ny: 8, vx: 1.4, vy: 0,
+      burnT: 0.2, burnDps: 120, rem: 15,
+    });
+    g.enemies = [c1];
+    g.step(1 / 60);
+    expect(g.enemies.length).toBe(2);
+    const northBlocked = g.enemies.find(e => e.divertDy === -1)!;
+    const southPartial = g.enemies.find(e => e.divertDy === 1)!;
+
+    // North half immediately cancels diversion and turns East toward House
+    expect(northBlocked.divertSteps).toBe(0);
+    expect([northBlocked.nx, northBlocked.ny]).toEqual([9, 8]);
+    // South half starts into open (8, 9)
+    expect([southPartial.nx, southPartial.ny]).toEqual([8, 9]);
+
+    const southPath: [number, number][] = [[southPartial.cx, southPartial.cy]];
+    for (let i = 0; i < 60 * 3; i++) {
+      g.step(1 / 60);
+      const last = southPath[southPath.length - 1];
+      if (southPartial.cx !== last[0] || southPartial.cy !== last[1]) southPath.push([southPartial.cx, southPartial.cy]);
+    }
+    // Moves 1 square South to (8, 9), sees (8, 10) blocked, and immediately turns East to (9, 9)
+    expect(southPath.slice(0, 3)).toEqual([[8, 8], [8, 9], [9, 9]]);
+    expect(southPath.some(([x, y]) => x === 8 && y === 10)).toBe(false);
+
+    // Subcase B: top map edge blocks North half immediately while South half moves 3 squares
+    const g2 = newGame(2);
+    g2.setMap(6);
+    g2.launchWave();
+    g2.spawners = [];
+    const c2 = makeEnemy(g2, 2213, 'cruiser', 10.5, 0.5, {
+      hp: 1, maxHp: 240, shield: 0, maxShield: 0, cx: 10, cy: 0, nx: 11, ny: 0, vx: 1.4, vy: 0,
+      burnT: 0.2, burnDps: 120, rem: 20,
+    });
+    g2.enemies = [c2];
+    g2.step(1 / 60);
+    const edgeNorth = g2.enemies.find(e => e.divertDy === -1)!;
+    const edgeSouth = g2.enemies.find(e => e.divertDy === 1)!;
+    expect(edgeNorth.divertSteps).toBe(0);
+    expect([edgeNorth.nx, edgeNorth.ny]).toEqual([11, 0]);
+
+    const edgeSouthPath: [number, number][] = [[edgeSouth.cx, edgeSouth.cy]];
+    for (let i = 0; i < 60 * 4; i++) {
+      g2.step(1 / 60);
+      const last = edgeSouthPath[edgeSouthPath.length - 1];
+      if (edgeSouth.cx !== last[0] || edgeSouth.cy !== last[1]) edgeSouthPath.push([edgeSouth.cx, edgeSouth.cy]);
+    }
+    expect(edgeSouthPath.slice(0, 5)).toEqual([[10, 0], [10, 1], [10, 2], [10, 3], [11, 3]]);
   });
 });
 

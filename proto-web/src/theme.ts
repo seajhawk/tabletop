@@ -400,7 +400,7 @@ const LAWN_THEME: TheaterTheme = {
   defeatTitle: 'HOUSE OVERRUN',
   helpText:
     'Protect the house from backyard pests! Lawn Thumpers and Mole Spades flush burrowed Moles, ' +
-    'while splash defenses counter splitting Giant Centipedes!',
+    'while splash defenses counter splitting Giant Centipedes that scatter 90° sideways!',
   obstacleLabel: 'Garden Beds',
   boostLabel: '+PWR',
   roleTags: {

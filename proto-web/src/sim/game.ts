@@ -117,6 +117,9 @@ export interface Enemy {
   breathTargetId?: number;
   breathTx?: number;
   breathTy?: number;
+  divertDx?: number;
+  divertDy?: number;
+  divertSteps?: number;
 }
 
 export interface SeaMine {
@@ -1126,7 +1129,32 @@ export class Game {
     const d = this.dist[this.idx(e.cx, e.cy)];
     e.nx = e.cx;
     e.ny = e.cy;
-    if (d <= 0) return;
+    if (d <= 0) {
+      e.divertSteps = 0;
+      return;
+    }
+    if ((e.divertSteps ?? 0) > 0) {
+      const dx = e.divertDx ?? 0;
+      const dy = e.divertDy ?? 0;
+      const nx = e.cx + dx;
+      const ny = e.cy + dy;
+      if (
+        (dx !== 0 || dy !== 0) &&
+        nx >= 0 &&
+        ny >= 0 &&
+        nx < this.w &&
+        ny < this.h &&
+        this.blocked[this.idx(nx, ny)] === 0 &&
+        this.dist[this.idx(nx, ny)] >= 0
+      ) {
+        e.nx = nx;
+        e.ny = ny;
+        e.ang = Math.atan2(dy, dx);
+        e.divertSteps = (e.divertSteps ?? 1) - 1;
+        return;
+      }
+      e.divertSteps = 0;
+    }
     for (const [dx, dy] of DIRS) {
       const nx = e.cx + dx;
       const ny = e.cy + dy;
@@ -1367,7 +1395,21 @@ export class Game {
       const cruiser = this.enemyById.get('cruiser');
       if (cruiser) {
         const hpScale = this.mode === 'normal' ? e.maxHp / e.def.hp : 1;
-        this.spawnSplitChildren(cruiser, e.x, e.y, e.vx, e.vy, e.ang, e.rem, cruiser.hp * hpScale);
+        this.spawnSplitChildren(
+          cruiser,
+          e.x,
+          e.y,
+          e.vx,
+          e.vy,
+          e.ang,
+          e.rem,
+          cruiser.hp * hpScale,
+          e.cx,
+          e.cy,
+          e.nx,
+          e.ny,
+          e.speedScale,
+        );
       }
     }
     const color = hex(e.def.color);
@@ -1386,6 +1428,11 @@ export class Game {
     ang: number,
     rem: number,
     baseMaxHp: number,
+    parentCx?: number,
+    parentCy?: number,
+    parentNx?: number,
+    parentNy?: number,
+    speedScale?: number,
   ): void {
     const childDef: EnemyDef = {
       ...parentDef,
@@ -1396,31 +1443,55 @@ export class Game {
     };
     const childHp = Math.max(1, Math.round(baseMaxHp * 0.38));
     const hLen = Math.hypot(vx, vy);
-    const hx = hLen > 1e-6 ? vx / hLen : 1;
-    const hy = hLen > 1e-6 ? vy / hLen : 0;
-    const px = -hy;
-    const py = hx;
+    let hx: number;
+    let hy: number;
+    if (hLen > 1e-6) {
+      hx = vx / hLen;
+      hy = vy / hLen;
+    } else if (
+      parentCx !== undefined &&
+      parentCy !== undefined &&
+      parentNx !== undefined &&
+      parentNy !== undefined &&
+      (parentNx !== parentCx || parentNy !== parentCy)
+    ) {
+      hx = parentNx - parentCx;
+      hy = parentNy - parentCy;
+    } else {
+      hx = Math.cos(ang);
+      hy = Math.sin(ang);
+    }
+    const dirX = Math.abs(hx) >= Math.abs(hy) ? (hx >= 0 ? 1 : -1) : 0;
+    const dirY = dirX === 0 ? (hy >= 0 ? 1 : -1) : 0;
+
+    let baseCx = Math.max(0, Math.min(this.w - 1, Math.floor(x)));
+    let baseCy = Math.max(0, Math.min(this.h - 1, Math.floor(y)));
+    if (
+      (this.blocked[this.idx(baseCx, baseCy)] !== 0 || this.dist[this.idx(baseCx, baseCy)] < 0) &&
+      parentCx !== undefined &&
+      parentCy !== undefined
+    ) {
+      baseCx = Math.max(0, Math.min(this.w - 1, parentCx));
+      baseCy = Math.max(0, Math.min(this.h - 1, parentCy));
+    }
+
     for (const sign of [-1, 1] as const) {
-      const cxPos = Math.max(0.2, Math.min(this.w - 0.2, x + px * 0.18 * sign));
-      const cyPos = Math.max(0.2, Math.min(this.h - 0.2, y + py * 0.18 * sign));
-      let cx = Math.max(0, Math.min(this.w - 1, Math.floor(cxPos)));
-      let cy = Math.max(0, Math.min(this.h - 1, Math.floor(cyPos)));
-      if (this.blocked[this.idx(cx, cy)] !== 0 || this.dist[this.idx(cx, cy)] < 0) {
-        cx = Math.max(0, Math.min(this.w - 1, Math.floor(x)));
-        cy = Math.max(0, Math.min(this.h - 1, Math.floor(y)));
-      }
+      const divertDx = (-dirY * sign) || 0;
+      const divertDy = (dirX * sign) || 0;
+      const cxPos = Math.max(baseCx + 0.15, Math.min(baseCx + 0.85, x + divertDx * 0.16));
+      const cyPos = Math.max(baseCy + 0.15, Math.min(baseCy + 0.85, y + divertDy * 0.16));
       const id = this.nextId++;
       const child: Enemy = {
         id,
         def: childDef,
         x: cxPos,
         y: cyPos,
-        vx,
-        vy,
-        cx,
-        cy,
-        nx: cx,
-        ny: cy,
+        vx: divertDx * childDef.speed,
+        vy: divertDy * childDef.speed,
+        cx: baseCx,
+        cy: baseCy,
+        nx: baseCx,
+        ny: baseCy,
         hp: childHp,
         maxHp: childHp,
         shield: 0,
@@ -1432,7 +1503,7 @@ export class Game {
         burnDps: 0,
         burnOwner: 0,
         bossPhase: 0,
-        ang,
+        ang: Math.atan2(divertDy, divertDx),
         rem,
         ox: 0,
         oy: 0,
@@ -1442,8 +1513,21 @@ export class Game {
         revealedT: 0,
         enraged: false,
         isSplitChild: true,
+        speedScale,
+        divertDx,
+        divertDy,
+        divertSteps: 3,
       };
-      if (this.dist[this.idx(cx, cy)] >= 0) this.pickNext(child);
+      if (this.dist[this.idx(baseCx, baseCy)] >= 0) {
+        this.pickNext(child);
+        const stepDx = child.nx - child.cx;
+        const stepDy = child.ny - child.cy;
+        child.vx = stepDx * childDef.speed;
+        child.vy = stepDy * childDef.speed;
+        child.rem =
+          this.dist[this.idx(child.nx, child.ny)] +
+          Math.hypot(child.nx + 0.5 - child.x, child.ny + 0.5 - child.y);
+      }
       this.enemies.push(child);
     }
     this.emitSound('centipede-split');
@@ -1506,7 +1590,21 @@ export class Game {
         e.def.id === 'cruiser' &&
         !e.isSplitChild
       ) {
-        this.spawnSplitChildren(e.def, e.x, e.y, e.vx, e.vy, e.ang, e.rem, e.maxHp);
+        this.spawnSplitChildren(
+          e.def,
+          e.x,
+          e.y,
+          e.vx,
+          e.vy,
+          e.ang,
+          e.rem,
+          e.maxHp,
+          e.cx,
+          e.cy,
+          e.nx,
+          e.ny,
+          e.speedScale,
+        );
       }
     }
   }
