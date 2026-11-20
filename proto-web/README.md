@@ -1,4 +1,4 @@
-# Galactic Alliance — Web
+# Galactic Defense — Web
 
 The selected implementation uses TypeScript, Vite, and PixiJS v8. A 28×16 maze grid
 fits adaptive landscape and portrait stages (1280×800 and 920×1280). Canonical data is imported from

@@ -4,7 +4,7 @@ Updated: 2026-11-20 8:34 AM Pacific. Pass 10 complete: vertical 90°-rotated pho
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative 5-hour interval; rearmed
-at this restart (~3:54 AM Pacific Nov 20), before implementation. After a quota/usage
+at this restart (~8:55 AM Pacific Nov 20), before implementation. After a quota/usage
 stall, rearm SAME timer for 5 hours from restart before other work. Never fixed daily.
 Automation updates require `destination: "thread"`; omitted field was rejected once.
 
@@ -54,3 +54,8 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
 ## Next
 1. Playtest the updated vertical `2P phone` layout and `Waves` setting on a real phone at `https://seajhawk.github.io/TTDefense/` (note: tap **Settings → Update app** if an older PWA cache is installed!).
 2. Verify physical multi-touch, DPI comfort, and sustained-load perf on target hardware.
+
+## In progress (8:55 AM restart)
+- Claude sustained-performance harness worker exec42703 active; owns scripts/benchmark-browser.js and focused tests only.
+- Parent owns integration/report/STATUS; no application or canonical balance edits planned.
+

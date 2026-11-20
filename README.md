@@ -1,4 +1,4 @@
-# Tabletop Defense (Galactic Alliance)
+# Tabletop Defense (Galactic Defense)
 
 Play live on GitHub Pages: **https://seajhawk.github.io/TTDefense/**
 
@@ -15,7 +15,7 @@ pwsh -File scripts/start-web.ps1
 ```
 
 The launcher installs locked dependencies on first run. Open
-[Galactic Alliance](http://127.0.0.1:5173) after the server starts.
+[Galactic Defense](http://127.0.0.1:5173) after the server starts.
 
 Choose a map, layout, and difficulty in **Settings**, drag defenses from your dock,
 then launch a wave.

@@ -1,9 +1,9 @@
-; Engine configuration file. Galactic Alliance - Prototype B (Godot 4 / GDScript)
+; Engine configuration file. Galactic Defense - Prototype B (Godot 4 / GDScript)
 config_version=5
 
 [application]
 
-config/name="Galactic Alliance - Godot prototype"
+config/name="Galactic Defense - Godot prototype"
 config/description="Cooperative multi-touch tabletop tower defense, prototype B."
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")

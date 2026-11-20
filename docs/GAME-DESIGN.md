@@ -1,8 +1,8 @@
-# Galactic Alliance — Game Blueprint
+# Galactic Defense — Game Blueprint
 
 > User design brief, preserved as the product reference. Implementation status and prototype scope live in [STATUS.md](../STATUS.md); proposed architecture below is not a claim of completed work. Source supplied 2026-11-19.
 
-## 1. Core Game Design: The *Galactic Alliance* Blueprint
+## 1. Core Game Design: The *Galactic Defense* Blueprint
 
 To capture the feel of Vectorform's tabletop classic while modernizing it for a 16" 2-in-1 (and eventually a 32"+ touch table), the design centers on **open-field mazing** and **simultaneous multi-touch co-op**.
 

@@ -1,4 +1,4 @@
-# Galactic Alliance — agent entry point
+# Galactic Defense — agent entry point
 
 Read this, `STATUS.md`, then only the relevant parts of `docs/GAME-DESIGN.md`.
 All coordinating agents must follow these instructions regardless of provider.

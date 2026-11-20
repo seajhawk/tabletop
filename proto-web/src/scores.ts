@@ -1,7 +1,7 @@
 import { DIFFICULTIES, WAVE_COUNTS, type Difficulty } from './types';
 
 /** Local-only best scores: one versioned localStorage key, no network. */
-export const SCORE_STORAGE_KEY = 'galactic-alliance:best-scores:v1';
+export const SCORE_STORAGE_KEY = 'galactic-defense:best-scores:v1';
 export const SCORE_VERSION = 1;
 export const MAX_SCORE = 10_000_000;
 export const PLAYER_COUNTS = [1, 2, 4] as const;
