@@ -109,6 +109,7 @@ export interface Enemy {
   revealedT: number;
   enraged: boolean;
   isSplitChild: boolean;
+  speedScale?: number;
 }
 
 export interface SeaMine {
@@ -199,6 +200,7 @@ interface Spawner {
   timer: number;
   spawnIndex: number;
   hpScale: number;
+  speedScale: number;
 }
 
 interface HitOpts {
@@ -233,6 +235,8 @@ export class Game {
   ordinaryWaves: WaveDef[];
   readonly stressWave: WaveDef | undefined;
   waveCount: WaveCount = 10;
+  overtimeStartWave = 10;
+  overtimeWavesAdded = 0;
   playerCount: number;
   credits: number[] = [];
   lives = 0;
@@ -312,6 +316,7 @@ export class Game {
 
   get totalWaves(): number { return this.ordinaryWaves.length; }
   get canLaunch(): boolean { return !this.over && this.waveCursor < this.ordinaryWaves.length; }
+  get canAddWaves(): boolean { return this.over === 'won' && this.mode === 'normal'; }
   get phase(): 'planning' | 'running' | 'paused' | 'won' | 'lost' {
     if (this.over) return this.over;
     if (!this.paused) return 'running';
@@ -497,6 +502,8 @@ export class Game {
     this.mode = 'normal';
     this.waveCursor = 0;
     this.ordinaryWaves = this.buildWavePlan(this.baseOrdinaryWaves, this.waveCount);
+    this.overtimeStartWave = this.ordinaryWaves.length;
+    this.overtimeWavesAdded = 0;
     this.time = 0;
     this.lastEarlyBonus = 0;
     this.autoWaveTimer = 0;
@@ -801,7 +808,65 @@ export class Game {
   }
 
   waveHealthScale(waveNum: number): number {
-    return DIFFICULTIES[this.difficulty].hpMultiplier * this.waveCoopScale() * (1 + Math.max(0, waveNum - 1) * 0.05);
+    let waveScale: number;
+    if (waveNum <= this.overtimeStartWave) {
+      waveScale = 1 + Math.max(0, waveNum - 1) * 0.05;
+    } else {
+      const ot = waveNum - this.overtimeStartWave;
+      const baseScale = 1 + Math.max(0, this.overtimeStartWave - 1) * 0.05;
+      waveScale = baseScale * Math.pow(1.16, ot);
+    }
+    return DIFFICULTIES[this.difficulty].hpMultiplier * this.waveCoopScale() * waveScale;
+  }
+
+  waveSpeedScale(waveNum: number): number {
+    if (waveNum <= this.overtimeStartWave) return 1;
+    const ot = waveNum - this.overtimeStartWave;
+    return 1 + Math.min(0.45, ot * 0.035);
+  }
+
+  addMoreWaves(extra = 5): boolean {
+    if (!this.canAddWaves || extra <= 0 || this.baseOrdinaryWaves.length === 0) return false;
+    const startIndex = this.ordinaryWaves.length + 1;
+    const batch = Math.floor(this.overtimeWavesAdded / extra) + 1;
+    const byIndex = new Map(this.baseOrdinaryWaves.map(w => [w.index, w]));
+    const picks = [6, 7, 8, 9, 10];
+    const countScale = Math.pow(1.20, batch);
+    const intervalScale = Math.max(0.55, 1 - 0.10 * batch);
+    const tierSuffix = batch === 1 ? ' OT' : ` OT${batch}`;
+
+    for (let k = 0; k < extra; k++) {
+      const waveIdx = startIndex + k;
+      const targetIdx = extra === 5 ? picks[k] : (k === extra - 1 ? 10 : picks[k % 4]);
+      const fallback = k === extra - 1
+        ? this.baseOrdinaryWaves[this.baseOrdinaryWaves.length - 1]
+        : this.baseOrdinaryWaves[k % this.baseOrdinaryWaves.length];
+      const src = byIndex.get(targetIdx) ?? fallback;
+      const groups = src.groups.map(g => {
+        const isBoss = this.enemyById.get(g.enemyId)?.boss === true;
+        return {
+          ...g,
+          count: isBoss ? 1 : Math.max(1, Math.round(g.count * countScale)),
+          interval: Math.max(0.10, Number((g.interval * intervalScale).toFixed(3))),
+        };
+      });
+      this.ordinaryWaves.push({
+        ...src,
+        index: waveIdx,
+        templateIndex: src.index,
+        tierSuffix,
+        overtime: true,
+        stress: false,
+        groups,
+      });
+    }
+
+    this.overtimeWavesAdded += extra;
+    this.over = null;
+    this.paused = true;
+    this.runId++;
+    this.emitSound('ui-wave');
+    return true;
   }
 
   activeBoss(): Enemy | null {
@@ -811,13 +876,14 @@ export class Game {
 
   private startWave(w: WaveDef): void {
     const baseHpScale = w.stress ? 1 : this.waveHealthScale(w.index);
+    const speedScale = w.stress ? 1 : this.waveSpeedScale(w.index);
     for (const g of w.groups) {
       const enemy = this.enemyById.get(g.enemyId);
       if (!enemy) continue;
-      const hpScale = (!w.stress && this.waveCount === 5 && w.index === 5 && enemy.boss)
+      const hpScale = (!w.stress && !w.overtime && this.waveCount === 5 && w.index === 5 && enemy.boss)
         ? baseHpScale * 0.80
         : baseHpScale;
-      this.spawners.push({ enemy, remaining: g.count, interval: g.interval, timer: 0, spawnIndex: g.spawnIndex, hpScale });
+      this.spawners.push({ enemy, remaining: g.count, interval: g.interval, timer: 0, spawnIndex: g.spawnIndex, hpScale, speedScale });
     }
     this.launched = true;
     this.paused = false;
@@ -924,7 +990,7 @@ export class Game {
       s.timer -= dt;
       while (s.remaining > 0 && s.timer <= 1e-9) {
         const sp = this.currentMap.spawns[s.spawnIndex % this.currentMap.spawns.length];
-        this.spawnEnemy(s.enemy, sp[0], sp[1], 0, 0, s.hpScale);
+        this.spawnEnemy(s.enemy, sp[0], sp[1], 0, 0, s.hpScale, s.speedScale);
         s.remaining--;
         s.timer += s.interval;
       }
@@ -932,10 +998,11 @@ export class Game {
     this.spawners = this.spawners.filter(s => s.remaining > 0);
   }
 
-  private spawnEnemy(def: EnemyDef, cx: number, cy: number, ox0 = 0, oy0 = 0, hpScale?: number): Enemy {
+  private spawnEnemy(def: EnemyDef, cx: number, cy: number, ox0 = 0, oy0 = 0, hpScale?: number, speedScale?: number): Enemy {
     const id = this.nextId++;
     const r = (Math.imul(id, 2654435761) >>> 0) / 4294967296;
     const scale = hpScale ?? (this.mode === 'normal' ? this.waveHealthScale(Math.max(1, this.waveCursor)) : 1);
+    const spdScale = speedScale ?? (this.mode === 'normal' ? this.waveSpeedScale(Math.max(1, this.waveCursor)) : 1);
     const maxHp = def.hp * scale;
     const maxShield = def.shield * scale;
     const e: Enemy = {
@@ -970,6 +1037,7 @@ export class Game {
       revealedT: 0,
       enraged: false,
       isSplitChild: false,
+      speedScale: spdScale,
     };
     if (def.flying) this.pickNextFlying(e);
     else this.pickNext(e);
@@ -1047,7 +1115,7 @@ export class Game {
 
       if (e.revealedT > 0) e.revealedT = Math.max(0, e.revealedT - dt);
 
-      const speedMult = this.mode === 'normal' ? DIFFICULTIES[this.difficulty].speedMultiplier : 1;
+      const speedMult = (this.mode === 'normal' ? DIFFICULTIES[this.difficulty].speedMultiplier : 1) * (e.speedScale ?? 1);
       const enragedMult = e.enraged ? 1.35 : 1;
       const rushMult =
         this.currentMap.mechanic === 'kitchen-rush' && this.rushActive

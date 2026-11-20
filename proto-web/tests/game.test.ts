@@ -1172,3 +1172,128 @@ describe('mars meteors, turret durability & repair', () => {
     expect(enemy.hp).toBeLessThan(startHp);
   });
 });
+
+describe('overtime (add more waves)', () => {
+  it('only succeeds when over === "won" in normal mode', () => {
+    const g = newGame(2);
+    expect(g.canAddWaves).toBe(false);
+    expect(g.addMoreWaves(5)).toBe(false);
+
+    // Running
+    g.launchWave();
+    expect(g.canAddWaves).toBe(false);
+    expect(g.addMoreWaves(5)).toBe(false);
+
+    // Lost
+    g.over = 'lost';
+    expect(g.canAddWaves).toBe(false);
+    expect(g.addMoreWaves(5)).toBe(false);
+
+    // Stress mode even if over === 'won'
+    g.setupStress();
+    g.over = 'won';
+    expect(g.canAddWaves).toBe(false);
+    expect(g.addMoreWaves(5)).toBe(false);
+
+    // Invalid extra <= 0
+    g.reset();
+    g.over = 'won';
+    expect(g.canAddWaves).toBe(true);
+    expect(g.addMoreWaves(0)).toBe(false);
+    expect(g.addMoreWaves(-5)).toBe(false);
+  });
+
+  it('extends 5-wave and 10-wave won matches by +5, preserves state, and supports chaining OT blocks', () => {
+    for (const initialCount of [5, 10] as const) {
+      const g = newGame(2);
+      g.setWaveCount(initialCount);
+      expect(g.tryPlace(0, 'pulse', 3, 3).ok).toBe(true);
+      const savedCredits = g.credits.slice();
+      const savedLives = g.lives;
+      const savedTowers = g.towers.length;
+
+      // Simulate winning all initial waves
+      g.waveCursor = g.totalWaves;
+      g.launched = true;
+      g.over = 'won';
+      g.paused = false;
+      const prevRunId = g.runId;
+      g.drainEvents();
+
+      expect(g.canAddWaves).toBe(true);
+      expect(g.addMoreWaves(5)).toBe(true);
+
+      expect(g.totalWaves).toBe(initialCount + 5);
+      expect(g.over).toBeNull();
+      expect(g.paused).toBe(true);
+      expect(g.runId).toBe(prevRunId + 1);
+      expect(g.waveCursor).toBe(initialCount);
+      expect(g.towers.length).toBe(savedTowers);
+      expect(g.credits).toEqual(savedCredits);
+      expect(g.lives).toBe(savedLives);
+      expect(g.drainEvents()).toContain('ui-wave');
+
+      const ot1 = g.ordinaryWaves.slice(initialCount);
+      expect(ot1).toHaveLength(5);
+      expect(ot1.every(w => w.overtime === true && w.stress === false && w.tierSuffix === ' OT')).toBe(true);
+      expect(ot1[4].groups.some(gr => g.enemyById.get(gr.enemyId)?.boss)).toBe(true);
+
+      // Launch and beat the first overtime block, then chain a second +5 block
+      expect(g.canLaunch).toBe(true);
+      g.waveCursor = g.totalWaves;
+      g.over = 'won';
+      expect(g.addMoreWaves(5)).toBe(true);
+      expect(g.totalWaves).toBe(initialCount + 10);
+      const ot2 = g.ordinaryWaves.slice(initialCount + 5);
+      expect(ot2).toHaveLength(5);
+      expect(ot2.every(w => w.overtime === true && w.tierSuffix === ' OT2')).toBe(true);
+      expect(ot2[4].groups.some(gr => g.enemyById.get(gr.enemyId)?.boss)).toBe(true);
+    }
+  });
+
+  it('escalates HP and speed much more rapidly in overtime than in normal waves', () => {
+    const g = newGame(2);
+    g.setWaveCount(10);
+    // Normal waves 1..10: +5%/wave linear
+    const normalDelta = g.waveHealthScale(10) - g.waveHealthScale(9);
+    expect(normalDelta).toBeCloseTo(0.05, 8);
+    expect(g.waveSpeedScale(1)).toBe(1);
+    expect(g.waveSpeedScale(10)).toBe(1);
+
+    // Win wave 10 and add 5 overtime waves
+    g.waveCursor = 10;
+    g.launched = true;
+    g.over = 'won';
+    expect(g.addMoreWaves(5)).toBe(true);
+
+    // Overtime waves 11..15: +16% compounded per wave
+    for (let w = 11; w <= 15; w++) {
+      const otDelta = g.waveHealthScale(w) - g.waveHealthScale(w - 1);
+      expect(otDelta).toBeGreaterThan(normalDelta);
+      expect(g.waveSpeedScale(w)).toBeGreaterThan(1);
+    }
+
+    // Wave 15 Boss HP > 2x Wave 10 Boss HP
+    const bossDef = g.data.enemies.find(e => e.boss)!;
+    const w10BossHp = bossDef.hp * g.waveHealthScale(10);
+    const w15BossHp = bossDef.hp * g.waveHealthScale(15);
+    expect(w15BossHp).toBeGreaterThan(2 * w10BossHp);
+
+    // Spawned Wave 15 enemy moves faster than Wave 10 enemy
+    const gNormal = newGame(2);
+    gNormal.waveCursor = 9;
+    gNormal.launchWave();
+    gNormal.step(1 / 60);
+    const normalEnemy = gNormal.enemies[0];
+
+    g.waveCursor = 14; // wave 15 (OT)
+    g.launchWave();
+    g.step(1 / 60);
+    const otEnemy = g.enemies.find(e => !e.def.boss) ?? g.enemies[0];
+    const otSpd = Math.hypot(otEnemy.vx, otEnemy.vy);
+    const normSpd = Math.hypot(normalEnemy.vx, normalEnemy.vy);
+    // Compare normalized by base def.speed
+    expect(otSpd / otEnemy.def.speed).toBeGreaterThan(normSpd / normalEnemy.def.speed);
+    expect(otEnemy.speedScale).toBeCloseTo(1 + 5 * 0.035, 8);
+  });
+});

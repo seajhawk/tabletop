@@ -22,7 +22,7 @@ export const HUD_BUTTON_IDS = ['wave', 'pause', 'fullscreen', 'settings'] as con
 export type HudButtonId = typeof HUD_BUTTON_IDS[number];
 export const SETTINGS_BUTTON_IDS = ['map', 'layout', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close'] as const;
 export type SettingsButtonId = typeof SETTINGS_BUTTON_IDS[number];
-export const SUMMARY_BUTTON_IDS = ['play-again', 'next-map'] as const;
+export const SUMMARY_BUTTON_IDS = ['add-waves', 'play-again', 'next-map'] as const;
 export type SummaryButtonId = typeof SUMMARY_BUTTON_IDS[number];
 export const BUTTON_IDS = [...HUD_BUTTON_IDS, ...SETTINGS_BUTTON_IDS, ...SUMMARY_BUTTON_IDS] as const;
 export type ButtonId = HudButtonId | SettingsButtonId | SummaryButtonId;
@@ -316,7 +316,7 @@ export function isPhoneLayout(layout: LayoutDef): boolean {
 
 export function summaryCardRect(layout: LayoutDef): Rect {
   const phone = isPhoneLayout(layout);
-  const w = phone ? 480 : 500, h = phone ? 440 : 252;
+  const w = phone ? 480 : 500, h = phone ? 540 : 296;
   return {
     x: layout.board.x + (layout.board.w - w) / 2,
     y: layout.board.y + (layout.board.h - h) / 2,
@@ -328,22 +328,25 @@ export function summaryCardRect(layout: LayoutDef): Rect {
 export function summaryButtonRects(layout: LayoutDef): Record<SummaryButtonId, Rect> {
   const { x: px, y: py, w: pw, h: ph } = summaryCardRect(layout);
   if (isPhoneLayout(layout)) {
-    const m = 28, bh = 88, bw = (pw - m * 3) / 2, by = py + ph - m - bh;
+    const m = 28, bh = 88, gap = 18, bw = (pw - m * 3) / 2, by = py + ph - m - bh;
     return {
+      'add-waves': { x: px + m, y: by - gap - bh, w: pw - m * 2, h: bh },
       'play-again': { x: px + m, y: by, w: bw, h: bh },
       'next-map': { x: px + m * 2 + bw, y: by, w: bw, h: bh },
     };
   }
-  const y = py + ph - 56;
+  const by = py + ph - 54;
   return {
-    'play-again': { x: px + 42, y, w: 200, h: 40 },
-    'next-map': { x: px + 258, y, w: 200, h: 40 },
+    'add-waves': { x: px + 42, y: by - 50, w: 416, h: 40 },
+    'play-again': { x: px + 42, y: by, w: 200, h: 40 },
+    'next-map': { x: px + 258, y: by, w: 200, h: 40 },
   };
 }
 
-export function hitSummaryButton(layout: LayoutDef, x: number, y: number): SummaryButtonId | null {
+export function hitSummaryButton(layout: LayoutDef, x: number, y: number, showAddWaves = true): SummaryButtonId | null {
   const rects = summaryButtonRects(layout);
   for (const id of SUMMARY_BUTTON_IDS) {
+    if (id === 'add-waves' && !showAddWaves) continue;
     if (inRect(rects[id], x, y)) return id;
   }
   return null;

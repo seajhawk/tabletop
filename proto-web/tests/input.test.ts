@@ -694,6 +694,25 @@ describe('theater obstacle & placement reason text & end-of-match summary button
     input.pointerUp(3, nextMap.x + nextMap.w / 2, nextMap.y + nextMap.h / 2, 50);
     expect(buttons).toEqual(['play-again', 'next-map']);
   });
+
+  it('summary button add-waves fires only when game.over is won and mode is normal', () => {
+    const { game, input, buttons, layout } = setup();
+    const addWaves = summaryButtonRects(layout)['add-waves'];
+    const cx = addWaves.x + addWaves.w / 2;
+    const cy = addWaves.y + addWaves.h / 2;
+
+    // When lost, clicking add-waves does nothing.
+    game.over = 'lost';
+    input.pointerDown(1, cx, cy, 'touch', 0, 10);
+    input.pointerUp(1, cx, cy, 20);
+    expect(buttons).toEqual([]);
+
+    // When won in normal mode, clicking add-waves fires 'add-waves'.
+    game.over = 'won';
+    input.pointerDown(2, cx, cy, 'touch', 0, 30);
+    input.pointerUp(2, cx, cy, 40);
+    expect(buttons).toEqual(['add-waves']);
+  });
 });
 
 class FakeTarget {

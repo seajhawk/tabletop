@@ -158,6 +158,7 @@ export interface WaveDef {
   stress: boolean;
   templateIndex?: number;
   tierSuffix?: string;
+  overtime?: boolean;
 }
 
 export interface GameData {

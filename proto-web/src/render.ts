@@ -1236,6 +1236,7 @@ export class Renderer {
       case 'update': return this.pwa?.updateLabel() ?? 'Update app';
       case 'play-again': return '▶ Play Again';
       case 'next-map': return 'Next Map ▸';
+      case 'add-waves': return '+ Add 5 More Waves?';
     }
   }
 
@@ -2530,10 +2531,10 @@ export class Renderer {
   private applySummaryTypography(layout: LayoutDef): void {
     const phone = isPhoneLayout(layout);
     const rows: [Text, number, number][] = phone
-      ? [[this.summaryTitle, 34, -168], [this.summarySub, 19, -114], [this.summaryStats, 19, -58],
-         [this.summaryPlayers, 18, -4], [this.summaryScore, 18, 54]]
-      : [[this.summaryTitle, 30, -86], [this.summarySub, 14, -52], [this.summaryStats, 14, -14],
-         [this.summaryPlayers, 13.5, 18], [this.summaryScore, 13, 44]];
+      ? [[this.summaryTitle, 34, -214], [this.summarySub, 19, -156], [this.summaryStats, 19, -100],
+         [this.summaryPlayers, 18, -44], [this.summaryScore, 18, 8]]
+      : [[this.summaryTitle, 28, -114], [this.summarySub, 13.5, -80], [this.summaryStats, 13.5, -46],
+         [this.summaryPlayers, 13, -16], [this.summaryScore, 12.5, 12]];
     for (const [t, size, y] of rows) {
       t.style.fontSize = size;
       t.style.lineHeight = Math.round(size * 1.3);
@@ -2562,7 +2563,7 @@ export class Renderer {
       const pk = g.stats.playerKills.slice(0, g.playerCount).map((k, i) => `P${i + 1}: ${k} kills`).join('   •   ');
       const sc = this.getScore();
       const scLines = sc ? scoreLines(sc) : null;
-      const sKey = `${g.over}|${g.difficulty}|${g.currentMap.id}|${g.waveCursor}|${g.lives}|${g.stats.kills}|${g.stats.leaks}|${pk}|${layout.id}|${g.runId}|${scLines ? scLines.join('/') : ''}`;
+      const sKey = `${g.over}|${g.canAddWaves ? 1 : 0}|${g.difficulty}|${g.currentMap.id}|${g.waveCursor}|${g.lives}|${g.stats.kills}|${g.stats.leaks}|${pk}|${layout.id}|${g.runId}|${scLines ? scLines.join('/') : ''}`;
       if (sKey !== this.summaryKey) {
         this.summaryKey = sKey;
         const won = g.over === 'won';
@@ -2573,7 +2574,9 @@ export class Renderer {
           .stroke({ width: 2.5, color: col, alpha: 0.95 });
         this.summaryTitle.text = won ? theme.victoryTitle : theme.defeatTitle;
         this.summaryTitle.style.fill = col;
-        this.summarySub.text = `${DIFFICULTIES[g.difficulty].label}  •  ${g.currentMap.name}`;
+        this.summarySub.text = g.canAddWaves
+          ? `${DIFFICULTIES[g.difficulty].label}  •  ${g.currentMap.name} — try 5 overtime waves?`
+          : `${DIFFICULTIES[g.difficulty].label}  •  ${g.currentMap.name}`;
         this.summaryStats.text = isPhoneLayout(layout)
           ? `Waves ${g.waveCursor}/${g.totalWaves}   •   Lives ${Math.max(0, g.lives)}\nKills ${g.stats.kills}   •   Leaks ${g.stats.leaks}`
           : `Waves ${g.waveCursor}/${g.totalWaves}   •   Lives ${Math.max(0, g.lives)}   •   Kills ${g.stats.kills}   •   Leaks ${g.stats.leaks}`;
@@ -2581,23 +2584,34 @@ export class Renderer {
         this.summaryScore.text = scLines ? (scLines[1] ? scLines.join('\n') : scLines[0]) : '';
       }
       for (const sb of this.summaryButtons) {
+        const show = sb.id !== 'add-waves' || g.canAddWaves;
         const pressed = this.input.isPressed(sb.id);
-        const btnKey = `${theme.id}|${pressed ? 'p' : 'idle'}|${layout.id}`;
+        const btnKey = `${theme.id}|${pressed ? 'p' : 'idle'}|${layout.id}|${show ? '1' : '0'}`;
         if (btnKey === sb.state) continue;
         sb.state = btnKey;
+        sb.bg.visible = show;
+        sb.label.visible = show;
+        if (!show) continue;
+        const isAddWaves = sb.id === 'add-waves';
         const isPrimary = sb.id === 'play-again';
-        const fill = isPrimary
-          ? (pressed ? (hasSprites ? 0x3b6e52 : 0x267a5c) : (hasSprites ? 0x244734 : 0x164d3e))
-          : (pressed ? (hasSprites ? 0x3b4d42 : 0x2f6a99) : theme.slotBg);
-        const stroke = isPrimary
-          ? (hasSprites ? 0x7be0a5 : C.mint)
-          : (hasSprites ? 0x6a9ab0 : C.cyan);
+        const fill = isAddWaves
+          ? (pressed ? (hasSprites ? 0x5c461c : 0x5a4314) : (hasSprites ? 0x3b2d12 : 0x38280b))
+          : isPrimary
+            ? (pressed ? (hasSprites ? 0x3b6e52 : 0x267a5c) : (hasSprites ? 0x244734 : 0x164d3e))
+            : (pressed ? (hasSprites ? 0x3b4d42 : 0x2f6a99) : theme.slotBg);
+        const stroke = isAddWaves
+          ? (hasSprites ? 0xffc16e : C.gold)
+          : isPrimary
+            ? (hasSprites ? 0x7be0a5 : C.mint)
+            : (hasSprites ? 0x6a9ab0 : C.cyan);
         const lx = sb.rect.x - cardCx;
         const ly = sb.rect.y - cardCy;
         sb.bg.clear().roundRect(lx, ly, sb.rect.w, sb.rect.h, 10)
           .fill({ color: fill, alpha: 0.96 })
           .stroke({ width: 2, color: stroke, alpha: 0.92 });
-        sb.label.style.fill = isPrimary ? (hasSprites ? 0xeaf7ef : C.mint) : (hasSprites ? 0xdbe2d8 : C.ice);
+        sb.label.style.fill = isAddWaves
+          ? (hasSprites ? 0xffe4b3 : C.gold)
+          : isPrimary ? (hasSprites ? 0xeaf7ef : C.mint) : (hasSprites ? 0xdbe2d8 : C.ice);
       }
       return;
     }

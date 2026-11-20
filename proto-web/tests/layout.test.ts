@@ -232,6 +232,7 @@ describe('rotation-aware dock layout', () => {
           expect(inRect(card, r.x, r.y)).toBe(true);
           expect(inRect(card, r.x + r.w - 1, r.y + r.h - 1)).toBe(true);
           expect(hitSummaryButton(L, r.x + r.w / 2, r.y + r.h / 2)).toBe(id);
+          expect(hitSummaryButton(L, r.x + r.w / 2, r.y + r.h / 2, false)).toBe(id === 'add-waves' ? null : id);
           for (let j = i + 1; j < SUMMARY_BUTTON_IDS.length; j++) {
             expect(rectsOverlap(r, btnRects[SUMMARY_BUTTON_IDS[j]])).toBe(false);
           }
@@ -242,21 +243,31 @@ describe('rotation-aware dock layout', () => {
         if (L.stageH <= L.stageW) return;
         const card = summaryCardRect(L);
         const rects = summaryButtonRects(L);
-        const [a, b] = SUMMARY_BUTTON_IDS.map(id => rects[id]);
-        for (const r of [a, b]) {
+        for (const id of SUMMARY_BUTTON_IDS) {
+          const r = rects[id];
           expect(r.h).toBeGreaterThanOrEqual(88);
+          for (const [vw, vh] of [[360, 640], [390, 844], [460, 760]]) {
+            const scale = Math.min(vw / L.stageW, vh / L.stageH);
+            expect(r.w * scale, `${id} width on ${vw}x${vh}`).toBeGreaterThanOrEqual(44);
+            expect(r.h * scale, `${id} height on ${vw}x${vh}`).toBeGreaterThanOrEqual(44);
+          }
           expect(r.x).toBeGreaterThanOrEqual(card.x + 28);
           expect(r.x + r.w).toBeLessThanOrEqual(card.x + card.w - 28);
           expect(r.y + r.h).toBeLessThanOrEqual(card.y + card.h - 28);
           // every corner-adjacent point hits only its own button
-          const id = SUMMARY_BUTTON_IDS[r === a ? 0 : 1];
           for (const [px, py] of [[r.x + 1, r.y + 1], [r.x + r.w - 1, r.y + r.h - 1]]) {
             expect(hitSummaryButton(L, px, py)).toBe(id);
           }
         }
-        const gap = Math.min(Math.abs(b.x - (a.x + a.w)), Math.abs(a.x - (b.x + b.w)));
-        expect(gap).toBeGreaterThanOrEqual(28);
-        expect(hitSummaryButton(L, a.x + a.w + gap / 2, a.y + a.h / 2)).toBeNull();
+        const add = rects['add-waves'];
+        const a = rects['play-again'];
+        const b = rects['next-map'];
+        const hGap = Math.min(Math.abs(b.x - (a.x + a.w)), Math.abs(a.x - (b.x + b.w)));
+        expect(hGap).toBeGreaterThanOrEqual(28);
+        expect(hitSummaryButton(L, a.x + a.w + hGap / 2, a.y + a.h / 2)).toBeNull();
+        const vGap = a.y - (add.y + add.h);
+        expect(vGap).toBeGreaterThanOrEqual(18);
+        expect(hitSummaryButton(L, add.x + add.w / 2, add.y + add.h + vGap / 2)).toBeNull();
       });
     });
   }
@@ -266,7 +277,7 @@ describe('hud + viewport', () => {
   it('always-on HUD buttons and settings/summary button IDs match contract', () => {
     expect(HUD_BUTTON_IDS).toEqual(['wave', 'pause', 'fullscreen', 'settings']);
     expect(SETTINGS_BUTTON_IDS).toEqual(['map', 'layout', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close']);
-    expect(SUMMARY_BUTTON_IDS).toEqual(['play-again', 'next-map']);
+    expect(SUMMARY_BUTTON_IDS).toEqual(['add-waves', 'play-again', 'next-map']);
     expect(BUTTON_IDS).toEqual([...HUD_BUTTON_IDS, ...SETTINGS_BUTTON_IDS, ...SUMMARY_BUTTON_IDS]);
     expect(TURRET_ORDER).toEqual(['pulse', 'plasma', 'stasis', 'railgun', 'swarm']);
 

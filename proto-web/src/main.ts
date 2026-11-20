@@ -163,6 +163,12 @@ async function main(): Promise<void> {
         audio.setTheme(game.currentMap.theme ?? 'space');
         renderer.toast(`Theater: ${game.currentMap.name}`, layout().stageW / 2, layout().stageH / 2, true);
         break;
+      case 'add-waves':
+        if (game.addMoreWaves(5)) {
+          input.cancelAll();
+          renderer.toast(`+5 Overtime Waves! (W${game.waveCursor + 1}–${game.totalWaves})`, cx, cy, true);
+        }
+        break;
     }
   };
 

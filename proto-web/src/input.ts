@@ -168,7 +168,7 @@ export class InputController {
 
     // 3b. End-of-match summary card buttons (when match is over and settings modal is closed).
     if (this.game.over !== null) {
-      const sb = hitSummaryButton(layout, x, y);
+      const sb = hitSummaryButton(layout, x, y, this.game.over === 'won' && this.game.mode === 'normal');
       if (sb) { this.pointers.set(id, { kind: 'button', id: sb }); return; }
     }
 
@@ -263,7 +263,7 @@ export class InputController {
       const layout = this.getLayout();
       const hit: ButtonId | null = this.settingsOpen
         ? hitSettingsButton(layout, x, y)
-        : hitHudButton(layout, x, y) ?? (this.game.over !== null ? hitSummaryButton(layout, x, y) : null);
+        : hitHudButton(layout, x, y) ?? (this.game.over !== null ? hitSummaryButton(layout, x, y, this.game.over === 'won' && this.game.mode === 'normal') : null);
       if (hit === p.id || (this.settingsOpen && p.id === 'settings' && hitHudButton(layout, x, y) === 'settings')) {
         this.hooks.button(p.id);
       }
