@@ -1181,7 +1181,9 @@ export class Game {
   }
 
   private updateEnemies(dt: number): void {
-    for (const e of this.enemies) {
+    const enemyCount = this.enemies.length;
+    for (let ei = 0; ei < enemyCount; ei++) {
+      const e = this.enemies[ei];
       if (e.dead) continue;
 
       // Shield regen
@@ -1476,10 +1478,11 @@ export class Game {
     }
 
     for (const sign of [-1, 1] as const) {
+      // sign = -1 turns 90° left of travel; sign = +1 turns 90° right of travel (opposite directions)
       const divertDx = (-dirY * sign) || 0;
       const divertDy = (dirX * sign) || 0;
-      const cxPos = Math.max(baseCx + 0.15, Math.min(baseCx + 0.85, x + divertDx * 0.16));
-      const cyPos = Math.max(baseCy + 0.15, Math.min(baseCy + 0.85, y + divertDy * 0.16));
+      const cxPos = Math.max(baseCx + 0.14, Math.min(baseCx + 0.86, x + divertDx * 0.28));
+      const cyPos = Math.max(baseCy + 0.14, Math.min(baseCy + 0.86, y + divertDy * 0.28));
       const id = this.nextId++;
       const child: Enemy = {
         id,
@@ -1696,7 +1699,9 @@ export class Game {
       if (s.slowDuration > 0) {
         let hit = 0;
         let flushedMole = false;
-        for (const e of this.enemies) {
+        const enemyCount = this.enemies.length;
+        for (let ei = 0; ei < enemyCount; ei++) {
+          const e = this.enemies[ei];
           if (e.dead || e.def.flying) continue;
           const dx = e.x - tx;
           const dy = e.y - ty;
@@ -1955,7 +1960,9 @@ export class Game {
         p.active = false;
         if (p.splash > 0) {
           const r2 = p.splash * p.splash;
-          for (const e of this.enemies) {
+          const enemyCount = this.enemies.length;
+          for (let ei = 0; ei < enemyCount; ei++) {
+            const e = this.enemies[ei];
             if (e.dead) continue;
             const ex = e.x - p.tx;
             const ey = e.y - p.ty;
@@ -1991,7 +1998,9 @@ export class Game {
       const r2 = p.splash * p.splash;
       const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
       const isT2Plasma = isLawn && tower !== undefined && tower.def.id === 'plasma' && tower.tier >= 2;
-      for (const e of this.enemies) {
+      const enemyCount = this.enemies.length;
+      for (let ei = 0; ei < enemyCount; ei++) {
+        const e = this.enemies[ei];
         if (e.dead || e.def.flying) continue;
         if (isLawn && e.submerged && e.revealedT <= 0 && !isT2Plasma) continue;
         const ex = e.x - p.tx;
@@ -2137,7 +2146,9 @@ export class Game {
         burnDps: m.burnDps,
         burnDuration: m.burnDuration,
       };
-      for (const e of this.enemies) {
+      const mineEnemyCount = this.enemies.length;
+      for (let ei = 0; ei < mineEnemyCount; ei++) {
+        const e = this.enemies[ei];
         if (e.dead || e.def.flying) continue;
         if (e.submerged && !m.hitsSub && e.revealedT <= 0) continue;
         const dx = e.x - m.x;
@@ -2265,7 +2276,9 @@ export class Game {
         }
       }
 
-      for (const e of this.enemies) {
+      const meteorEnemyCount = this.enemies.length;
+      for (let ei = 0; ei < meteorEnemyCount; ei++) {
+        const e = this.enemies[ei];
         if (e.dead || e.def.flying) continue;
         if (Math.hypot(e.x - m.tx, e.y - m.ty) <= m.radius) {
           this.damageEnemy(e, 25, -1, {
@@ -2331,7 +2344,9 @@ export class Game {
           const sweepRadius = 0.85 + k.tier * 0.15;
           const sweepR2 = sweepRadius * sweepRadius;
           const boostedBurn = Boolean(tower?.boosted && this.currentMap.mechanic === 'kitchen-rush');
-          for (const e of this.enemies) {
+          const sweepEnemyCount = this.enemies.length;
+          for (let ei = 0; ei < sweepEnemyCount; ei++) {
+            const e = this.enemies[ei];
             if (e.dead || e.def.flying || e.hp <= 0) continue;
             const edx = e.x - k.x;
             const edy = e.y - k.y;
@@ -2384,7 +2399,9 @@ export class Game {
       }
       const r2 = fz.radius * fz.radius;
       const tower = fz.towerId ? (this.towerById(fz.towerId) ?? undefined) : undefined;
-      for (const e of this.enemies) {
+      const fireEnemyCount = this.enemies.length;
+      for (let ei = 0; ei < fireEnemyCount; ei++) {
+        const e = this.enemies[ei];
         if (e.dead || e.def.flying || e.hp <= 0) continue;
         const dx = e.x - fz.x;
         const dy = e.y - fz.y;

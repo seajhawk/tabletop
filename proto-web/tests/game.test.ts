@@ -1098,6 +1098,45 @@ describe('new theater maps & mechanics', () => {
     }
     expect(edgeSouthPath.slice(0, 5)).toEqual([[10, 0], [10, 1], [10, 2], [10, 3], [11, 3]]);
   });
+
+  it('lawn: Gnome (plasma) splash kill splits centipede into 2 full-HP opposite-90° parts (left & right) without hitting newborn halves', () => {
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn
+    g.grant(0, 200);
+    expect(g.tryPlace(0, 'plasma', 8, 6).ok).toBe(true);
+    const gnome = g.towers[0];
+    g.launchWave();
+    g.spawners = [];
+
+    // Low-HP East-moving centipede at (8, 8): Gnome splash kills it and must NOT damage the two newborn halves
+    const centipede = makeEnemy(g, 2220, 'cruiser', 8.5, 8.5, {
+      hp: 5, maxHp: 240, shield: 0, maxShield: 0, cx: 8, cy: 8, nx: 9, ny: 8, vx: 1.4, vy: 0, rem: 15,
+    });
+    g.enemies = [centipede];
+
+    // Step until the Gnome mortar lands and splits the centipede
+    let splitSeen = false;
+    for (let i = 0; i < 60 * 3; i++) {
+      g.step(1 / 60);
+      if (g.enemies.some(e => e.isSplitChild)) {
+        splitSeen = true;
+        break;
+      }
+    }
+    expect(splitSeen).toBe(true);
+    expect(g.enemies.length).toBe(2);
+    const [a, b] = g.enemies;
+    expect(a.isSplitChild).toBe(true);
+    expect(b.isSplitChild).toBe(true);
+    // Both newborn halves retain full split HP (untouched by the killing splash)
+    expect(a.hp).toBe(a.maxHp);
+    expect(b.hp).toBe(b.maxHp);
+    // Strictly opposite 90° directions (one left, one right): sum is (0, 0), dot with East (1, 0) is 0
+    expect((a.divertDx ?? 0) + (b.divertDx ?? 0)).toBe(0);
+    expect((a.divertDy ?? 0) + (b.divertDy ?? 0)).toBe(0);
+    expect(Math.abs((a.divertDy ?? 0) - (b.divertDy ?? 0))).toBe(2);
+    expect(gnome.kills).toBe(1);
+  });
 });
 
 describe('configurable wave count', () => {

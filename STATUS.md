@@ -1,6 +1,6 @@
 # Coordination handoff
 
-Updated: 2026-11-20 3:39 PM Pacific. Pass 16 complete: Backyard Lawn Giant Centipede split parts now turn ±90° perpendicular to the parent's travel direction and advance up to 3 grid squares (stopping early if blocked by obstacles, turrets, or map edges) before turning back toward the House; verified, pushed to `seajhawk/tabletop`, and republished to `https://seajhawk.github.io/TTDefense/`.
+Updated: 2026-11-20 3:59 PM Pacific. Pass 17 complete: prevented AoE splash kills from damaging newborn split centipede halves so both halves always peel off opposite 90° (left & right), moved the on-map health indicator behind the exit/house squares matching their screen orientation (portrait vertical on desktop, landscape horizontal on rotated phone), and stretched all maps edge-to-edge (`adaptLayout` + full-bleed `LAYOUTS`) between player cards and outer borders; verified, pushed to `seajhawk/tabletop`, and republished to `https://seajhawk.github.io/TTDefense/`.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative 5-hour interval; rearmed
@@ -18,16 +18,17 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
   - Shareable Pages site: **`https://seajhawk.github.io/TTDefense/`** (`seajhawk/TTDefense`, subpath-safe PWA/SW).
 - **9 Maps across 7 Themes** (`shared-data/maps.json`), **7 Adaptive Layouts** (vertical +90° phone court), **Configurable Waves (`5–30`) + Overtime (`+ Add 5 More Waves?`)**, **Mars Meteors & Radial Credit Repair**, **Ironhold Keep Dragons/Keep Walls/Knight Stable/Flaming Trebuchet**, local best scores, offline PWA.
 - **Pass 14–15 — Midnight Kitchen & 1:1 Grid-Aligned Floor Tiles**: Full-room `kitchen-map.jpg` floorplan with Fridge on floor, 10 mountable `COUNTER` `wallCells` (`+15%` range), 4 stove `+BURN` burners, patrolling 1/2/3 **Roomba** (`swarm`) defense, and mathematically aligned `28×16` checkered floor tiles.
-- **Pass 16 — Backyard Lawn Centipede ±90° Split & 3-Square Flank**:
-  - Updated `Enemy` (`divertDx`, `divertDy`, `divertSteps`), `pickNext()`, and `spawnSplitChildren()` in `proto-web/src/sim/game.ts`.
-  - When a Giant Centipede (`cruiser`) splits (or Millipede Queen spawns split halves), the 2 resulting parts turn **±90° perpendicular** to the parent's cardinal travel direction, advance up to **3 grid squares** (`divertSteps = 3`) if open/reachable, and cancel early to resume BFS pathing toward the House if blocked by a map boundary, obstacle, or turret.
+- **Pass 16–17 — Centipede Opposite-90° Split, Behind-Exit Health Indicator & Edge-to-Edge Stretched Maps**:
+  - **Centipede Opposite-90° Split (`proto-web/src/sim/game.ts`)**: Split parts turn opposite 90° (one left `sign=-1`, one right `sign=+1`), separate cleanly (`0.28` cell nudge), advance up to 3 open squares before resuming BFS toward House, and snapshot `this.enemies.length` across all AoE loops (`stasis`, `plasma`, `missile`, `mines`, `meteors`, `roomba`, `fireZones`, `updateEnemies`) so killing splash blasts never damage newborn split halves on their birth frame.
+  - **Behind-Exit Orientation-Matched Health Bar (`proto-web/src/render.ts`)**: Maps with space behind exits (`backyard-lawn`, `kitchen-raid`, `mars-outpost`, `pacific-fleet`, `ironhold-keep`, `dc-defense`) render the health indicator behind the exit squares (`maxExitX + 1`) matching their screen orientation — portrait vertical pill behind vertical 1×2 exits on desktop, landscape horizontal pill behind/below horizontal 2×1 exits on rotated phone.
+  - **Edge-to-Edge Stretched Maps (`proto-web/src/layout.ts`, `render.ts`, `main.ts`)**: Expanded all 7 base `LAYOUTS` and added `adaptLayout(base, sw, sh)` to stretch boards across the full available space between player docks, HUD, and outer borders on 16:9, 16:10, 4:3, and portrait phone screens, with exact stretched `boardLocalToWorld`/`worldToBoardLocal`/`boardCellSize`, counter-scaled crisp in-map labels, and elliptical true-grid range previews.
 
 ## Verified (2026-11-20)
 - `node scripts/validate-data.mjs` -> PASS (5 turrets, 6 enemies, 9 maps, 11 waves; all spawns reachable).
 - `npm --prefix proto-web run typecheck` -> PASS (0 errors).
-- `npm --prefix proto-web test` -> PASS (**335/335** across 12 suites, incl. 3 new deterministic tests for horizontal ±90° 3-square split, vertical ±90° 3-square split, and obstacle/turret/edge early-stop).
+- `npm --prefix proto-web test` -> PASS (**337/337** across 12 suites, incl. Gnome splash opposite-90° split test and 12-viewport `adaptLayout` SAT & cell-mapping round-trip suite).
 - Production builds (`/` and `VITE_BASE=/TTDefense/`) -> PASS (22 precached files).
-- Live Chromium `http://localhost:5173/` (`1280×800`) -> PASS (`0` console/page/network errors; verified Wave 3 `Centipede Split` on Backyard Lawn with North/South ±90° split halves scuttling vertically from East-moving parent). Archived in `.tasks/pass16-centipede-split-90deg.png`.
+- Live Chromium `http://localhost:5173/` (`1280×720` 16:9 desktop + `390×844` portrait phone) -> PASS (`0` console/page/network errors; visually confirmed full-bleed Backyard Lawn & Midnight Kitchen maps and orientation-matched portrait/landscape health bars behind House/Fridge squares). Archived in `.tasks/pass17-*.png`.
 - Unverified: physical device multi-touch/DPI/thermal feel and native OS PWA installation.
 
 ## Sustained benchmark verified (this restart)

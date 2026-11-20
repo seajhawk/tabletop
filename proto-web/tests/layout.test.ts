@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD, boardCellCenter, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
-  dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton,
-  hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, LAYOUTS, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
-  radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect,
-  SUMMARY_BUTTON_IDS, summaryButtonRects, summaryCardRect, TURRET_ORDER, Viewport, WORLD_H, WORLD_W, worldToBoardLocal,
-  worldToDock,
+  adaptLayout, BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE,
+  creditChipRect, DOCK_H, DOCK_W, dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot,
+  hitHudButton, hitRadialButton, hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, LAYOUTS, PHONE_SETTINGS,
+  polygonsOverlap, RADIAL_BTN_R, radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects,
+  settingsPanelRect, slotRect, SUMMARY_BUTTON_IDS, summaryButtonRects, summaryCardRect, TURRET_ORDER, Viewport,
+  WORLD_H, WORLD_W, worldToBoardLocal, worldToDock,
 } from '../src/layout';
 
 const DEG = Math.PI / 180;
@@ -66,7 +66,7 @@ describe('rotation-aware dock layout', () => {
     expect(L.stageH).toBe(1244);
     expect(L.boardRotated).toBe(true);
     expect(L.board.h).toBeGreaterThan(L.board.w);
-    expect(L.board).toEqual({ x: 18, y: 204, w: 512, h: 896 });
+    expect(L.board).toEqual({ x: 8, y: 200, w: 532, h: 900 });
     for (const d of L.docks) expect(d.scale).toBeGreaterThanOrEqual(1.1);
     expect(L.docks[0].cy).toBeGreaterThan(L.board.y + L.board.h);
     expect(L.docks[1].cy).toBeLessThan(L.board.y);
@@ -79,25 +79,81 @@ describe('rotation-aware dock layout', () => {
     expect(v.oy).toBeCloseTo((844 - 1244 * expectedScale) / 2, 9);
   });
 
-  it('1P base side has 1 dock on the right/base side at cx=1184, cy=400, scale=1', () => {
+  it('1P base side has 1 dock on the right/base side at cx=1212, cy=400, scale=1 and full-bleed board', () => {
     const L = LAYOUTS.find(l => l.id === '1p-base')!;
     expect(L.playerCount).toBe(1);
     expect(L.docks).toHaveLength(1);
-    expect(L.docks[0]).toMatchObject({ player: 0, cx: 1184, cy: 400, scale: 1 });
+    expect(L.docks[0]).toMatchObject({ player: 0, cx: 1212, cy: 400, scale: 1 });
     expect(L.docks[0].bounds.x).toBeGreaterThan(L.board.x + L.board.w);
+    expect(L.board.w).toBeGreaterThan(1100);
+    expect(L.board.h).toBeGreaterThan(700);
   });
 
-  it('1P phone has 1 dock at the bottom at scale=1.12 and rotated vertical court', () => {
+  it('1P phone has 1 dock at the bottom at scale=1.12 and stretched rotated vertical court', () => {
     const L = LAYOUTS.find(l => l.id === '1p-phone')!;
     expect(L.playerCount).toBe(1);
     expect(L.stageW).toBe(548);
     expect(L.stageH).toBe(1140);
     expect(L.boardRotated).toBe(true);
     expect(L.board.h).toBeGreaterThan(L.board.w);
-    expect(L.board).toEqual({ x: 18, y: 80, w: 512, h: 896 });
+    expect(L.board).toEqual({ x: 8, y: 72, w: 532, h: 918 });
     expect(L.docks).toHaveLength(1);
-    expect(L.docks[0]).toMatchObject({ player: 0, cx: 274, cy: 1058, rot: 0, scale: 1.12 });
+    expect(L.docks[0]).toMatchObject({ player: 0, cx: 274, cy: 1064, rot: 0, scale: 1.12 });
     expect(L.docks[0].bounds.y).toBeGreaterThan(L.board.y + L.board.h);
+  });
+
+  it('adaptLayout stretches boards to fill wider/taller screens with zero dock/HUD/board overlap', () => {
+    const scenarios: [string, number, number][] = [
+      ['2p-opposing', 1920, 1080],
+      ['2p-opposing', 1024, 768],
+      ['2p-opposing', 3440, 1440],
+      ['1p-base', 1920, 1080],
+      ['4p-edges', 1920, 1080],
+      ['4p-2x2', 1920, 1080],
+      ['4p-corners', 1920, 1080],
+      ['4p-corners', 1024, 768],
+      ['2p-phone', 390, 844],
+      ['2p-phone', 412, 915],
+      ['2p-phone', 360, 840],
+      ['1p-phone', 390, 844],
+    ];
+    for (const [id, sw, sh] of scenarios) {
+      const base = LAYOUTS.find(l => l.id === id)!;
+      const adapted = adaptLayout(base, sw, sh);
+      expect(adapted.board.w).toBeGreaterThanOrEqual(base.board.w);
+      expect(adapted.board.h).toBeGreaterThanOrEqual(base.board.h);
+      const hudRects = HUD_BUTTON_IDS.map(hid => adapted.hudButtons[hid]);
+      for (const hr of hudRects) {
+        expect(hr.x).toBeGreaterThanOrEqual(0);
+        expect(hr.y).toBeGreaterThanOrEqual(0);
+        expect(hr.x + hr.w).toBeLessThanOrEqual(adapted.stageW);
+        expect(hr.y + hr.h).toBeLessThanOrEqual(adapted.stageH);
+        expect(rectsOverlap(hr, adapted.board)).toBe(false);
+      }
+      for (const d of adapted.docks) {
+        for (const c of dockPolygon(d)) {
+          expect(c.x).toBeGreaterThanOrEqual(0);
+          expect(c.y).toBeGreaterThanOrEqual(0);
+          expect(c.x).toBeLessThanOrEqual(adapted.stageW + 1e-6);
+          expect(c.y).toBeLessThanOrEqual(adapted.stageH + 1e-6);
+        }
+        expect(polygonsOverlap(dockPolygon(d), rectPolygon(adapted.board))).toBe(false);
+        for (const hr of hudRects) {
+          expect(polygonsOverlap(dockPolygon(d), rectPolygon(hr))).toBe(false);
+        }
+      }
+      // Verify stretched cellAt + boardLocalToWorld + worldToBoardLocal round-trip cleanly
+      const { cw, ch } = boardCellSize(adapted.board, !!adapted.boardRotated);
+      expect(cw).toBeGreaterThan(20);
+      expect(ch).toBeGreaterThan(20);
+      for (const [gx, gy] of [[0, 0], [27, 0], [0, 15], [27, 15], [13, 7]]) {
+        const wc = boardCellCenter(adapted.board, gx, gy, !!adapted.boardRotated);
+        expect(cellAt(wc.x, wc.y, adapted.board, !!adapted.boardRotated)).toEqual({ x: gx, y: gy });
+        const back = worldToBoardLocal(adapted.board, wc.x, wc.y, !!adapted.boardRotated);
+        expect(back.x).toBeCloseTo((gx + 0.5) * CELL, 8);
+        expect(back.y).toBeCloseTo((gy + 0.5) * CELL, 8);
+      }
+    }
   });
 
   it('all 7 layouts are present in LAYOUTS', () => {
