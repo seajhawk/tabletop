@@ -131,8 +131,8 @@ const checkReachable = (w, h, spawns, exits, blocked, label) => {
 };
 
 // Validate maps (7+ maps)
-const validThemes = new Set(['space', 'military', 'naval', 'mars', 'medieval']);
-const validMechanics = new Set(['naval-subs-mines', 'mars-storms', 'medieval-frenzy']);
+const validThemes = new Set(['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn']);
+const validMechanics = new Set(['naval-subs-mines', 'mars-storms', 'medieval-frenzy', 'kitchen-rush', 'lawn-split-burrow']);
 assert.ok(maps.length >= 7, `Expected at least 7 maps, got ${maps.length}`);
 assert.equal(maps[0].id, 'orbital-crossing', 'First map must be orbital-crossing');
 assert.equal(maps[1].id, 'dc-defense', 'Second map must be dc-defense');

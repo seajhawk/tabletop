@@ -320,12 +320,126 @@ const MEDIEVAL_THEME: TheaterTheme = {
   },
 };
 
+const KITCHEN_THEME: TheaterTheme = {
+  id: 'kitchen',
+  spaceBg: 0x1b1510,
+  boardBg: 0x2b2219,
+  gridColor: 0x5c4a38,
+  borderColor: 0xd4a973,
+  panelBg: 0x241c14,
+  slotBg: 0x31261c,
+  routeDotColor: 0x4b3826,
+  routePulseColor: 0xd96b27,
+  spawnLabel: 'PANTRY',
+  objectiveLabel: 'FRIDGE',
+  bossTitle: 'KING RAT',
+  victoryTitle: 'FRIDGE DEFENDED',
+  defeatTitle: 'FRIDGE RAIDED',
+  helpText:
+    'Defend the fridge from kitchen vermin! Hot Stove Burners (+BURN) add fire burn to passing creeps. ' +
+    'Prepare Honey Traps to counter fast bursts during the Fridge Snack Rush!',
+  obstacleLabel: 'Appliances',
+  boostLabel: '+BURN',
+  roleTags: {
+    pulse: 'SWAT',
+    plasma: 'SPICE',
+    stasis: 'GLUE',
+    railgun: 'SLICE',
+    swarm: 'SPRAY',
+  },
+  turrets: {
+    pulse: { shortName: 'Swatter', fullName: 'Fly Swatter', upgrades: ['Twin Swatter', 'Bug Zapper'], color: 0x38bdf8 },
+    plasma: { shortName: 'Pepper Mill', fullName: 'Pepper Mill', upgrades: ['Cayenne Cannon', 'Ghost Pepper'], color: 0xf97316 },
+    stasis: { shortName: 'Honey Trap', fullName: 'Honey Trap', upgrades: ['Syrup Spill', 'Super Glue Pad'], color: 0xfacc15 },
+    railgun: { shortName: 'Chef Knife', fullName: "Chef's Knife", upgrades: ['Twin Cleavers', 'Laser Slicer'], color: 0xc084fc },
+    swarm: { shortName: 'Soap Spray', fullName: 'Soap Sprayer', upgrades: ['Suds Launcher', 'Dishwasher Pod'], color: 0xf472b6 },
+  },
+  enemies: {
+    scout: { name: 'Kitchen Ant', color: 0x8b4513 },
+    swarmer: { name: 'Sugar Ant', color: 0xd2691e },
+    cruiser: { name: 'Armored Roach', color: 0x5c4033 },
+    frigate: { name: 'Pantry Rat', color: 0x708090 },
+    phase: { name: 'Fruit Fly', color: 0xffa07a },
+    dreadnought: { name: 'King Rat', color: 0x4a3b32 },
+  },
+  waveNames: {
+    1: 'Crumb Patrol',
+    2: 'Sugar Trail',
+    3: 'Roach March',
+    4: 'Pantry Rats',
+    5: 'Fruit Fly Cloud',
+    6: 'Midnight Raid',
+    7: 'Ant Stampede',
+    8: 'Grease Brigade',
+    9: 'Counter Blitz',
+    10: 'King Rat Siege',
+  },
+};
+
+const LAWN_THEME: TheaterTheme = {
+  id: 'lawn',
+  spaceBg: 0x101c12,
+  boardBg: 0x182b1b,
+  gridColor: 0xd9f2c9,
+  borderColor: 0x7cb868,
+  panelBg: 0x162418,
+  slotBg: 0x203422,
+  routeDotColor: 0xf3e8be,
+  routePulseColor: 0x9be564,
+  spawnLabel: 'BACKYARD',
+  objectiveLabel: 'HOUSE',
+  bossTitle: 'MILLIPEDE QUEEN',
+  victoryTitle: 'HOUSE DEFENDED',
+  defeatTitle: 'HOUSE OVERRUN',
+  helpText:
+    'Protect the house from backyard pests! Lawn Thumpers and Mole Spades flush burrowed Moles, ' +
+    'while splash defenses counter splitting Giant Centipedes!',
+  obstacleLabel: 'Garden Beds',
+  boostLabel: '+PWR',
+  roleTags: {
+    pulse: 'ZAP',
+    plasma: 'BOOM',
+    stasis: 'THUMP',
+    railgun: 'DIG',
+    swarm: 'HOSE',
+  },
+  turrets: {
+    pulse: { shortName: 'Bug Zapper', fullName: 'Bug Zapper', upgrades: ['Twin Zapper', 'UV Tesla Coil'], color: 0x38d9ff },
+    plasma: { shortName: 'Gnome', fullName: 'Garden Gnome', upgrades: ['Pinecone Mortar', 'Firecracker Gnome'], color: 0xff6b4a },
+    stasis: { shortName: 'Thumper', fullName: 'Lawn Thumper', upgrades: ['Super Sprinkler', 'Seismic Thumper'], color: 0x6ee7b7 },
+    railgun: { shortName: 'Mole Spade', fullName: 'Mole Crusher', upgrades: ['Deep Spade', 'Mower Rail'], color: 0xe2e8f0 },
+    swarm: { shortName: 'Hose Jet', fullName: 'Hose Turret', upgrades: ['Pressure Washer', 'Hydro Barrage'], color: 0xfbbf24 },
+  },
+  enemies: {
+    scout: { name: 'Fire Ant', color: 0xd9381e },
+    swarmer: { name: 'Garden Beetle', color: 0x556b2f },
+    cruiser: { name: 'Giant Centipede', color: 0x8b0000 },
+    frigate: { name: 'Burrowing Mole', color: 0x6959cd },
+    phase: { name: 'Swarm Mosquito', color: 0x778899 },
+    dreadnought: { name: 'Millipede Queen', color: 0x4a0e4e },
+  },
+  waveNames: {
+    1: 'Ant Hill',
+    2: 'Beetle Rush',
+    3: 'Centipede Split',
+    4: 'Mole Tunnels [DIG]',
+    5: 'Mosquito Swarm',
+    6: 'Garden Raid',
+    7: 'Bug Stampede',
+    8: 'Underground Push',
+    9: 'Porch Assault',
+    10: 'Millipede Queen',
+  },
+};
+
 export const THEMES: Record<ThemeId, TheaterTheme> = {
   space: SPACE_THEME,
   military: MILITARY_THEME,
   naval: NAVAL_THEME,
   mars: MARS_THEME,
   medieval: MEDIEVAL_THEME,
+  kitchen: KITCHEN_THEME,
+  lawn: LAWN_THEME,
 };
 
 export function getTheater(theme?: string): TheaterTheme {
@@ -338,6 +452,10 @@ export function getTheater(theme?: string): TheaterTheme {
       return MARS_THEME;
     case 'medieval':
       return MEDIEVAL_THEME;
+    case 'kitchen':
+      return KITCHEN_THEME;
+    case 'lawn':
+      return LAWN_THEME;
     case 'space':
     default:
       return SPACE_THEME;

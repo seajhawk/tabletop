@@ -443,9 +443,9 @@ describe('weapons, shields, armor, flying, and boss mechanics', () => {
     expect(g2.mapVersion).toBeGreaterThan(prevVer);
     g2.setMap(2);
     expect(g2.currentMap.id).toBe('pacific-fleet');
-    g2.setMap(5);
+    g2.setMap(7);
     expect(g2.currentMap.id).toBe('asteroid-belt');
-    g2.setMap(7); // wraps modulo 7 -> 0
+    g2.setMap(9); // wraps modulo 9 -> 0
     expect(g2.mapIndex).toBe(0);
     expect(g2.currentMap.id).toBe('orbital-crossing');
   });
@@ -645,15 +645,17 @@ describe('1-Player Solo Mode balance', () => {
 });
 
 describe('new theater maps & mechanics', () => {
-  it('loads all 7 maps and runs stress setup cleanly on the 3 new theaters', () => {
+  it('loads all 9 maps and runs stress setup cleanly on the new theaters', () => {
     const d = loadData();
-    expect(d.maps.length).toBe(7);
+    expect(d.maps.length).toBe(9);
     expect(d.maps.map((m) => m.id)).toEqual([
       'orbital-crossing',
       'dc-defense',
       'pacific-fleet',
       'mars-outpost',
       'ironhold-keep',
+      'kitchen-raid',
+      'backyard-lawn',
       'asteroid-belt',
       'nebula-rift',
     ]);
@@ -663,6 +665,8 @@ describe('new theater maps & mechanics', () => {
       [2, 'pacific-fleet'],
       [3, 'mars-outpost'],
       [4, 'ironhold-keep'],
+      [5, 'kitchen-raid'],
+      [6, 'backyard-lawn'],
     ] as const) {
       g.setMap(idx);
       expect(g.currentMap.id).toBe(expectedId);
@@ -839,5 +843,115 @@ describe('new theater maps & mechanics', () => {
     expect(king.enraged).toBe(true);
     expect(g.drainEvents()).toContain('enrage');
     expect(Math.hypot(orc.vx, orc.vy)).toBeCloseTo(orc.def.speed * 1.35, 3);
+  });
+
+  it('kitchen: stove burners grant burn DoT and Fridge Snack Rush speeds unslowed pests (+30%) while Honey Trap slows them extra (0.80x)', () => {
+    const g = newGame(2);
+    g.setMap(5); // kitchen-raid
+    expect(g.currentMap.mechanic).toBe('kitchen-rush');
+    g.credits[0] = 1000;
+
+    // [9, 5] is a stove burner boostCell
+    expect(g.tryPlace(0, 'pulse', 9, 5).ok).toBe(true);
+    const burnerTower = g.towers[0];
+    expect(burnerTower.boosted).toBe(true);
+    expect(g.towerStats(burnerTower).burnDps).toBeGreaterThanOrEqual(10);
+    expect(g.towerStats(burnerTower).burnDuration).toBeGreaterThanOrEqual(2.5);
+
+    g.launchWave();
+    g.spawners = [];
+    const pest = makeEnemy(g, 2001, 'cruiser', 9.5, 6.5, {
+      hp: 500, maxHp: 500, shield: 0, maxShield: 0, cx: 9, cy: 6, nx: 10, ny: 6, rem: 15,
+    });
+    g.enemies = [pest];
+    run(g, 0.3);
+    expect(pest.burnT).toBeGreaterThan(0);
+    expect(pest.burnDps).toBeGreaterThanOrEqual(10);
+
+    // Trigger Fridge Snack Rush at 20s
+    g.enemies = [
+      makeEnemy(g, 2002, 'scout', 2.5, 8.5, { cx: 2, cy: 8, nx: 3, ny: 8, rem: 20 }),
+      makeEnemy(g, 2003, 'scout', 2.5, 8.5, { cx: 2, cy: 8, nx: 3, ny: 8, rem: 20, slowT: 5, slowF: 0.62 }),
+    ];
+    g.rushTimer = 19.9;
+    g.rushActive = false;
+    run(g, 0.2);
+    expect(g.rushActive).toBe(true);
+    expect(g.drainEvents()).toContain('fridge-open');
+
+    const [fastPest, stickyPest] = g.enemies;
+    expect(Math.hypot(fastPest.vx, fastPest.vy)).toBeCloseTo(fastPest.def.speed * 1.3, 3);
+    expect(Math.hypot(stickyPest.vx, stickyPest.vy)).toBeCloseTo(stickyPest.def.speed * 0.62 * 0.8, 3);
+  });
+
+  it('lawn: burrowed moles evade Pulse until flushed by Lawn Thumper (stasis), struck by Mole Crusher (railgun) at 1.4x, or surfaced by T2 Firecracker Gnome', () => {
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn
+    expect(g.currentMap.mechanic).toBe('lawn-split-burrow');
+    g.credits[0] = 1000;
+    g.credits[1] = 1000;
+
+    expect(g.tryPlace(0, 'pulse', 3, 4).ok).toBe(true);
+    g.launchWave();
+    g.spawners = [];
+    const mole = makeEnemy(g, 2101, 'frigate', 3.5, 5.5, { submerged: true, revealedT: 0, rem: 12 });
+    const startPool = mole.hp + mole.shield;
+    g.enemies = [mole];
+
+    // Pulse cannot target unrevealed burrowed mole
+    run(g, 1);
+    expect(mole.hp + mole.shield).toBe(startPool);
+
+    // Lawn Thumper (stasis) flushes mole and emits 'mole-flush', allowing Pulse to hit
+    expect(g.tryPlace(1, 'stasis', 4, 4).ok).toBe(true);
+    run(g, 0.35);
+    expect(mole.revealedT).toBeGreaterThan(0);
+    expect(mole.hp + mole.shield).toBeLessThan(startPool);
+    expect(g.drainEvents()).toContain('mole-flush');
+
+    // Mole Crusher (railgun) natively detects burrowed moles and deals 1.4x damage
+    const g2 = newGame(2);
+    g2.setMap(6);
+    g2.credits[0] = 500;
+    expect(g2.tryPlace(0, 'railgun', 3, 4).ok).toBe(true);
+    const railDmg = g2.towerStats(g2.towers[0]).damage;
+    g2.launchWave();
+    g2.spawners = [];
+    const mole2 = makeEnemy(g2, 2102, 'frigate', 3.5, 6.5, {
+      submerged: true, revealedT: 0, hp: 500, maxHp: 500, shield: 0, maxShield: 0, rem: 12,
+    });
+    g2.enemies = [mole2];
+    run(g2, 0.35);
+    expect(mole2.hp).toBeCloseTo(500 - railDmg * 1.4, 4);
+    expect(mole2.revealedT).toBeGreaterThan(0);
+  });
+
+  it('lawn: Giant Centipede (cruiser) splits into 2 non-recursive halves on death and emits centipede-split', () => {
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn
+    expect(g.tryPlace(0, 'railgun', 3, 4).ok).toBe(true);
+    g.launchWave();
+    g.spawners = [];
+
+    const centipede = makeEnemy(g, 2201, 'cruiser', 3.5, 5.5, {
+      hp: 10, maxHp: 240, shield: 0, maxShield: 0, cx: 3, cy: 5, nx: 4, ny: 5, vx: 1.4, vy: 0, rem: 15,
+    });
+    g.enemies = [centipede];
+
+    // Kill the parent centipede -> spawns 2 split children
+    run(g, 0.35);
+    expect(g.drainEvents()).toContain('centipede-split');
+    expect(g.enemies.length).toBe(2);
+    for (const child of g.enemies) {
+      expect(child.isSplitChild).toBe(true);
+      expect(child.maxHp).toBe(Math.round(240 * 0.38));
+      expect(child.def.armor).toBe(0);
+      expect(child.def.lifeCost).toBe(1);
+    }
+
+    // Kill both split children -> no infinite recursion, wave clears cleanly
+    run(g, 8);
+    expect(g.enemies.length).toBe(0);
+    expect(g.totalCredits()).toBeCloseTo(g.expectedCredits(), 6);
   });
 });

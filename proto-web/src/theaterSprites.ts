@@ -4,9 +4,12 @@ import type { MilitaryTextureSet } from './militarySprites';
 export interface TheaterTextureSet extends MilitaryTextureSet {
   mine?: Texture;
   boost?: Texture;
+  base?: Texture;
+  moleMound?: Texture;
 }
 
-export type TheaterTheme = 'naval' | 'mars' | 'medieval';
+export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
+export type TheaterSpriteTheme = TheaterTheme;
 
 const TURRET_KEYS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_KEYS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
@@ -1889,8 +1892,1166 @@ function paintMedievalCrater(): Texture {
 }
 
 // ============================================================================
+// SHARED KITCHEN & LAWN HELPERS
+// ============================================================================
+
+function paintMinimalCornerObstacle(color: string, alpha: number): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const pad = 10;
+    const arm = 12;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    const corners: [number, number, number, number][] = [
+      [pad, pad, 1, 1],
+      [size - pad, pad, -1, 1],
+      [pad, size - pad, 1, -1],
+      [size - pad, size - pad, -1, -1],
+    ];
+    for (const [x, y, dx, dy] of corners) {
+      ctx.beginPath();
+      ctx.moveTo(x + dx * arm, y);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x, y + dy * arm);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
+function paintTransparentHaloRing(
+  innerColor: string,
+  midColor: string,
+  outerColor: string,
+  ringStroke: string,
+): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const glow = ctx.createRadialGradient(c, c, 18, c, c, 44);
+    glow.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    glow.addColorStop(0.45, innerColor);
+    glow.addColorStop(0.72, midColor);
+    glow.addColorStop(1, outerColor);
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(c, c, 44, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = ringStroke;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(c, c, 32, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.arc(c, c, 37, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function paintCoreBracketMarker(
+  bracketColor: string,
+  glowColor: string,
+  accentColor: string,
+): Texture {
+  return paintCanvas(128, (ctx, size) => {
+    const c = size / 2;
+    // Soft perimeter glow so the painted map base shines through the center
+    const halo = ctx.createRadialGradient(c, c, 30, c, c, 60);
+    halo.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    halo.addColorStop(0.65, glowColor);
+    halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(c, c, 60, 0, Math.PI * 2);
+    ctx.fill();
+
+    const pad = 12;
+    const arm = 22;
+    const corners: [number, number, number, number][] = [
+      [pad, pad, 1, 1],
+      [size - pad, pad, -1, 1],
+      [pad, size - pad, 1, -1],
+      [size - pad, size - pad, -1, -1],
+    ];
+    for (const [x, y, dx, dy] of corners) {
+      ctx.save();
+      ctx.shadowColor = bracketColor;
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = INK_OUTLINE;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x + dx * arm, y);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x, y + dy * arm);
+      ctx.stroke();
+
+      ctx.strokeStyle = bracketColor;
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(x + dx * 4, y + dy * 4, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+function drawAntSprite(
+  ctx: CanvasRenderingContext2D,
+  c: number,
+  scale: number,
+  bodyLight: string,
+  bodyDark: string,
+  legColor: string,
+): void {
+  // 6 crisp legs
+  ctx.strokeStyle = INK_OUTLINE;
+  ctx.lineWidth = 3.2 * scale;
+  ctx.lineCap = 'round';
+  const legPairs = [-4, 1, 6];
+  for (const lx of legPairs) {
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(c + lx * scale, c);
+      ctx.lineTo(c + (lx - 3) * scale, c + side * 12 * scale);
+      ctx.lineTo(c + (lx + 2) * scale, c + side * 17 * scale);
+      ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = legColor;
+  ctx.lineWidth = 1.5 * scale;
+  for (const lx of legPairs) {
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(c + lx * scale, c);
+      ctx.lineTo(c + (lx - 3) * scale, c + side * 12 * scale);
+      ctx.lineTo(c + (lx + 2) * scale, c + side * 17 * scale);
+      ctx.stroke();
+    }
+  }
+
+  // Abdomen, thorax, head facing +X
+  const drawSeg = (ox: number, oy: number, rx: number, ry: number) => {
+    const grad = ctx.createRadialGradient(
+      c + ox - rx * 0.25,
+      c + oy - ry * 0.25,
+      1,
+      c + ox,
+      c + oy,
+      Math.max(rx, ry),
+    );
+    grad.addColorStop(0, bodyLight);
+    grad.addColorStop(1, bodyDark);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(c + ox, c + oy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.8);
+  };
+
+  withGroundShadow(ctx, () => {
+    drawSeg(-11 * scale, 0, 9.5 * scale, 7 * scale);
+    drawSeg(1 * scale, 0, 5.5 * scale, 4.5 * scale);
+    drawSeg(11 * scale, 0, 6 * scale, 5.2 * scale);
+  });
+
+  // Antennae
+  ctx.strokeStyle = INK_OUTLINE;
+  ctx.lineWidth = 1.7 * scale;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(c + 16 * scale, c + side * 2 * scale);
+    ctx.quadraticCurveTo(
+      c + 22 * scale,
+      c + side * 7 * scale,
+      c + 25 * scale,
+      c + side * 11 * scale,
+    );
+    ctx.stroke();
+  }
+}
+
+// ============================================================================
+// 4. KITCHEN THEATER (COUNTERTOP — BUGS & RODENTS)
+// ============================================================================
+
+function paintKitchenCoreBase(): Texture {
+  return paintCoreBracketMarker('#6ef3ff', 'rgba(110, 243, 255, 0.24)', '#e2feff');
+}
+
+function paintKitchenBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const palette: Record<TurretKey, [string, string, string]> = {
+      pulse: ['#ffffff', '#c7e8f5', '#00bcd4'],
+      plasma: ['#7a4d2b', '#472a15', '#ff5722'],
+      stasis: ['#fff0b3', '#e09f1f', '#ffb300'],
+      railgun: ['#525860', '#2b2f36', '#cfd8dc'],
+      swarm: ['#ffffff', '#e8d5e5', '#e91e63'],
+    };
+    const [light, dark, accent] = palette[key];
+
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, c - 31, c - 31, 62, 62, 14);
+      ctx.fillStyle = dark;
+      ctx.fill();
+    });
+
+    const grad = ctx.createRadialGradient(c - 8, c - 8, 4, c, c, 34);
+    grad.addColorStop(0, light);
+    grad.addColorStop(1, dark);
+    roundedRectPath(ctx, c - 31, c - 31, 62, 62, 14);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    strokeInk(ctx, 1.9);
+
+    roundedRectPath(ctx, c - 24, c - 24, 48, 48, 10);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+  });
+}
+
+function paintKitchenTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+
+    if (key === 'pulse') {
+      // Fly Swatter: cyan/blue mesh paddle on handle; T1 twin paddles; T2 electric bug-zapper grid
+      const drawPaddle = (oy: number, electric: boolean) => {
+        ctx.save();
+        ctx.translate(c, c + oy);
+        // Handle
+        drawGradBarrel(ctx, -20, 0, 4, 6, '#90a4ae', '#546e7a', '#263238', 1.6);
+        // Mesh head
+        roundedRectPath(ctx, 2, -14, 28, 28, 6);
+        ctx.fillStyle = electric ? '#80f5ff' : '#29b6f6';
+        ctx.fill();
+        strokeInk(ctx, 1.8);
+        // Grid lines
+        ctx.strokeStyle = electric ? '#ffffff' : '#01579b';
+        ctx.lineWidth = 1.2;
+        for (let gx = 8; gx <= 24; gx += 6) {
+          ctx.beginPath();
+          ctx.moveTo(gx, -12);
+          ctx.lineTo(gx, 12);
+          ctx.stroke();
+        }
+        for (let gy = -8; gy <= 8; gy += 6) {
+          ctx.beginPath();
+          ctx.moveTo(4, gy);
+          ctx.lineTo(28, gy);
+          ctx.stroke();
+        }
+        if (electric) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(6, -6);
+          ctx.lineTo(14, 2);
+          ctx.lineTo(20, -4);
+          ctx.lineTo(26, 6);
+          ctx.stroke();
+        }
+        ctx.restore();
+      };
+
+      withGroundShadow(ctx, () => {
+        if (tier === 0) {
+          drawPaddle(0, false);
+        } else if (tier === 1) {
+          drawPaddle(-11, false);
+          drawPaddle(11, false);
+        } else {
+          drawPaddle(-11, true);
+          drawPaddle(11, true);
+        }
+      });
+      // Center pivot cap
+      ctx.fillStyle = tier === 2 ? '#00e5ff' : '#cfd8dc';
+      ctx.beginPath();
+      ctx.arc(c - 12, c, 9, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.8);
+      return;
+    }
+
+    if (key === 'plasma') {
+      // Pepper Mill: walnut & brass grinder; T1 red cayenne ring; T2 blazing chili mortar
+      withGroundShadow(ctx, () => {
+        drawGradBarrel(ctx, c, c, c + 30, tier === 2 ? 16 : 12, '#ffe082', '#d4a017', '#795548', 1.7);
+      });
+      if (tier >= 1) {
+        ctx.strokeStyle = tier === 2 ? '#ff3d00' : '#d84315';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(c, c, 21, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      const grad = ctx.createRadialGradient(c - 5, c - 5, 3, c, c, 18);
+      grad.addColorStop(0, tier === 2 ? '#ff8a65' : '#8d6e63');
+      grad.addColorStop(1, tier === 2 ? '#bf360c' : '#3e2723');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(c, c, 18, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.9);
+
+      // Brass crank top
+      ctx.fillStyle = '#ffd54f';
+      ctx.beginPath();
+      ctx.arc(c, c, 7, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+      if (tier === 2) {
+        ctx.fillStyle = '#fff59d';
+        ctx.beginPath();
+        ctx.arc(c + 26, c, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+
+    if (key === 'stasis') {
+      // Honey Trap: golden amber honey jar/puddle; T1 maple syrup ring; T2 glossy emerald-gold super-glue coil
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = tier === 2 ? '#26a69a' : '#ffb300';
+        ctx.beginPath();
+        ctx.arc(c, c, 24, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      const grad = ctx.createRadialGradient(c - 6, c - 6, 3, c, c, 24);
+      if (tier === 2) {
+        grad.addColorStop(0, '#ffe082');
+        grad.addColorStop(0.55, '#00bfa5');
+        grad.addColorStop(1, '#00695c');
+      } else {
+        grad.addColorStop(0, '#fff59d');
+        grad.addColorStop(0.55, '#ffb300');
+        grad.addColorStop(1, tier === 1 ? '#bf360c' : '#e65100');
+      }
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(c, c, 23, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.85);
+
+      // Dripping nozzle & glossy highlight
+      drawGradBarrel(ctx, c + 8, c, c + 30, 8, '#ffe082', '#ffb300', '#e65100', 1.5);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.beginPath();
+      ctx.ellipse(c - 7, c - 8, 6, 3.2, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    if (key === 'railgun') {
+      // Chef's Knife: brushed steel blade; T1 twin cleavers; T2 glowing violet-steel laser slicer
+      const drawBlade = (oy: number, width: number, violet: boolean) => {
+        ctx.save();
+        ctx.translate(c, c + oy);
+        const grad = ctx.createLinearGradient(0, -width, 0, width);
+        grad.addColorStop(0, violet ? '#e1bee7' : '#ffffff');
+        grad.addColorStop(0.5, violet ? '#ab47bc' : '#b0bec5');
+        grad.addColorStop(1, violet ? '#4a148c' : '#546e7a');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(-10, -width);
+        ctx.lineTo(28, -width * 0.6);
+        ctx.lineTo(36, 0);
+        ctx.lineTo(28, width * 0.6);
+        ctx.lineTo(-10, width);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.8);
+        ctx.restore();
+      };
+
+      withGroundShadow(ctx, () => {
+        if (tier === 0) {
+          drawBlade(0, 9, false);
+        } else if (tier === 1) {
+          drawBlade(-9, 7, false);
+          drawBlade(9, 7, false);
+        } else {
+          drawBlade(-9, 7.5, true);
+          drawBlade(9, 7.5, true);
+        }
+      });
+
+      // Dark knife handle bolster
+      roundedRectPath(ctx, c - 22, c - 11, 18, 22, 5);
+      ctx.fillStyle = '#212121';
+      ctx.fill();
+      strokeInk(ctx, 1.8);
+      return;
+    }
+
+    // swarm: Soap Sprayer (white/magenta nozzle; T1 twin suds; T2 quad dishwasher pod launcher)
+    const nozzles = tier === 0 ? [0] : tier === 1 ? [-9, 9] : [-14, -5, 5, 14];
+    withGroundShadow(ctx, () => {
+      for (const oy of nozzles) {
+        drawGradBarrel(ctx, c + 2, c + oy, c + 30, 6, '#ffffff', '#f48fb1', '#ad1457', 1.5);
+      }
+    });
+    const bodyGrad = ctx.createRadialGradient(c - 5, c - 5, 3, c, c, 18);
+    bodyGrad.addColorStop(0, '#ffffff');
+    bodyGrad.addColorStop(1, '#f06292');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.arc(c - 2, c, 17, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.85);
+
+    if (tier >= 1) {
+      // Soap bubble accents
+      ctx.fillStyle = 'rgba(178, 235, 242, 0.85)';
+      ctx.beginPath();
+      ctx.arc(c - 10, c - 12, 5, 0, Math.PI * 2);
+      ctx.arc(c - 10, c + 12, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+    }
+  });
+}
+
+function paintKitchenEnemy(key: EnemyKey): Texture {
+  if (key === 'dreadnought') {
+    // King Rat (128x128): imposing armored giant rat boss with golden crown & cheese-wedge shoulder plates
+    return paintCanvas(128, (ctx, size) => {
+      const c = size / 2;
+      withGroundShadow(ctx, () => {
+        // Long pink tail
+        ctx.strokeStyle = '#f48fb1';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(c - 26, c);
+        ctx.quadraticCurveTo(c - 48, c - 18, c - 56, c + 10);
+        ctx.stroke();
+        strokeInk(ctx, 2);
+
+        // Giant rat body
+        const grad = ctx.createRadialGradient(c - 6, c - 8, 6, c, c, 36);
+        grad.addColorStop(0, '#90a4ae');
+        grad.addColorStop(1, '#37474f');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(c, c, 34, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 2.2);
+      });
+
+      // Cheese-wedge shoulder plates
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#ffd54f';
+        ctx.beginPath();
+        ctx.moveTo(c - 8, c + side * 14);
+        ctx.lineTo(c + 16, c + side * 26);
+        ctx.lineTo(c - 14, c + side * 32);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.8);
+        ctx.fillStyle = '#f57f17';
+        ctx.beginPath();
+        ctx.arc(c - 4, c + side * 24, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Snout & pink nose
+      ctx.fillStyle = '#78909c';
+      ctx.beginPath();
+      ctx.ellipse(c + 28, c, 15, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 2);
+      ctx.fillStyle = '#ff80ab';
+      ctx.beginPath();
+      ctx.arc(c + 41, c, 5, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+
+      // Golden crown
+      ctx.fillStyle = '#ffca28';
+      ctx.beginPath();
+      ctx.moveTo(c + 4, c - 10);
+      ctx.lineTo(c + 8, c - 20);
+      ctx.lineTo(c + 14, c - 13);
+      ctx.lineTo(c + 19, c - 22);
+      ctx.lineTo(c + 23, c - 11);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.8);
+    });
+  }
+
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+
+    if (key === 'scout') {
+      // Kitchen Ant: dark mahogany-red 3-segment ant
+      drawAntSprite(ctx, c, 1.0, '#c62828', '#5d0f0f', '#8e1c1c');
+      return;
+    }
+
+    if (key === 'swarmer') {
+      // Sugar Ant: smaller amber-brown scurrying ant
+      drawAntSprite(ctx, c, 0.78, '#ffb300', '#8d4e00', '#b26a00');
+      return;
+    }
+
+    if (key === 'cruiser') {
+      // Armored Roach: glossy dark-brown/burgundy oval armored cockroach
+      withGroundShadow(ctx, () => {
+        const grad = ctx.createRadialGradient(c - 4, c - 4, 3, c, c, 22);
+        grad.addColorStop(0, '#8d3b3b');
+        grad.addColorStop(1, '#2b0f0f');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(c, c, 21, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.9);
+      });
+      // Segmented carapace & glossy streak
+      ctx.strokeStyle = INK_OUTLINE;
+      ctx.lineWidth = 1.4;
+      for (const sx of [-6, 2, 10]) {
+        ctx.beginPath();
+        ctx.moveTo(c + sx, c - 11);
+        ctx.lineTo(c + sx, c + 11);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(255, 220, 210, 0.5)';
+      ctx.beginPath();
+      ctx.ellipse(c - 3, c - 5, 10, 2.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Long antennae
+      for (const side of [-1, 1]) {
+        ctx.strokeStyle = INK_OUTLINE;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(c + 19, c + side * 3);
+        ctx.quadraticCurveTo(c + 26, c + side * 12, c + 14, c + side * 22);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    if (key === 'frigate') {
+      // Pantry Rat: chunky slate-grey rodent with pink ears/tail & pale-blue grease sheen
+      withGroundShadow(ctx, () => {
+        ctx.strokeStyle = '#f48fb1';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(c - 16, c);
+        ctx.quadraticCurveTo(c - 26, c - 8, c - 28, c + 6);
+        ctx.stroke();
+
+        const grad = ctx.createRadialGradient(c - 3, c - 4, 2, c, c, 19);
+        grad.addColorStop(0, '#b0bec5');
+        grad.addColorStop(0.6, '#607d8b');
+        grad.addColorStop(1, '#37474f');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(c + 1, c, 18, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.9);
+      });
+      // Pink ears & nose
+      ctx.fillStyle = '#f48fb1';
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(c + 7, c + side * 9, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.4);
+      }
+      ctx.fillStyle = '#ff80ab';
+      ctx.beginPath();
+      ctx.arc(c + 19, c, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Pale-blue grease sheen
+      ctx.fillStyle = 'rgba(179, 229, 252, 0.55)';
+      ctx.beginPath();
+      ctx.ellipse(c - 2, c - 4, 8, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    // phase: Fruit Fly (magenta-eyed buzzing fly with wide translucent shimmering wings)
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#3e2723';
+      ctx.beginPath();
+      ctx.ellipse(c, c, 11, 6.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.7);
+    });
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = 'rgba(178, 255, 255, 0.62)';
+      ctx.beginPath();
+      ctx.ellipse(c - 3, c + side * 12, 13, 6.5, side * -0.45, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+      // Bright magenta eyes
+      ctx.fillStyle = '#ff1744';
+      ctx.beginPath();
+      ctx.arc(c + 9, c + side * 3.5, 3, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.2);
+    }
+  });
+}
+
+function paintKitchenBoost(): Texture {
+  return paintTransparentHaloRing(
+    'rgba(255, 90, 31, 0.72)',
+    'rgba(255, 179, 71, 0.58)',
+    'rgba(255, 90, 31, 0)',
+    '#ff6d00',
+  );
+}
+
+function paintKitchenObstacle(_variant: number): Texture {
+  return paintMinimalCornerObstacle('#5d4037', 0.24);
+}
+
+function paintKitchenCrater(): Texture {
+  return paintCanvas(48, (ctx, size) => {
+    const c = size / 2;
+    const grad = ctx.createRadialGradient(c, c, 2, c, c, 20);
+    grad.addColorStop(0, 'rgba(62, 30, 18, 0.85)');
+    grad.addColorStop(0.55, 'rgba(141, 64, 24, 0.52)');
+    grad.addColorStop(1, 'rgba(141, 64, 24, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(c, c, 20, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================================
+// 5. LAWN THEATER (BACKYARD GRASS — GARDEN PESTS)
+// ============================================================================
+
+function paintLawnCoreBase(): Texture {
+  return paintCoreBracketMarker('#ffca28', 'rgba(255, 193, 7, 0.25)', '#fff8e1');
+}
+
+function paintLawnBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const palette: Record<TurretKey, [string, string, string]> = {
+      pulse: ['#b0bec5', '#37474f', '#00e5ff'],
+      plasma: ['#e57373', '#8d3b2b', '#ff1744'],
+      stasis: ['#ffe082', '#8c6d1f', '#40c4ff'],
+      railgun: ['#eceff1', '#607d8b', '#76ff03'],
+      swarm: ['#fff176', '#00796b', '#ffeb3b'],
+    };
+    const [light, dark, accent] = palette[key];
+
+    withGroundShadow(ctx, () => {
+      polygonPath(ctx, c, c, 32, 8, Math.PI / 8);
+      ctx.fillStyle = dark;
+      ctx.fill();
+    });
+
+    const grad = ctx.createRadialGradient(c - 7, c - 7, 4, c, c, 32);
+    grad.addColorStop(0, light);
+    grad.addColorStop(1, dark);
+    polygonPath(ctx, c, c, 32, 8, Math.PI / 8);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    strokeInk(ctx, 1.9);
+
+    polygonPath(ctx, c, c, 24, 8, Math.PI / 8);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+  });
+}
+
+function paintLawnTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+
+    if (key === 'pulse') {
+      // Bug Zapper: glowing cyan/white UV lantern cage; T1 twin cages; T2 Tesla UV coil
+      const drawCage = (ox: number, oy: number, r: number) => {
+        ctx.fillStyle = '#e0f7fa';
+        ctx.beginPath();
+        ctx.arc(c + ox, c + oy, r, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.7);
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(c + ox, c + oy, r * 0.62, 0, Math.PI * 2);
+        ctx.stroke();
+      };
+      withGroundShadow(ctx, () => {
+        if (tier === 0) {
+          drawCage(0, 0, 17);
+        } else if (tier === 1) {
+          drawCage(-4, -10, 12);
+          drawCage(-4, 10, 12);
+        } else {
+          drawCage(0, 0, 20);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 4; i++) {
+            const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+            ctx.beginPath();
+            ctx.moveTo(c + Math.cos(a) * 10, c + Math.sin(a) * 10);
+            ctx.lineTo(c + Math.cos(a) * 26, c + Math.sin(a) * 26);
+            ctx.stroke();
+          }
+        }
+      });
+      return;
+    }
+
+    if (key === 'plasma') {
+      // Garden Gnome: bright scarlet pointed hat + white beard + mortar pot; T1 gold trim; T2 firecracker gnome
+      withGroundShadow(ctx, () => {
+        // White beard
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(c + 4, c, 15, -Math.PI * 0.65, Math.PI * 0.65);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.7);
+
+        // Scarlet pointed hat pointing +X
+        ctx.fillStyle = '#e53935';
+        ctx.beginPath();
+        ctx.moveTo(c - 18, c - 14);
+        ctx.lineTo(c + 24, c);
+        ctx.lineTo(c - 18, c + 14);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.9);
+      });
+      if (tier >= 1) {
+        ctx.strokeStyle = '#ffd54f';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(c - 14, c - 12);
+        ctx.lineTo(c - 14, c + 12);
+        ctx.stroke();
+      }
+      if (tier === 2) {
+        ctx.fillStyle = '#ffeb3b';
+        ctx.beginPath();
+        ctx.arc(c + 24, c, 5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.4);
+      }
+      return;
+    }
+
+    if (key === 'stasis') {
+      // Lawn Thumper: brass & sky-blue spinning sprinkler / seismic thumper
+      const arms = tier === 0 ? 2 : tier === 1 ? 3 : 4;
+      withGroundShadow(ctx, () => {
+        for (let i = 0; i < arms; i++) {
+          const a = (i / arms) * Math.PI * 2;
+          ctx.save();
+          ctx.translate(c, c);
+          ctx.rotate(a);
+          drawGradBarrel(ctx, 4, 0, 28, 6, '#81d4fa', '#0288d1', '#01579b', 1.5);
+          ctx.restore();
+        }
+      });
+      if (tier === 2) {
+        ctx.strokeStyle = '#40c4ff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(c, c, 24, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#ffd54f';
+      ctx.beginPath();
+      ctx.arc(c, c, 12, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.85);
+      return;
+    }
+
+    if (key === 'railgun') {
+      // Mole Crusher: silver-steel garden spade / mower blade; T1 double spades; T2 chrome mower-rail
+      const drawSpade = (oy: number, w: number) => {
+        ctx.save();
+        ctx.translate(c, c + oy);
+        const grad = ctx.createLinearGradient(0, -w, 0, w);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#b0bec5');
+        grad.addColorStop(1, '#455a64');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(-12, -w);
+        ctx.lineTo(24, -w * 0.8);
+        ctx.lineTo(34, 0);
+        ctx.lineTo(24, w * 0.8);
+        ctx.lineTo(-12, w);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.8);
+        ctx.restore();
+      };
+      withGroundShadow(ctx, () => {
+        if (tier === 0) {
+          drawSpade(0, 10);
+        } else {
+          drawSpade(-9, 7);
+          drawSpade(9, 7);
+        }
+      });
+      ctx.fillStyle = tier === 2 ? '#76ff03' : '#37474f';
+      ctx.beginPath();
+      ctx.arc(c - 10, c, 10, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.8);
+      return;
+    }
+
+    // swarm: Hose Turret (yellow & teal hose reel with brass spray nozzle)
+    const nozzles = tier === 0 ? [0] : tier === 1 ? [-8, 8] : [-13, -4, 4, 13];
+    withGroundShadow(ctx, () => {
+      for (const oy of nozzles) {
+        drawGradBarrel(ctx, c + 4, c + oy, c + 30, 5.5, '#ffe082', '#ffb300', '#8c6d1f', 1.5);
+      }
+    });
+    ctx.fillStyle = '#00897b';
+    ctx.beginPath();
+    ctx.arc(c - 2, c, 17, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.85);
+    ctx.strokeStyle = '#ffee58';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(c - 2, c, 10, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function paintLawnEnemy(key: EnemyKey): Texture {
+  if (key === 'dreadnought') {
+    // Millipede Queen (128x128): massive multi-segmented crimson/violet boss with bright orange legs & mandibles
+    return paintCanvas(128, (ctx, size) => {
+      const c = size / 2;
+      // Bright orange legs along both sides
+      ctx.strokeStyle = INK_OUTLINE;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      for (let sx = -36; sx <= 28; sx += 12) {
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(c + sx, c + side * 12);
+          ctx.lineTo(c + sx - 4, c + side * 32);
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = '#ff9100';
+      ctx.lineWidth = 2.6;
+      for (let sx = -36; sx <= 28; sx += 12) {
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(c + sx, c + side * 12);
+          ctx.lineTo(c + sx - 4, c + side * 32);
+          ctx.stroke();
+        }
+      }
+
+      withGroundShadow(ctx, () => {
+        for (let i = 0; i < 6; i++) {
+          const sx = -34 + i * 13;
+          const r = i === 5 ? 16 : 15 - Math.abs(i - 2.5) * 1.2;
+          const grad = ctx.createRadialGradient(c + sx - 3, c - 4, 2, c + sx, c, r);
+          grad.addColorStop(0, i % 2 === 0 ? '#ff5252' : '#ce93d8');
+          grad.addColorStop(1, i % 2 === 0 ? '#880e4f' : '#4a148c');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(c + sx, c, r, 0, Math.PI * 2);
+          ctx.fill();
+          strokeInk(ctx, 2);
+        }
+      });
+
+      // Mandibles
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#ff9100';
+        ctx.beginPath();
+        ctx.moveTo(c + 38, c + side * 6);
+        ctx.lineTo(c + 52, c + side * 12);
+        ctx.lineTo(c + 44, c + side * 2);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.6);
+      }
+    });
+  }
+
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+
+    if (key === 'scout') {
+      // Fire Ant: bright fiery red-orange ant
+      drawAntSprite(ctx, c, 1.0, '#ff7043', '#bf360c', '#ff5722');
+      return;
+    }
+
+    if (key === 'swarmer') {
+      // Garden Beetle: shiny metallic amber-copper round beetle
+      withGroundShadow(ctx, () => {
+        const grad = ctx.createRadialGradient(c - 4, c - 4, 2, c, c, 15);
+        grad.addColorStop(0, '#ffe082');
+        grad.addColorStop(0.55, '#d87a16');
+        grad.addColorStop(1, '#5d2b06');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(c, c, 14, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.9);
+      });
+      ctx.strokeStyle = INK_OUTLINE;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(c - 13, c);
+      ctx.lineTo(c + 13, c);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.beginPath();
+      ctx.ellipse(c - 3, c - 5, 5, 2.5, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    if (key === 'cruiser') {
+      // Giant Centipede: vivid orange-crimson segmented centipede with bright yellow legs
+      ctx.strokeStyle = INK_OUTLINE;
+      ctx.lineWidth = 3.2;
+      ctx.lineCap = 'round';
+      for (let sx = -16; sx <= 14; sx += 8) {
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(c + sx, c + side * 6);
+          ctx.lineTo(c + sx - 2, c + side * 16);
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = '#ffeb3b';
+      ctx.lineWidth = 1.5;
+      for (let sx = -16; sx <= 14; sx += 8) {
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(c + sx, c + side * 6);
+          ctx.lineTo(c + sx - 2, c + side * 16);
+          ctx.stroke();
+        }
+      }
+      withGroundShadow(ctx, () => {
+        for (let i = 0; i < 5; i++) {
+          const sx = -16 + i * 8;
+          ctx.fillStyle = i % 2 === 0 ? '#ff5722' : '#d50000';
+          ctx.beginPath();
+          ctx.arc(c + sx, c, 7.5, 0, Math.PI * 2);
+          ctx.fill();
+          strokeInk(ctx, 1.7);
+        }
+      });
+      // Curved antennae
+      for (const side of [-1, 1]) {
+        ctx.strokeStyle = INK_OUTLINE;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(c + 20, c + side * 3);
+        ctx.quadraticCurveTo(c + 26, c + side * 9, c + 24, c + side * 13);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    if (key === 'frigate') {
+      // Burrowing Mole: dark-brown fuzzy mole with unmistakable bright pink star-nose & big digging claws
+      withGroundShadow(ctx, () => {
+        const grad = ctx.createRadialGradient(c - 4, c - 4, 3, c, c, 19);
+        grad.addColorStop(0, '#795548');
+        grad.addColorStop(1, '#3e2723');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(c - 2, c, 17, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.9);
+      });
+      // Big digging front claws
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#ffe0b2';
+        ctx.beginPath();
+        ctx.ellipse(c + 10, c + side * 12, 6, 4, side * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.5);
+      }
+      // Bright pink star-nose
+      ctx.fillStyle = '#ff80ab';
+      ctx.beginPath();
+      ctx.arc(c + 16, c, 5, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+      return;
+    }
+
+    // phase: Swarm Mosquito (sleek dark-crimson mosquito with long proboscis & translucent white-cyan wings)
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#b71c1c';
+      ctx.beginPath();
+      ctx.ellipse(c - 2, c, 11, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+    });
+    // Needle proboscis
+    ctx.strokeStyle = INK_OUTLINE;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(c + 9, c);
+    ctx.lineTo(c + 24, c);
+    ctx.stroke();
+    // Translucent wings
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = 'rgba(224, 247, 250, 0.72)';
+      ctx.beginPath();
+      ctx.ellipse(c - 3, c + side * 12, 13, 5.5, side * -0.45, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+    }
+  });
+}
+
+function paintLawnBoost(): Texture {
+  return paintTransparentHaloRing(
+    'rgba(232, 255, 102, 0.72)',
+    'rgba(255, 210, 63, 0.56)',
+    'rgba(232, 255, 102, 0)',
+    '#e8ff66',
+  );
+}
+
+function paintLawnObstacle(_variant: number): Texture {
+  return paintMinimalCornerObstacle('#ffffff', 0.22);
+}
+
+function paintLawnCrater(): Texture {
+  return paintCanvas(48, (ctx, size) => {
+    const c = size / 2;
+    const grad = ctx.createRadialGradient(c, c, 2, c, c, 19);
+    grad.addColorStop(0, 'rgba(62, 39, 35, 0.9)');
+    grad.addColorStop(0.6, 'rgba(109, 76, 65, 0.55)');
+    grad.addColorStop(1, 'rgba(109, 76, 65, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(c, c, 19, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function paintLawnMoleMound(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    withGroundShadow(ctx, () => {
+      const grad = ctx.createRadialGradient(c - 4, c - 4, 4, c, c, 24);
+      grad.addColorStop(0, '#8d6e63');
+      grad.addColorStop(1, '#4e342e');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(c, c + 3, 23, 17, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.9);
+    });
+    // Dark tunnel shadow
+    ctx.fillStyle = '#1b0f0a';
+    ctx.beginPath();
+    ctx.ellipse(c, c + 1, 10, 6.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Loose clods
+    ctx.fillStyle = '#6d4c41';
+    for (const [ox, oy, r] of [
+      [-16, 12, 3.5],
+      [17, 10, 3.2],
+      [-12, -10, 2.8],
+    ]) {
+      ctx.beginPath();
+      ctx.arc(c + ox, c + oy, r, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+    }
+    // Two little digging claws poking out
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = '#ffe0b2';
+      ctx.beginPath();
+      ctx.ellipse(c + side * 8, c - 4, 4.5, 3, side * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.4);
+    }
+  });
+}
+
+// ============================================================================
 // PUBLIC BUILDER
 // ============================================================================
+
+interface ThemePainters {
+  base: (key: TurretKey) => Texture;
+  turret: (key: TurretKey, tier: 0 | 1 | 2) => Texture;
+  enemy: (key: EnemyKey) => Texture;
+  obstacle: (variant: number) => Texture;
+  crater: () => Texture;
+}
+
+const THEME_PAINTERS: Record<TheaterTheme, ThemePainters> = {
+  naval: {
+    base: paintNavalBase,
+    turret: paintNavalTurret,
+    enemy: paintNavalEnemy,
+    obstacle: paintNavalObstacle,
+    crater: paintNavalCrater,
+  },
+  mars: {
+    base: paintMarsBase,
+    turret: paintMarsTurret,
+    enemy: paintMarsEnemy,
+    obstacle: paintMarsObstacle,
+    crater: paintMarsCrater,
+  },
+  medieval: {
+    base: paintMedievalBase,
+    turret: paintMedievalTurret,
+    enemy: paintMedievalEnemy,
+    obstacle: paintMedievalObstacle,
+    crater: paintMedievalCrater,
+  },
+  kitchen: {
+    base: paintKitchenBase,
+    turret: paintKitchenTurret,
+    enemy: paintKitchenEnemy,
+    obstacle: paintKitchenObstacle,
+    crater: paintKitchenCrater,
+  },
+  lawn: {
+    base: paintLawnBase,
+    turret: paintLawnTurret,
+    enemy: paintLawnEnemy,
+    obstacle: paintLawnObstacle,
+    crater: paintLawnCrater,
+  },
+};
 
 export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
   if (typeof document === 'undefined') {
@@ -1919,6 +3080,12 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     } else {
       result.boost = Texture.EMPTY;
     }
+    if (theme === 'kitchen' || theme === 'lawn') {
+      result.base = Texture.EMPTY;
+    }
+    if (theme === 'lawn') {
+      result.moleMound = Texture.EMPTY;
+    }
     return result;
   }
 
@@ -1928,37 +3095,30 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     return tex;
   };
 
-  const paintBase = theme === 'naval' ? paintNavalBase : theme === 'mars' ? paintMarsBase : paintMedievalBase;
-  const paintTurret =
-    theme === 'naval' ? paintNavalTurret : theme === 'mars' ? paintMarsTurret : paintMedievalTurret;
-  const paintEnemy = theme === 'naval' ? paintNavalEnemy : theme === 'mars' ? paintMarsEnemy : paintMedievalEnemy;
-  const paintObstacle =
-    theme === 'naval' ? paintNavalObstacle : theme === 'mars' ? paintMarsObstacle : paintMedievalObstacle;
-  const paintCrater =
-    theme === 'naval' ? paintNavalCrater : theme === 'mars' ? paintMarsCrater : paintMedievalCrater;
+  const painters = THEME_PAINTERS[theme];
 
   const bases: Record<string, Texture> = {};
   const turrets: Record<string, [Texture, Texture, Texture]> = {};
   const enemies: Record<string, Texture> = {};
 
   for (const key of TURRET_KEYS) {
-    bases[key] = track(paintBase(key));
+    bases[key] = track(painters.base(key));
     turrets[key] = [
-      track(paintTurret(key, 0)),
-      track(paintTurret(key, 1)),
-      track(paintTurret(key, 2)),
+      track(painters.turret(key, 0)),
+      track(painters.turret(key, 1)),
+      track(painters.turret(key, 2)),
     ];
   }
   for (const key of ENEMY_KEYS) {
-    enemies[key] = track(paintEnemy(key));
+    enemies[key] = track(painters.enemy(key));
   }
 
   const obstacles = [
-    track(paintObstacle(0)),
-    track(paintObstacle(1)),
-    track(paintObstacle(2)),
+    track(painters.obstacle(0)),
+    track(painters.obstacle(1)),
+    track(painters.obstacle(2)),
   ];
-  const crater = track(paintCrater());
+  const crater = track(painters.crater());
 
   const result: TheaterTextureSet = {
     bases,
@@ -1978,8 +3138,15 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     result.mine = track(paintNavalMine());
   } else if (theme === 'mars') {
     result.boost = track(paintMarsBoost());
-  } else {
+  } else if (theme === 'medieval') {
     result.boost = track(paintMedievalBoost());
+  } else if (theme === 'kitchen') {
+    result.boost = track(paintKitchenBoost());
+    result.base = track(paintKitchenCoreBase());
+  } else {
+    result.boost = track(paintLawnBoost());
+    result.base = track(paintLawnCoreBase());
+    result.moleMound = track(paintLawnMoleMound());
   }
 
   return result;

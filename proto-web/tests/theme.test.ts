@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { getTheater, THEMES, type ThemeId } from '../src/theme';
 
-const THEME_IDS: ThemeId[] = ['space', 'military', 'naval', 'mars', 'medieval'];
+const THEME_IDS: ThemeId[] = ['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn'];
 const TURRET_IDS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_IDS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
 
 describe('theater themes', () => {
-  it('returns space theme by default and resolves all 5 themes by id', () => {
+  it('returns space theme by default and resolves all 7 themes by id', () => {
     expect(getTheater(undefined).id).toBe('space');
     expect(getTheater('space').id).toBe('space');
     expect(getTheater('military').id).toBe('military');
     expect(getTheater('naval').id).toBe('naval');
     expect(getTheater('mars').id).toBe('mars');
     expect(getTheater('medieval').id).toBe('medieval');
-    expect(Object.keys(THEMES)).toEqual(['space', 'military', 'naval', 'mars', 'medieval']);
+    expect(getTheater('kitchen').id).toBe('kitchen');
+    expect(getTheater('lawn').id).toBe('lawn');
+    expect(Object.keys(THEMES)).toEqual(['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn']);
   });
 
   it.each(THEME_IDS)('defines complete labels, colors, equipment, enemies, and waves for %s', (id) => {
@@ -190,5 +192,89 @@ describe('theater themes', () => {
 
     expect(med.waveNames[1]).toBe('Goblin Scouting');
     expect(med.waveNames[10]).toBe('Siege Troll King');
+  });
+
+  it('defines Pantry/Fridge labels, defenses, boost label, and wave progression in kitchen theme', () => {
+    const kitchen = getTheater('kitchen');
+    expect(kitchen.spawnLabel).toBe('PANTRY');
+    expect(kitchen.objectiveLabel).toBe('FRIDGE');
+    expect(kitchen.bossTitle).toBe('KING RAT');
+    expect(kitchen.victoryTitle).toBe('FRIDGE DEFENDED');
+    expect(kitchen.defeatTitle).toBe('FRIDGE RAIDED');
+    expect(kitchen.obstacleLabel).toBe('Appliances');
+    expect(kitchen.boostLabel).toBe('+BURN');
+    expect(kitchen.spaceBg).toBe(0x1b1510);
+    expect(kitchen.boardBg).toBe(0x2b2219);
+    expect(kitchen.gridColor).toBe(0x5c4a38);
+    expect(kitchen.borderColor).toBe(0xd4a973);
+    expect(kitchen.routeDotColor).toBe(0x4b3826);
+    expect(kitchen.routePulseColor).toBe(0xd96b27);
+
+    expect(kitchen.turrets.pulse.shortName).toBe('Swatter');
+    expect(kitchen.turrets.plasma.shortName).toBe('Pepper Mill');
+    expect(kitchen.turrets.stasis.shortName).toBe('Honey Trap');
+    expect(kitchen.turrets.railgun.shortName).toBe('Chef Knife');
+    expect(kitchen.turrets.swarm.shortName).toBe('Soap Spray');
+
+    expect(kitchen.roleTags).toEqual({
+      pulse: 'SWAT',
+      plasma: 'SPICE',
+      stasis: 'GLUE',
+      railgun: 'SLICE',
+      swarm: 'SPRAY',
+    });
+
+    expect(kitchen.enemies.scout.name).toBe('Kitchen Ant');
+    expect(kitchen.enemies.swarmer.name).toBe('Sugar Ant');
+    expect(kitchen.enemies.cruiser.name).toBe('Armored Roach');
+    expect(kitchen.enemies.frigate.name).toBe('Pantry Rat');
+    expect(kitchen.enemies.phase.name).toBe('Fruit Fly');
+    expect(kitchen.enemies.dreadnought.name).toBe('King Rat');
+
+    expect(kitchen.waveNames[1]).toBe('Crumb Patrol');
+    expect(kitchen.waveNames[10]).toBe('King Rat Siege');
+    expect(kitchen.helpText).toContain('+BURN');
+  });
+
+  it('defines Backyard/House labels, defenses, boost label, and wave progression in lawn theme', () => {
+    const lawn = getTheater('lawn');
+    expect(lawn.spawnLabel).toBe('BACKYARD');
+    expect(lawn.objectiveLabel).toBe('HOUSE');
+    expect(lawn.bossTitle).toBe('MILLIPEDE QUEEN');
+    expect(lawn.victoryTitle).toBe('HOUSE DEFENDED');
+    expect(lawn.defeatTitle).toBe('HOUSE OVERRUN');
+    expect(lawn.obstacleLabel).toBe('Garden Beds');
+    expect(lawn.boostLabel).toBe('+PWR');
+    expect(lawn.spaceBg).toBe(0x101c12);
+    expect(lawn.boardBg).toBe(0x182b1b);
+    expect(lawn.gridColor).toBe(0xd9f2c9);
+    expect(lawn.borderColor).toBe(0x7cb868);
+    expect(lawn.routeDotColor).toBe(0xf3e8be);
+    expect(lawn.routePulseColor).toBe(0x9be564);
+
+    expect(lawn.turrets.pulse.shortName).toBe('Bug Zapper');
+    expect(lawn.turrets.plasma.shortName).toBe('Gnome');
+    expect(lawn.turrets.stasis.shortName).toBe('Thumper');
+    expect(lawn.turrets.railgun.shortName).toBe('Mole Spade');
+    expect(lawn.turrets.swarm.shortName).toBe('Hose Jet');
+
+    expect(lawn.roleTags).toEqual({
+      pulse: 'ZAP',
+      plasma: 'BOOM',
+      stasis: 'THUMP',
+      railgun: 'DIG',
+      swarm: 'HOSE',
+    });
+
+    expect(lawn.enemies.scout.name).toBe('Fire Ant');
+    expect(lawn.enemies.swarmer.name).toBe('Garden Beetle');
+    expect(lawn.enemies.cruiser.name).toBe('Giant Centipede');
+    expect(lawn.enemies.frigate.name).toBe('Burrowing Mole');
+    expect(lawn.enemies.phase.name).toBe('Swarm Mosquito');
+    expect(lawn.enemies.dreadnought.name).toBe('Millipede Queen');
+
+    expect(lawn.waveNames[1]).toBe('Ant Hill');
+    expect(lawn.waveNames[10]).toBe('Millipede Queen');
+    expect(lawn.helpText).toContain('Lawn Thumper');
   });
 });

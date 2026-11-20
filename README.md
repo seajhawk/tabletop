@@ -1,4 +1,6 @@
-# Galactic Alliance
+# Tabletop Defense (Galactic Alliance)
+
+Play live on GitHub Pages: **https://seajhawk.github.io/TTDefense/**
 
 A cooperative tabletop tower-defense game for a 16-inch Windows touch PC, with a
 path toward larger touch tables. **The TypeScript/Vite/PixiJS v8 web stack is the
@@ -35,8 +37,9 @@ for the full workflow; actual OS installation and device testing remain unverifi
 
 ## Current game
 
-- Seven maps across five themes: **Orbital Crossing**, **Washington DC**,
-  **Pacific Fleet**, **Mars Outpost**, **Ironhold Keep**, **Asteroid Belt**, and **Nebula Rift**.
+- Nine maps across seven themes: **Orbital Crossing**, **Washington DC**,
+  **Pacific Fleet**, **Mars Outpost**, **Ironhold Keep**, **Kitchen Counter**,
+  **Backyard Lawn**, **Asteroid Belt**, and **Nebula Rift**.
 - Five turret roles with two upgrade tiers, six enemy types, ten campaign waves,
   and a separate 150-ship stress scene with twenty towers.
 - Seven adaptive layouts for one, two, or four players, including portrait phone
@@ -45,9 +48,11 @@ for the full workflow; actual OS installation and device testing remain unverifi
   early-wave bonuses, automatic waves, and a summary with Play Again / Next Map controls.
 - Completed wins and losses show a score and a local best for the current map,
   difficulty, and player count. Records stay in the same browser/site; no account is needed.
-- Space and military theaters, plus illustrated naval, Mars, and medieval maps
-  with their own units, audio, and mechanics: submarines/mines, dust storms/power
-  vents, and enraging enemies/arcane runes.
+- Space and military theaters, plus illustrated naval, Mars, medieval, kitchen, and
+  backyard lawn maps with custom units, procedural audio, and unique mechanics:
+  stealth submarines & sea mines, geothermal vents & dust storms, berserk orcs & arcane
+  runes, hot stove burners & Fridge Snack Rush, and burrowing moles, mosquitoes &
+  centipedes that split in half.
 
 Local automated and browser checks are recorded in [STATUS.md](STATUS.md).
 Physical multi-touch, target-device frame times, input latency, and DPI comfort

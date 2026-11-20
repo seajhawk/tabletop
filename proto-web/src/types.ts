@@ -1,8 +1,8 @@
 export type TargetPriority = 'first' | 'strong' | 'close' | 'air';
 export type GameSpeed = 1 | 2;
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type MapTheme = 'space' | 'military' | 'naval' | 'mars' | 'medieval';
-export type MapMechanic = 'naval-subs-mines' | 'mars-storms' | 'medieval-frenzy';
+export type MapTheme = 'space' | 'military' | 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
+export type MapMechanic = 'naval-subs-mines' | 'mars-storms' | 'medieval-frenzy' | 'kitchen-rush' | 'lawn-split-burrow';
 
 export interface DifficultyPreset {
   id: Difficulty;
@@ -34,6 +34,9 @@ export type SoundEvent =
   | 'sonar-ping'
   | 'dust-storm'
   | 'enrage'
+  | 'fridge-open'
+  | 'centipede-split'
+  | 'mole-flush'
   | 'kill'
   | 'boss-phase'
   | 'leak'

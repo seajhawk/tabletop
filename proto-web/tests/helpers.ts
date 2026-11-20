@@ -67,6 +67,7 @@ export function makeEnemy(
     submerged: false,
     revealedT: 0,
     enraged: false,
+    isSplitChild: false,
     ...overrides,
   };
 }

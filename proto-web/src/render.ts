@@ -276,7 +276,7 @@ export class Renderer {
   private toastLayer = new Container();
 
   private milTex: MilitaryTextureSet;
-  private theaterTex: Record<'naval' | 'mars' | 'medieval', TheaterTextureSet>;
+  private theaterTex: Record<'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn', TheaterTextureSet>;
   private craters: { sprite: Sprite; ttl: number; max: number }[] = [];
   private mineSprites: Sprite[] = [];
   private milTowers: { container: Container; base: Sprite; head: Sprite; badge: Graphics }[] = [];
@@ -355,6 +355,8 @@ export class Renderer {
       naval: buildTheaterTextures('naval'),
       mars: buildTheaterTextures('mars'),
       medieval: buildTheaterTextures('medieval'),
+      kitchen: buildTheaterTextures('kitchen'),
+      lawn: buildTheaterTextures('lawn'),
     };
     this.lastLives = game.lives;
     this.routePulseG.blendMode = 'add';
@@ -528,7 +530,9 @@ export class Renderer {
 
   private activeSprites(themeId: ThemeId = this.theme().id): TheaterTextureSet | null {
     if (themeId === 'military') return this.milTex;
-    if (themeId === 'naval' || themeId === 'mars' || themeId === 'medieval') return this.theaterTex[themeId];
+    if (themeId === 'naval' || themeId === 'mars' || themeId === 'medieval' || themeId === 'kitchen' || themeId === 'lawn') {
+      return this.theaterTex[themeId];
+    }
     return null;
   }
 
@@ -684,12 +688,14 @@ export class Renderer {
 
     // grid
     const grid = new Graphics();
+    const minorGridAlpha = theme.id === 'kitchen' ? 0.14 : hasSprites ? 0.08 : 0.55;
+    const majorGridAlpha = theme.id === 'kitchen' ? 0.22 : hasSprites ? 0.16 : 0.95;
     for (let x = 0; x <= GRID_W; x++) grid.moveTo(board.x + x * CELL, board.y).lineTo(board.x + x * CELL, board.y + board.h);
     for (let y = 0; y <= GRID_H; y++) grid.moveTo(board.x, board.y + y * CELL).lineTo(board.x + board.w, board.y + y * CELL);
-    grid.stroke({ width: 1, color: theme.gridColor, alpha: hasSprites ? 0.08 : 0.55 });
+    grid.stroke({ width: 1, color: theme.gridColor, alpha: minorGridAlpha });
     for (let x = 0; x <= GRID_W; x += 4) grid.moveTo(board.x + x * CELL, board.y).lineTo(board.x + x * CELL, board.y + board.h);
     for (let y = 0; y <= GRID_H; y += 4) grid.moveTo(board.x, board.y + y * CELL).lineTo(board.x + board.w, board.y + y * CELL);
-    grid.stroke({ width: hasSprites ? 1 : 1.5, color: theme.gridColor, alpha: hasSprites ? 0.16 : 0.95 });
+    grid.stroke({ width: hasSprites ? 1 : 1.5, color: theme.gridColor, alpha: majorGridAlpha });
     grid.rect(board.x, board.y, board.w, board.h).stroke({
       width: 2,
       color: theme.id === 'military' ? 0x687a6e : theme.borderColor,
@@ -697,9 +703,9 @@ export class Renderer {
     });
     this.bg.addChild(grid);
 
-    // obstacles: asteroids (space) or illustrated terrain obstacles (military/naval/mars/medieval)
+    // obstacles: asteroids (space) or illustrated terrain obstacles (military/naval/mars/medieval/kitchen/lawn)
     if (hasSprites && sprites && sprites.obstacles.length > 0) {
-      const obsAlpha = theme.id === 'naval' ? 0.62 : 0.92;
+      const obsAlpha = theme.id === 'naval' ? 0.62 : (theme.id === 'kitchen' || theme.id === 'lawn') ? 0.85 : 0.92;
       for (const [ax, ay] of map.asteroids) {
         const cx = board.x + (ax + 0.5) * CELL, cy = board.y + (ay + 0.5) * CELL;
         const obs = new Sprite(sprites.obstacles[(ax * 7 + ay * 13) % sprites.obstacles.length]);
@@ -730,9 +736,13 @@ export class Renderer {
       this.bg.addChild(ast);
     }
 
-    // boost cells (Mars Geothermal Vents & Medieval Arcane Runes)
+    // boost cells (Mars Geothermal Vents, Medieval Arcane Runes, Kitchen Stove Burners, Lawn Patio Pads)
     if (map.boostCells?.length) {
-      const boostCol = theme.id === 'mars' ? 0xffa64d : 0x62f2ff;
+      const boostCol = theme.id === 'kitchen' ? 0xff8c2b
+        : theme.id === 'lawn' ? 0xc8f052
+        : theme.id === 'mars' ? 0xffa64d
+        : 0x62f2ff;
+      const boostLabel = theme.boostLabel ?? '+PWR';
       const boostG = new Graphics();
       this.bg.addChild(boostG);
       for (const [bx, by] of map.boostCells) {
@@ -748,10 +758,11 @@ export class Renderer {
         } else {
           boostG.circle(cx, cy, CELL * 0.4).stroke({ width: 1.8, color: boostCol, alpha: 0.75 });
         }
-        const tag = mkText('+PWR', 7.5, boostCol, { bold: true });
+        const tag = mkText(boostLabel, 7.5, boostCol, { bold: true });
         tag.anchor.set(0.5);
+        const pw = Math.max(28, Math.ceil(tag.width) + 8);
         const pillG = new Graphics();
-        pillG.roundRect(cx - 14, cy + CELL * 0.24, 28, 10, 3)
+        pillG.roundRect(cx - pw / 2, cy + CELL * 0.24, pw, 10, 3)
           .fill({ color: 0x0b0f14, alpha: 0.85 })
           .stroke({ width: 0.8, color: boostCol, alpha: 0.7 });
         tag.position.set(cx, cy + CELL * 0.24 + 5);
@@ -1514,8 +1525,11 @@ export class Renderer {
 
         const bg = mt.badge.clear();
         if (t.boosted) {
-          const boostCol = theme.id === 'mars' ? 0xffa64d : 0x62f2ff;
-          bg.circle(0, 0, CELL * 0.45).stroke({ width: 1.8, color: boostCol, alpha: 0.78 });
+          const boostCol = theme.id === 'kitchen' ? 0xff8c2b
+            : theme.id === 'lawn' ? 0xc8f052
+            : theme.id === 'mars' ? 0xffa64d
+            : 0x62f2ff;
+          bg.circle(0, 0, CELL * 0.45).stroke({ width: 1.8, color: boostCol, alpha: 0.82 });
         }
         bg.rect(-10, CELL * 0.36, 12, 3).fill(PLAYER_COLORS[t.owner] ?? C.cyan);
         bg.rect(3, CELL * 0.36, 7, 3).fill(this.turretColor(t.def.id));
@@ -1608,6 +1622,7 @@ export class Renderer {
     const list = this.game.enemies;
     const themeId = this.theme().id;
     const hasSprites = themeId !== 'space';
+    const isLawnBurrow = this.game.currentMap.mechanic === 'lawn-split-burrow';
     const sprites = this.activeSprites(themeId);
     const board = this.getLayout().board;
     const sg = this.enemyShadowG.clear();
@@ -1624,22 +1639,24 @@ export class Renderer {
       const s = this.sprites[i];
       if (i >= list.length) { if (s.visible) s.visible = false; continue; }
       const e = list[i];
-      const spriteTex = hasSprites ? sprites?.enemies[e.def.id] : undefined;
+      const useMound = hasSprites && isLawnBurrow && e.submerged && e.revealedT <= 0 && !!sprites?.moleMound;
+      const spriteTex = useMound ? sprites!.moleMound : (hasSprites ? sprites?.enemies[e.def.id] : undefined);
       const tex = spriteTex ?? this.textures.get(`${themeId}:${e.def.id}`) ?? this.textures.get(`space:${e.def.id}`)!;
       if (s.texture !== tex) s.texture = tex;
+      const splitScale = e.isSplitChild ? 0.72 : 1;
       if (spriteTex) {
-        const sz = spriteSizes[e.def.id] ?? 28;
+        const sz = (spriteSizes[e.def.id] ?? 28) * splitScale;
         s.width = sz;
         s.height = sz;
       } else {
-        s.scale.set(1);
+        s.scale.set(splitScale);
       }
       s.visible = true;
       const wx = board.x + (e.x + e.ox) * CELL;
       const wy = board.y + (e.y + e.oy) * CELL;
       s.position.set(wx, wy);
-      s.rotation = e.ang;
-      s.alpha = e.submerged ? (e.revealedT > 0 ? 0.96 : 0.34) : 1;
+      s.rotation = useMound ? 0 : e.ang;
+      s.alpha = e.submerged ? (e.revealedT > 0 ? (isLawnBurrow ? 1.0 : 0.96) : (isLawnBurrow ? 0.96 : 0.34)) : 1;
       s.tint = e.slowT > 0 ? 0x9ffff0 : e.burnT > 0 ? 0xffbb77 : 0xffffff;
       if (e.def.flying) {
         if (hasSprites) {
@@ -1723,6 +1740,31 @@ export class Renderer {
           g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.5, color: 0xeef6ff, alpha: a });
           g.circle(x2, y2, 2.5 * a).fill({ color: 0xffffff, alpha: a * 0.85 });
         }
+      } else if (themeId === 'kitchen') {
+        if (b.kind === 'rail') {
+          // Metallic silver knife-slash rail beam
+          glow.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 4.2, color: 0xcbd5e1, alpha: a * 0.38 });
+          g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 2.6, color: 0xf8fafc, alpha: a });
+          g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.2, color: 0x94a3b8, alpha: a * 0.85 });
+          g.circle(x2, y2, 4.5 * a).fill({ color: 0xffffff, alpha: a * 0.85 });
+        } else {
+          // Electric-cyan swat beam
+          glow.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: w * 2.1, color: 0x38bdf8, alpha: a * 0.36 });
+          g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.9, color: 0xe0f7ff, alpha: a });
+          g.circle(x2, y2, 3.8 * a).fill({ color: 0x38bdf8, alpha: a * 0.9 });
+        }
+      } else if (themeId === 'lawn') {
+        if (b.kind === 'rail') {
+          // Shiny silver spade-slash rail beam
+          glow.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 4.4, color: 0x94a3b8, alpha: a * 0.4 });
+          g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 2.8, color: 0xffffff, alpha: a });
+          g.circle(x1, y1, 5.5 * a).fill({ color: 0xe2e8f0, alpha: a * 0.88 });
+        } else {
+          // Bright UV bug-zapper beam
+          glow.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: w * 2.3, color: 0x8b5cf6, alpha: a * 0.42 });
+          g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.9, color: 0x38d9ff, alpha: a });
+          g.circle(x2, y2, 4.2 * a).fill({ color: 0xe879f9, alpha: a * 0.9 });
+        }
       } else {
         glow.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: w * 2.8, color: b.color, alpha: a * 0.45 });
         g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: w, color: b.kind === 'rail' ? 0xffffff : b.color, alpha: a });
@@ -1780,6 +1822,30 @@ export class Renderer {
           glow.circle(cx, cy, rad).stroke({ width: 4, color: 0x7ce8ff, alpha: (1 - k) * 0.36 });
           g.circle(cx, cy, rad).stroke({ width: 2, color: 0xdffaff, alpha: (1 - k) * 0.78 });
         }
+      } else if (themeId === 'kitchen') {
+        if (r.max <= 0.3) {
+          // Fiery pepper burst
+          glow.circle(cx, cy, rad).stroke({ width: 4.2, color: 0xf97316, alpha: (1 - k) * 0.45 });
+          g.circle(cx, cy, rad * 0.84).stroke({ width: 2.6, color: 0xff5722, alpha: (1 - k) * 0.82 });
+          if (k < 0.58) g.circle(cx, cy, rad * 0.52).fill({ color: 0xff7b29, alpha: (1 - k / 0.58) * 0.68 });
+          if (k < 0.3) g.circle(cx, cy, rad * 0.28).fill({ color: 0xfff3c4, alpha: (1 - k / 0.3) * 0.9 });
+        } else {
+          // Golden honey slow ring
+          glow.circle(cx, cy, rad).stroke({ width: 4.5, color: 0xfacc15, alpha: (1 - k) * 0.36 });
+          g.circle(cx, cy, rad).stroke({ width: 2.2, color: 0xfde047, alpha: (1 - k) * 0.8 });
+        }
+      } else if (themeId === 'lawn') {
+        if (r.max <= 0.3) {
+          // Fiery gnome mortar burst
+          glow.circle(cx, cy, rad).stroke({ width: 4.2, color: 0xff6b4a, alpha: (1 - k) * 0.48 });
+          g.circle(cx, cy, rad * 0.85).stroke({ width: 2.6, color: 0xff8c42, alpha: (1 - k) * 0.82 });
+          if (k < 0.55) g.circle(cx, cy, rad * 0.5).fill({ color: 0xff6b4a, alpha: (1 - k / 0.55) * 0.66 });
+          if (k < 0.28) g.circle(cx, cy, rad * 0.26).fill({ color: 0xffe082, alpha: (1 - k / 0.28) * 0.9 });
+        } else {
+          // Sky-blue sprinkler/thumper shockwave ring
+          glow.circle(cx, cy, rad).stroke({ width: 4, color: 0x38bdf8, alpha: (1 - k) * 0.38 });
+          g.circle(cx, cy, rad).stroke({ width: 2, color: 0xbae6fd, alpha: (1 - k) * 0.8 });
+        }
       } else {
         glow.circle(cx, cy, rad).stroke({ width: 5, color: r.color, alpha: (1 - k) * 0.35 });
         g.circle(cx, cy, rad).stroke({ width: 2, color: r.color, alpha: (1 - k) * 0.85 });
@@ -1826,6 +1892,32 @@ export class Renderer {
           glow.circle(px, py, 6.5).fill({ color: 0xff7722, alpha: 0.45 });
           g.circle(px, py, 4.2).fill({ color: 0x5c4b3e }).stroke({ width: 1.5, color: 0xff8833, alpha: 0.9 });
         }
+      } else if (themeId === 'kitchen') {
+        if (p.kind === 'missile') {
+          // Pink-white soap missiles
+          const spd = Math.hypot(p.vx, p.vy) || 1;
+          const tx = px - (p.vx / spd) * 10, ty = py - (p.vy / spd) * 10;
+          glow.moveTo(tx, ty).lineTo(px, py).stroke({ width: 5, color: 0xf472b6, alpha: 0.55 });
+          g.moveTo(tx, ty).lineTo(px, py).stroke({ width: 2.2, color: 0xffffff, alpha: 0.95 });
+          g.circle(px, py, 3.0).fill({ color: 0xfbcfe8 }).stroke({ width: 1, color: 0xf472b6, alpha: 0.9 });
+        } else {
+          // Fiery pepper mortar orb
+          glow.circle(px, py, 6.5).fill({ color: 0xf97316, alpha: 0.45 });
+          g.circle(px, py, 3.8).fill({ color: 0xd9480f }).stroke({ width: 1.4, color: 0xfdba74, alpha: 0.9 });
+        }
+      } else if (themeId === 'lawn') {
+        if (p.kind === 'missile') {
+          // Pressurized aqua-gold hose jets
+          const spd = Math.hypot(p.vx, p.vy) || 1;
+          const tx = px - (p.vx / spd) * 11, ty = py - (p.vy / spd) * 11;
+          glow.moveTo(tx, ty).lineTo(px, py).stroke({ width: 5, color: 0x38d9ff, alpha: 0.55 });
+          g.moveTo(tx, ty).lineTo(px, py).stroke({ width: 2.2, color: 0xfbbf24, alpha: 0.95 });
+          g.circle(px, py, 2.8).fill(0xe0f7ff);
+        } else {
+          // Fiery gnome mortar shell
+          glow.circle(px, py, 6.5).fill({ color: 0xff6b4a, alpha: 0.45 });
+          g.circle(px, py, 4.0).fill({ color: 0x854d0e }).stroke({ width: 1.5, color: 0xff8c42, alpha: 0.9 });
+        }
       } else if (p.kind === 'missile') {
         const spd = Math.hypot(p.vx, p.vy) || 1;
         const tx = px - (p.vx / spd) * 11, ty = py - (p.vy / spd) * 11;
@@ -1850,21 +1942,27 @@ export class Renderer {
       }
     }
 
+    const isLawnBurrow = gm.currentMap.mechanic === 'lawn-split-burrow';
     for (const e of gm.enemies) {
       if (e.dead) continue;
       const ex = board.x + (e.x + e.ox) * CELL, ey = board.y + (e.y + e.oy) * CELL;
       if (e.submerged) {
         if (e.revealedT <= 0) {
           const pulse = 13 + Math.sin(gm.time * 5 + e.id) * 2;
-          g.circle(ex, ey, pulse).stroke({ width: 1.3, color: 0x0b2a3d, alpha: 0.58 });
+          if (isLawnBurrow) {
+            g.circle(ex, ey, pulse).stroke({ width: 1.6, color: 0x7c4d25, alpha: 0.68 });
+          } else {
+            g.circle(ex, ey, pulse).stroke({ width: 1.3, color: 0x0b2a3d, alpha: 0.58 });
+          }
         } else {
-          // Crisp turquoise sonar-lock corner brackets
+          // Crisp sonar-lock (naval) or amber-lime target-lock (lawn) corner brackets
+          const lockCol = isLawnBurrow ? 0xd4f24b : 0x38f2d8;
           const r = 14, b = 5;
           g.moveTo(ex - r, ey - r + b).lineTo(ex - r, ey - r).lineTo(ex - r + b, ey - r)
             .moveTo(ex + r - b, ey - r).lineTo(ex + r, ey - r).lineTo(ex + r, ey - r + b)
             .moveTo(ex - r, ey + r - b).lineTo(ex - r, ey + r).lineTo(ex - r + b, ey + r)
             .moveTo(ex + r - b, ey + r).lineTo(ex + r, ey + r).lineTo(ex + r, ey + r - b)
-            .stroke({ width: 1.8, color: 0x38f2d8, alpha: 0.95 });
+            .stroke({ width: 1.8, color: lockCol, alpha: 0.95 });
         }
       }
       if (e.enraged) {
@@ -1889,8 +1987,8 @@ export class Renderer {
         glow.circle(ex, ey, e.def.boss ? 18 : 10).fill({ color: 0xff7a2f, alpha: 0.25 + 0.12 * Math.sin(gm.time * 24 + e.id) });
       }
       if (e.hp < e.maxHp || e.shield > 0) {
-        const bw = e.def.boss ? 34 : 16;
-        const bx = ex - bw / 2, by = ey - (e.def.boss ? 24 : 14);
+        const bw = e.def.boss ? 34 : e.isSplitChild ? 12 : 16;
+        const bx = ex - bw / 2, by = ey - (e.def.boss ? 24 : e.isSplitChild ? 11 : 14);
         g.rect(bx, by, bw, 2.5).fill({ color: 0x000000, alpha: 0.65 });
         g.rect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 2.5).fill({ color: C.mint });
         if (e.maxShield > 0 && e.shield > 0) {
@@ -1943,27 +2041,68 @@ export class Renderer {
   private updateStormOverlay(_dt: number): void {
     const gm = this.game;
     const g = this.stormG.clear();
-    if (gm.currentMap.mechanic !== 'mars-storms' || !gm.stormActive) {
+    const isMarsStorm = gm.currentMap.mechanic === 'mars-storms' && gm.stormActive;
+    const isKitchenRush = gm.currentMap.mechanic === 'kitchen-rush' && gm.rushActive;
+    if (!isMarsStorm && !isKitchenRush) {
       if (this.stormAlertG.visible) this.stormAlertG.visible = false;
       if (this.stormAlertText.visible) this.stormAlertText.visible = false;
       return;
     }
 
     const board = this.getLayout().board;
-    // Translucent rust-amber wind streaks sweeping diagonally across the board
-    g.rect(board.x, board.y, board.w, board.h).fill({ color: 0xc95b24, alpha: 0.10 });
-    const t = gm.time * 280;
-    for (let i = 0; i < 24; i++) {
-      const rx = ((hash(i, 41) * board.w + t * (0.9 + (i % 3) * 0.25)) % (board.w + 180)) - 140;
-      const ry = ((hash(i, 42) * board.h + t * 0.32) % (board.h + 80)) - 40;
-      const len = 70 + (i % 4) * 35;
-      const x1 = Math.max(board.x, board.x + rx);
-      const y1 = Math.max(board.y, board.y + ry);
-      const x2 = Math.min(board.x + board.w, board.x + rx + len);
-      const y2 = Math.min(board.y + board.h, board.y + ry + len * 0.28);
-      if (x2 > x1 && y2 > y1) {
-        g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.6 + (i % 2), color: 0xffa65c, alpha: 0.22 });
+    if (isMarsStorm) {
+      // Translucent rust-amber wind streaks sweeping diagonally across the board
+      g.rect(board.x, board.y, board.w, board.h).fill({ color: 0xc95b24, alpha: 0.10 });
+      const t = gm.time * 280;
+      for (let i = 0; i < 24; i++) {
+        const rx = ((hash(i, 41) * board.w + t * (0.9 + (i % 3) * 0.25)) % (board.w + 180)) - 140;
+        const ry = ((hash(i, 42) * board.h + t * 0.32) % (board.h + 80)) - 40;
+        const len = 70 + (i % 4) * 35;
+        const x1 = Math.max(board.x, board.x + rx);
+        const y1 = Math.max(board.y, board.y + ry);
+        const x2 = Math.min(board.x + board.w, board.x + rx + len);
+        const y2 = Math.min(board.y + board.h, board.y + ry + len * 0.28);
+        if (x2 > x1 && y2 > y1) {
+          g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 1.6 + (i % 2), color: 0xffa65c, alpha: 0.22 });
+        }
       }
+      this.stormAlertText.text = 'DUST STORM · RANGE -20% (VENTS/T2 IMMUNE)';
+      this.stormAlertText.style.fill = 0xffd394;
+    } else {
+      // Soft icy cyan-white translucent fridge-light trapezoid/mist radiating leftward from open fridge (exits)
+      const exits = gm.currentMap.exits;
+      const avgExitY = exits.reduce((s, [, y]) => s + y, 0) / Math.max(1, exits.length);
+      const fy = board.y + (avgExitY + 0.5) * CELL;
+      const fx = board.x + board.w;
+      const leftX = board.x + board.w * 0.16;
+      const midX = board.x + board.w * 0.48;
+      const topOuter = Math.max(board.y, fy - board.h * 0.44);
+      const botOuter = Math.min(board.y + board.h, fy + board.h * 0.44);
+      const topInner = Math.max(board.y, fy - board.h * 0.28);
+      const botInner = Math.min(board.y + board.h, fy + board.h * 0.28);
+      const topExit = Math.max(board.y, fy - CELL * 1.15);
+      const botExit = Math.min(board.y + board.h, fy + CELL * 1.15);
+
+      g.rect(board.x, board.y, board.w, board.h).fill({ color: 0x8ae8ff, alpha: 0.05 });
+      g.poly([fx, topExit, fx, botExit, leftX, botOuter, leftX, topOuter]).fill({ color: 0xb8f3ff, alpha: 0.11 });
+      g.poly([fx, topExit, fx, botExit, midX, botInner, midX, topInner]).fill({ color: 0xe6fbff, alpha: 0.13 });
+
+      // Subtle drifting icy chill wisps clipped inside board
+      const t = gm.time * 170;
+      for (let i = 0; i < 18; i++) {
+        const span = board.w * 0.82;
+        const rx = board.w - ((hash(i, 51) * span + t * (0.75 + (i % 3) * 0.22)) % (span + 120));
+        const ry = hash(i, 52) * board.h;
+        const len = 45 + (i % 4) * 24;
+        const x1 = Math.max(board.x, board.x + rx - len);
+        const x2 = Math.min(board.x + board.w, board.x + rx);
+        const y = Math.max(board.y + 4, Math.min(board.y + board.h - 4, board.y + ry));
+        if (x2 > x1) {
+          g.moveTo(x1, y).lineTo(x2, y).stroke({ width: 1.4 + (i % 2) * 0.6, color: 0xb8f3ff, alpha: 0.20 });
+        }
+      }
+      this.stormAlertText.text = 'FRIDGE OPEN! — SNACK RUSH (+30% SPEED)';
+      this.stormAlertText.style.fill = 0xb8f3ff;
     }
 
     // Centered top-of-board alert pill (below Boss bar if Boss is active)
@@ -1974,8 +2113,8 @@ export class Renderer {
     this.stormAlertG.visible = true;
     this.stormAlertG.clear()
       .roundRect(px, py, pw, ph, 7)
-      .fill({ color: 0x2b1208, alpha: 0.90 })
-      .stroke({ width: 1.5, color: 0xff8c42, alpha: 0.92 });
+      .fill({ color: isKitchenRush ? 0x0c2433 : 0x2b1208, alpha: 0.90 })
+      .stroke({ width: 1.5, color: isKitchenRush ? 0x6ee7ff : 0xff8c42, alpha: 0.92 });
     this.stormAlertText.visible = true;
     this.stormAlertText.position.set(board.x + board.w / 2, py + ph / 2);
   }

@@ -91,6 +91,7 @@ export interface Enemy {
   submerged: boolean;
   revealedT: number;
   enraged: boolean;
+  isSplitChild: boolean;
 }
 
 export interface SeaMine {
@@ -250,6 +251,8 @@ export class Game {
   runId = 0;
   stormActive = false;
   stormTimer = 22;
+  rushActive = false;
+  rushTimer = 0;
   private nextId = 1;
   towerVersion = 0;
   pathVersion = 0;
@@ -388,6 +391,8 @@ export class Game {
     for (const pop of this.popups) pop.active = false;
     this.stormActive = false;
     this.stormTimer = 22;
+    this.rushActive = false;
+    this.rushTimer = 0;
 
     const preset = DIFFICULTIES[this.difficulty];
     const soloMult = this.playerCount === 1 ? 1.55 : 1;
@@ -555,6 +560,10 @@ export class Game {
     if (t.boosted) {
       stats.fireRate *= 1.25;
       stats.range *= 1.20;
+      if (this.currentMap.mechanic === 'kitchen-rush') {
+        stats.burnDps = Math.max(stats.burnDps, 10);
+        stats.burnDuration = Math.max(stats.burnDuration, 2.5);
+      }
     }
     if (this.currentMap.mechanic === 'mars-storms' && this.stormActive && !t.boosted && t.tier < 2) {
       stats.range *= 0.80;
@@ -720,6 +729,16 @@ export class Game {
         }
       }
     }
+    if (this.currentMap.mechanic === 'kitchen-rush' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.rushTimer += dt;
+      if (!this.rushActive && this.rushTimer >= 20) {
+        this.rushActive = true;
+        this.emitSound('fridge-open');
+      } else if (this.rushActive && this.rushTimer >= 25.5) {
+        this.rushActive = false;
+        this.rushTimer -= 25.5;
+      }
+    }
     this.runSpawners(dt);
     this.updateEnemies(dt);
     this.fireTowers(dt);
@@ -794,9 +813,10 @@ export class Game {
       oy: ((r * 7.31) % 1 - 0.5) * 0.5,
       dead: false,
       leaked: false,
-      submerged: this.currentMap.mechanic === 'naval-subs-mines' && def.id === 'frigate',
+      submerged: (this.currentMap.mechanic === 'naval-subs-mines' || this.currentMap.mechanic === 'lawn-split-burrow') && def.id === 'frigate',
       revealedT: 0,
       enraged: false,
+      isSplitChild: false,
     };
     if (def.flying) this.pickNextFlying(e);
     else this.pickNext(e);
@@ -876,7 +896,11 @@ export class Game {
 
       const speedMult = this.mode === 'normal' ? DIFFICULTIES[this.difficulty].speedMultiplier : 1;
       const enragedMult = e.enraged ? 1.35 : 1;
-      const spd = e.def.speed * speedMult * enragedMult * (e.slowT > 0 ? e.slowF : 1);
+      const rushMult =
+        this.currentMap.mechanic === 'kitchen-rush' && this.rushActive
+          ? (e.slowT > 0 ? 0.80 : 1.30)
+          : 1;
+      const spd = e.def.speed * speedMult * enragedMult * rushMult * (e.slowT > 0 ? e.slowF : 1);
       if (e.slowT > 0) {
         e.slowT -= dt;
         if (e.slowT <= 0) { e.slowT = 0; e.slowF = 1; }
@@ -1006,11 +1030,91 @@ export class Game {
         this.spawnEnemy(swarmer, e.cx, e.cy, ox, oy, hpScale);
       }
     }
+    if (this.currentMap.mechanic === 'lawn-split-burrow') {
+      const cruiser = this.enemyById.get('cruiser');
+      if (cruiser) {
+        const hpScale = this.mode === 'normal' ? e.maxHp / e.def.hp : 1;
+        this.spawnSplitChildren(cruiser, e.x, e.y, e.vx, e.vy, e.ang, e.rem, cruiser.hp * hpScale);
+      }
+    }
     const color = hex(e.def.color);
     const ring = acquire(this.rings, () => ({ active: false, x: 0, y: 0, r: 0, ttl: 0, max: 0, color: 0 }));
     Object.assign(ring, { active: true, x: e.x, y: e.y, r: 2.2, ttl: 0.6, max: 0.6, color });
     this.spawnPopup(e.x, e.y - 0.35, label, 0xffd166, 1.2, -0.9);
     this.spawnParticles(e.x, e.y, 12, color, 3.2, 3.2);
+  }
+
+  private spawnSplitChildren(
+    parentDef: EnemyDef,
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    ang: number,
+    rem: number,
+    baseMaxHp: number,
+  ): void {
+    const childDef: EnemyDef = {
+      ...parentDef,
+      armor: 0,
+      speed: parentDef.speed * 1.22,
+      bounty: Math.max(1, Math.round(parentDef.bounty * 0.35)),
+      lifeCost: 1,
+    };
+    const childHp = Math.max(1, Math.round(baseMaxHp * 0.38));
+    const hLen = Math.hypot(vx, vy);
+    const hx = hLen > 1e-6 ? vx / hLen : 1;
+    const hy = hLen > 1e-6 ? vy / hLen : 0;
+    const px = -hy;
+    const py = hx;
+    for (const sign of [-1, 1] as const) {
+      const cxPos = Math.max(0.2, Math.min(this.w - 0.2, x + px * 0.18 * sign));
+      const cyPos = Math.max(0.2, Math.min(this.h - 0.2, y + py * 0.18 * sign));
+      let cx = Math.max(0, Math.min(this.w - 1, Math.floor(cxPos)));
+      let cy = Math.max(0, Math.min(this.h - 1, Math.floor(cyPos)));
+      if (this.blocked[this.idx(cx, cy)] !== 0 || this.dist[this.idx(cx, cy)] < 0) {
+        cx = Math.max(0, Math.min(this.w - 1, Math.floor(x)));
+        cy = Math.max(0, Math.min(this.h - 1, Math.floor(y)));
+      }
+      const id = this.nextId++;
+      const child: Enemy = {
+        id,
+        def: childDef,
+        x: cxPos,
+        y: cyPos,
+        vx,
+        vy,
+        cx,
+        cy,
+        nx: cx,
+        ny: cy,
+        hp: childHp,
+        maxHp: childHp,
+        shield: 0,
+        maxShield: 0,
+        shieldDelay: 0,
+        slowT: 0,
+        slowF: 1,
+        burnT: 0,
+        burnDps: 0,
+        burnOwner: 0,
+        bossPhase: 0,
+        ang,
+        rem,
+        ox: 0,
+        oy: 0,
+        dead: false,
+        leaked: false,
+        submerged: false,
+        revealedT: 0,
+        enraged: false,
+        isSplitChild: true,
+      };
+      if (this.dist[this.idx(cx, cy)] >= 0) this.pickNext(child);
+      this.enemies.push(child);
+    }
+    this.emitSound('centipede-split');
+    this.spawnPopup(x, y - 0.25, 'SPLIT!', 0xffa84c, 0.9, -0.9);
   }
 
   private damageEnemy(e: Enemy, rawDamage: number, owner: number, opts: HitOpts, tower?: Tower): void {
@@ -1064,11 +1168,19 @@ export class Game {
       this.spawnPopup(e.x, e.y - 0.2, `+${bounty}`, 0xffe066);
       this.spawnParticles(e.x, e.y, 6, hex(e.def.color));
       this.emitSound('kill');
+      if (
+        this.currentMap.mechanic === 'lawn-split-burrow' &&
+        e.def.id === 'cruiser' &&
+        !e.isSplitChild
+      ) {
+        this.spawnSplitChildren(e.def, e.x, e.y, e.vx, e.vy, e.ang, e.rem, e.maxHp);
+      }
     }
   }
 
   private fireTowers(dt: number): void {
     const isNaval = this.currentMap.mechanic === 'naval-subs-mines';
+    const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
     for (const t of this.towers) {
       t.cooldown -= dt;
       if (t.cooldown > 0) continue;
@@ -1080,9 +1192,10 @@ export class Game {
       const color = hex(t.def.color);
       const interval = 1 / s.fireRate;
 
-      // Stasis / Sonar Buoy: radial ground/sea pulse
+      // Stasis / Sonar Buoy / Lawn Thumper: radial ground/sea pulse
       if (s.slowDuration > 0) {
         let hit = 0;
+        let flushedMole = false;
         for (const e of this.enemies) {
           if (e.dead || e.def.flying) continue;
           const dx = e.x - tx;
@@ -1091,6 +1204,10 @@ export class Game {
           e.slowT = Math.max(e.slowT, s.slowDuration);
           e.slowF = Math.min(e.slowF, s.slowFactor);
           if (isNaval) e.revealedT = Math.max(e.revealedT, 3.5);
+          if (isLawn && e.submerged) {
+            if (e.revealedT <= 0) flushedMole = true;
+            e.revealedT = Math.max(e.revealedT, 3.5);
+          }
           this.damageEnemy(e, s.damage, t.owner, {
             armorPierce: s.armorPierce,
             shieldMultiplier: s.shieldMultiplier,
@@ -1105,6 +1222,7 @@ export class Game {
           Object.assign(ring, { active: true, x: tx, y: ty, r: s.range, ttl: 0.4, max: 0.4, color });
           t.cooldown = Math.max(0, t.cooldown + interval);
           this.emitSound(isNaval ? 'sonar-ping' : 'shot-stasis');
+          if (flushedMole) this.emitSound('mole-flush');
         } else {
           t.cooldown = 0;
         }
@@ -1117,7 +1235,7 @@ export class Game {
         continue;
       }
 
-      const canDetectSub = isNaval && (s.pierceCount > 0 || s.armorPierce);
+      const canDetectSub = (isNaval || isLawn) && (s.pierceCount > 0 || s.armorPierce);
       const best = pickTarget(this.enemies, tx, ty, s.range, s.targetsAir, t.priority, canDetectSub);
       if (!best) { t.cooldown = 0; continue; }
 
@@ -1155,8 +1273,8 @@ export class Game {
         const cap = Math.max(1, s.pierceCount);
         for (let i = 0; i < hits.length && i < cap; i++) {
           const target = hits[i].e;
-          const dmg = isNaval && target.submerged ? s.damage * 1.4 : s.damage;
-          if (isNaval && target.submerged) target.revealedT = Math.max(target.revealedT, 2.5);
+          const dmg = (isNaval || isLawn) && target.submerged ? s.damage * 1.4 : s.damage;
+          if ((isNaval || isLawn) && target.submerged) target.revealedT = Math.max(target.revealedT, 2.5);
           this.damageEnemy(target, dmg, t.owner, {
             armorPierce: s.armorPierce,
             shieldMultiplier: s.shieldMultiplier,
@@ -1370,11 +1488,17 @@ export class Game {
       }
       p.active = false;
       const r2 = p.splash * p.splash;
+      const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
+      const isT2Plasma = isLawn && tower !== undefined && tower.def.id === 'plasma' && tower.tier >= 2;
       for (const e of this.enemies) {
         if (e.dead || e.def.flying) continue;
+        if (isLawn && e.submerged && e.revealedT <= 0 && !isT2Plasma) continue;
         const ex = e.x - p.tx;
         const ey = e.y - p.ty;
-        if (ex * ex + ey * ey <= r2) this.damageEnemy(e, p.damage, p.owner, hitOpts, tower);
+        if (ex * ex + ey * ey <= r2) {
+          if (isT2Plasma && e.submerged) e.revealedT = Math.max(e.revealedT, 2.5);
+          this.damageEnemy(e, p.damage, p.owner, hitOpts, tower);
+        }
       }
       const ring = acquire(this.rings, () => ({ active: false, x: 0, y: 0, r: 0, ttl: 0, max: 0, color: 0 }));
       Object.assign(ring, { active: true, x: p.tx, y: p.ty, r: p.splash, ttl: 0.25, max: 0.25, color: p.color });

@@ -77,6 +77,16 @@ const THEATER_REASON_OVERRIDES: Record<string, Record<string, string>> = {
     reserved: 'Castle / Road Gate',
     'blocks-path': 'Would block road',
   },
+  kitchen: {
+    ok: 'Placed',
+    reserved: 'Pantry / Fridge',
+    'blocks-path': 'Would block counter',
+  },
+  lawn: {
+    ok: 'Placed',
+    reserved: 'Fence / Porch',
+    'blocks-path': 'Would block yard',
+  },
 };
 
 export function reasonText(reason: string, theme?: string): string {

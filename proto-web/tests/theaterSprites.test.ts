@@ -1,14 +1,18 @@
 import { Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { buildTheaterTextures, type TheaterTheme } from '../src/theaterSprites';
+import {
+  buildTheaterTextures,
+  type TheaterSpriteTheme,
+  type TheaterTheme,
+} from '../src/theaterSprites';
 
 const TURRET_KEYS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_KEYS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
 
 describe('buildTheaterTextures', () => {
-  it.each<TheaterTheme>(['naval', 'mars', 'medieval'])(
+  it.each<TheaterSpriteTheme>(['naval', 'mars', 'medieval', 'kitchen', 'lawn'])(
     'returns a valid TheaterTextureSet with Texture.EMPTY in headless Node for %s',
-    (theme) => {
+    (theme: TheaterTheme) => {
       expect(typeof document).toBe('undefined');
 
       const set = buildTheaterTextures(theme);
@@ -44,6 +48,18 @@ describe('buildTheaterTextures', () => {
       } else {
         expect(set.boost).toBe(Texture.EMPTY);
         expect(set.mine).toBeUndefined();
+      }
+
+      if (theme === 'kitchen' || theme === 'lawn') {
+        expect(set.base).toBe(Texture.EMPTY);
+      } else {
+        expect(set.base).toBeUndefined();
+      }
+
+      if (theme === 'lawn') {
+        expect(set.moleMound).toBe(Texture.EMPTY);
+      } else {
+        expect(set.moleMound).toBeUndefined();
       }
 
       expect(() => set.destroy()).not.toThrow();

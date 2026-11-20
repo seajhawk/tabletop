@@ -16,6 +16,9 @@ const ALL_SOUND_EVENTS: SoundEvent[] = [
   'sonar-ping',
   'dust-storm',
   'enrage',
+  'fridge-open',
+  'centipede-split',
+  'mole-flush',
   'kill',
   'boss-phase',
   'leak',
@@ -29,7 +32,7 @@ const ALL_SOUND_EVENTS: SoundEvent[] = [
   'ui-lose',
 ];
 
-const THEMES: AudioTheme[] = ['space', 'military', 'naval', 'mars', 'medieval'];
+const THEMES: AudioTheme[] = ['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn'];
 
 describe('SoundEngine', () => {
   it('safe headless no-op when AudioContext is absent', () => {
@@ -45,8 +48,8 @@ describe('SoundEngine', () => {
     expect(engine.muted).toBe(false);
   });
 
-  it('defines positive cooldowns for all 24 sound events', () => {
-    expect(ALL_SOUND_EVENTS).toHaveLength(24);
+  it('defines positive cooldowns for all 27 sound events', () => {
+    expect(ALL_SOUND_EVENTS).toHaveLength(27);
     for (const ev of ALL_SOUND_EVENTS) {
       expect(typeof SOUND_COOLDOWNS[ev]).toBe('number');
       expect(SOUND_COOLDOWNS[ev]).toBeGreaterThan(0);
@@ -168,7 +171,7 @@ describe('SoundEngine', () => {
       expect(createdOscillators.length).toBe(0);
     });
 
-    it('supports switching theme across all 5 themes', () => {
+    it('supports switching theme across all 7 themes', () => {
       const engine = new SoundEngine(() => mockCtx);
       expect(engine.theme).toBe('space');
       for (const t of THEMES) {
@@ -177,7 +180,7 @@ describe('SoundEngine', () => {
       }
     });
 
-    it.each(THEMES)('synthesizes all 24 SoundEvents cleanly in %s theme', (theme) => {
+    it.each(THEMES)('synthesizes all 27 SoundEvents cleanly in %s theme', (theme) => {
       for (let i = 0; i < ALL_SOUND_EVENTS.length; i++) {
         const ev = ALL_SOUND_EVENTS[i];
         const engine = new SoundEngine(() => mockCtx);

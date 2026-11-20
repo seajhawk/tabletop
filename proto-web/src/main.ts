@@ -35,17 +35,21 @@ async function main(): Promise<void> {
   const audio = new SoundEngine();
   audio.setTheme(game.currentMap.theme ?? 'space');
   const base = import.meta.env.BASE_URL;
-  const [militaryTex, navalTex, marsTex, medievalTex] = await Promise.all([
+  const [militaryTex, navalTex, marsTex, medievalTex, kitchenTex, lawnTex] = await Promise.all([
     Assets.load<Texture>(`${base}assets/us-dc-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/naval-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/mars-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/castle-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/kitchen-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/lawn-map.jpg`).catch(() => null),
   ]);
   const mapTextures: Partial<Record<MapTheme, Texture | null>> = {
     military: militaryTex,
     naval: navalTex,
     mars: marsTex,
     medieval: medievalTex,
+    kitchen: kitchenTex,
+    lawn: lawnTex,
   };
   const viewport = new Viewport();
   const stepper = new FixedStepper();

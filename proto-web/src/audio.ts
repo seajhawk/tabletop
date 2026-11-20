@@ -17,6 +17,9 @@ export const SOUND_COOLDOWNS: Record<SoundEvent, number> = {
   'sonar-ping': 120,
   'dust-storm': 100,
   'enrage': 90,
+  'fridge-open': 120,
+  'centipede-split': 90,
+  'mole-flush': 100,
   'kill': 60,
   'boss-phase': 25,
   'leak': 25,
@@ -160,6 +163,10 @@ export class SoundEngine {
       this.synthesizeMars(ev);
     } else if (this.theme === 'medieval') {
       this.synthesizeMedieval(ev);
+    } else if (this.theme === 'kitchen') {
+      this.synthesizeKitchen(ev);
+    } else if (this.theme === 'lawn') {
+      this.synthesizeLawn(ev);
     } else {
       this.synthesize(ev);
     }
@@ -739,6 +746,89 @@ export class SoundEngine {
           osc.start(t);
           osc.stop(t + 0.25);
           setTimeout(releaseVoice, 250);
+          break;
+        }
+
+        case 'fridge-open': {
+          // icy chime + cool air whoosh (high crystalline sine 1760 Hz + airy lowpass noise, 240ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 700, 0.28, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // crisp double-snap pop (dual quick noise snaps + high frequency chirp, 90ms)
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // earthen thump + pop-up chirp (low frequency thump 130->45 Hz + rising sine 280->640 Hz, 180ms)
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
           break;
         }
 
@@ -1482,6 +1572,89 @@ export class SoundEngine {
           break;
         }
 
+        case 'fridge-open': {
+          // icy chime + cool air whoosh
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 700, 0.28, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // crisp double-snap pop
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // earthen thump + pop-up chirp
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
         default:
           releaseVoice();
           break;
@@ -1989,6 +2162,89 @@ export class SoundEngine {
           break;
         }
 
+        case 'fridge-open': {
+          // icy chime + cool air whoosh
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 700, 0.28, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // crisp double-snap pop
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // earthen thump + pop-up chirp
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
         default:
           releaseVoice();
           break;
@@ -2485,6 +2741,89 @@ export class SoundEngine {
           break;
         }
 
+        case 'fridge-open': {
+          // icy chime + cool air whoosh
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 700, 0.28, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // crisp double-snap pop
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // earthen thump + pop-up chirp
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
         default:
           releaseVoice();
           break;
@@ -2977,6 +3316,1214 @@ export class SoundEngine {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(notes[i], noteT);
             gain.gain.setValueAtTime(0.26, noteT);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteT + dur);
+            osc.connect(gain);
+            gain.connect(destination);
+            osc.start(noteT);
+            osc.stop(noteT + dur + 0.02);
+          }
+          setTimeout(releaseVoice, 500);
+          break;
+        }
+
+        case 'fridge-open': {
+          // Icy chime + cool air whoosh
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 700, 0.28, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // Crisp double-snap pop
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // Earthen thump + pop-up chirp
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
+        default:
+          releaseVoice();
+          break;
+      }
+    } catch {
+      releaseVoice();
+    }
+  }
+
+  private synthesizeKitchen(ev: SoundEvent): void {
+    const ctx = this.ctx;
+    const destination = this.compressor;
+    if (!ctx || !destination) return;
+
+    this.activeVoices++;
+    let voiceFinished = false;
+    const releaseVoice = () => {
+      if (!voiceFinished) {
+        voiceFinished = true;
+        this.activeVoices = Math.max(0, this.activeVoices - 1);
+      }
+    };
+
+    const t = ctx.currentTime;
+
+    try {
+      switch (ev) {
+        case 'shot-pulse': {
+          // Swatter: snappy plastic swat smack (sharp slap noise + rapid triangle pitch down 680->120 Hz, 45ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(680, t);
+          osc.frequency.exponentialRampToValueAtTime(120, t + 0.045);
+          gain.gain.setValueAtTime(0.48, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.04, 2800, 0.42, 'bandpass', 2.5);
+          osc.start(t);
+          osc.stop(t + 0.05);
+          setTimeout(releaseVoice, 50);
+          break;
+        }
+
+        case 'shot-overcharge': {
+          // Bug Zapper / Twin Swatter: electric zapping snap (dual triangle + crackle noise, 65ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(1200, t);
+          osc.frequency.exponentialRampToValueAtTime(260, t + 0.065);
+          gain.gain.setValueAtTime(0.42, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.065);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.06, 3500, 0.38, 'highpass');
+          osc.start(t);
+          osc.stop(t + 0.07);
+          setTimeout(releaseVoice, 70);
+          break;
+        }
+
+        case 'shot-plasma': {
+          // Pepper Mill: spice puff & wooden crank clack (woody click 240->90 Hz + pepper puff noise, 120ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(240, t);
+          osc.frequency.exponentialRampToValueAtTime(90, t + 0.08);
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.12, 1100, 0.4, 'bandpass', 1.5);
+          osc.start(t);
+          osc.stop(t + 0.09);
+          setTimeout(releaseVoice, 120);
+          break;
+        }
+
+        case 'shot-stasis': {
+          // Honey Trap: sticky syrup squish (slurpy sine frequency dip 420->180->320 Hz, 160ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, t);
+          osc.frequency.linearRampToValueAtTime(180, t + 0.08);
+          osc.frequency.exponentialRampToValueAtTime(320, t + 0.16);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t + 0.02, 0.12, 600, 0.25, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.17);
+          setTimeout(releaseVoice, 170);
+          break;
+        }
+
+        case 'shot-rail': {
+          // Chef Knife: metallic knife shing / blade slice (bright metallic shing 1800->3200 Hz sine + slice noise, 110ms)
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(1800, t);
+          osc1.frequency.exponentialRampToValueAtTime(3200, t + 0.1);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(2200, t);
+          osc2.frequency.exponentialRampToValueAtTime(1400, t + 0.1);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.09, 4500, 0.35, 'highpass');
+          osc1.start(t);
+          osc2.start(t);
+          osc1.stop(t + 0.11);
+          osc2.stop(t + 0.11);
+          setTimeout(releaseVoice, 110);
+          break;
+        }
+
+        case 'shot-swarm': {
+          // Soap Sprayer: spray spritz burst (hissing mist noise + squirt chirp 800->400 Hz, 90ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, t);
+          osc.frequency.exponentialRampToValueAtTime(400, t + 0.08);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.09, 3200, 0.45, 'bandpass', 1.2);
+          osc.start(t);
+          osc.stop(t + 0.09);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'shot-mine': {
+          // Mousetrap arming click (sharp metal click 950->340 Hz, 60ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(950, t);
+          osc.frequency.exponentialRampToValueAtTime(340, t + 0.06);
+          gain.gain.setValueAtTime(0.35, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.065);
+          setTimeout(releaseVoice, 65);
+          break;
+        }
+
+        case 'impact-plasma': {
+          // Pepper burst / spice splash (thud 160->50 Hz + sizzling spice noise, 180ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(160, t);
+          osc.frequency.exponentialRampToValueAtTime(50, t + 0.16);
+          gain.gain.setValueAtTime(0.6, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.18, 900, 0.45);
+          osc.start(t);
+          osc.stop(t + 0.17);
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
+        case 'impact-missile': {
+          // Soap bubble pop / sud burst (bubble pop 600->220 Hz + splash noise, 110ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, t);
+          osc.frequency.exponentialRampToValueAtTime(220, t + 0.09);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.1, 1400, 0.35);
+          osc.start(t);
+          osc.stop(t + 0.1);
+          setTimeout(releaseVoice, 110);
+          break;
+        }
+
+        case 'impact-mine': {
+          // Mousetrap snap & clatter (powerful wooden snap 280->40 Hz + click, 160ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(280, t);
+          osc.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+          gain.gain.setValueAtTime(0.7, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.15, 2400, 0.5, 'bandpass', 2.0);
+          osc.start(t);
+          osc.stop(t + 0.16);
+          setTimeout(releaseVoice, 160);
+          break;
+        }
+
+        case 'sonar-ping': {
+          // Microwave / timer bell ding (sweet metallic bell ding 1046 Hz pure chime, 300ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1046.5, t);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.31);
+          setTimeout(releaseVoice, 310);
+          break;
+        }
+
+        case 'dust-storm': {
+          // Range hood exhaust whoosh / stove burner flare (warm rushing air, 260ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(120, t);
+          osc.frequency.exponentialRampToValueAtTime(70, t + 0.25);
+          gain.gain.setValueAtTime(0.35, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.26, 650, 0.45, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.26);
+          setTimeout(releaseVoice, 260);
+          break;
+        }
+
+        case 'enrage': {
+          // Angry rat squeak & hiss (high shrieking sweep 900->1800->1100 Hz, 240ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(900, t);
+          osc.frequency.linearRampToValueAtTime(1800, t + 0.1);
+          osc.frequency.exponentialRampToValueAtTime(1100, t + 0.24);
+          gain.gain.setValueAtTime(0.42, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.25);
+          setTimeout(releaseVoice, 250);
+          break;
+        }
+
+        case 'fridge-open': {
+          // Icy chime + cool air whoosh
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 680, 0.3, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // Crisp double-snap pop
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // Earthen thump + pop-up chirp
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
+        case 'kill': {
+          // Bug squish / vermin crunch (squishy pop 340->110 Hz, 100ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(340, t);
+          osc.frequency.exponentialRampToValueAtTime(110, t + 0.1);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.08, 1200, 0.35);
+          osc.start(t);
+          osc.stop(t + 0.11);
+          setTimeout(releaseVoice, 110);
+          break;
+        }
+
+        case 'boss-phase': {
+          // King Rat battle roar / kitchen crash (pots clattering 740->220 Hz + deep growl 110->55 Hz, 360ms)
+          const oscPan = ctx.createOscillator();
+          const oscGrowl = ctx.createOscillator();
+          const gain = ctx.createGain();
+          oscPan.type = 'triangle';
+          oscPan.frequency.setValueAtTime(740, t);
+          oscPan.frequency.exponentialRampToValueAtTime(220, t + 0.35);
+          oscGrowl.type = 'sawtooth';
+          oscGrowl.frequency.setValueAtTime(110, t);
+          oscGrowl.frequency.exponentialRampToValueAtTime(55, t + 0.35);
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          oscPan.connect(gain);
+          oscGrowl.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.25, 2200, 0.4);
+          oscPan.start(t);
+          oscGrowl.start(t);
+          oscPan.stop(t + 0.36);
+          oscGrowl.stop(t + 0.36);
+          setTimeout(releaseVoice, 360);
+          break;
+        }
+
+        case 'leak': {
+          // Fridge alarm buzzer / dropped carton splat (jarring buzz 480->320 Hz, 280ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(480, t);
+          osc.frequency.exponentialRampToValueAtTime(320, t + 0.28);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.29);
+          setTimeout(releaseVoice, 290);
+          break;
+        }
+
+        case 'ui-place': {
+          // Ceramic mug / plate set-down clink (bright ceramic ping 784 Hz, 70ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(783.99, t);
+          gain.gain.setValueAtTime(0.38, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.075);
+          setTimeout(releaseVoice, 75);
+          break;
+        }
+
+        case 'ui-upgrade': {
+          // Silver spoon clink / chef chime (bright dual chime 880 -> 1320 Hz, 120ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, t);
+          osc.frequency.exponentialRampToValueAtTime(1320, t + 0.12);
+          gain.gain.setValueAtTime(0.35, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.13);
+          setTimeout(releaseVoice, 130);
+          break;
+        }
+
+        case 'ui-sell': {
+          // Kitchen register bell ding (987 Hz triangle ding, 80ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(987.77, t);
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.085);
+          setTimeout(releaseVoice, 85);
+          break;
+        }
+
+        case 'ui-error': {
+          // Buzzer / toaster thud (dull wooden spoon tap 160 Hz, 90ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(160, t);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.095);
+          setTimeout(releaseVoice, 95);
+          break;
+        }
+
+        case 'ui-share': {
+          // Toast pop / spoon tap pair (659 -> 987 Hz, 120ms)
+          const n1 = ctx.createOscillator();
+          const g1 = ctx.createGain();
+          n1.type = 'sine';
+          n1.frequency.setValueAtTime(659.25, t);
+          g1.gain.setValueAtTime(0.3, t);
+          g1.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
+          n1.connect(g1);
+          g1.connect(destination);
+          n1.start(t);
+          n1.stop(t + 0.06);
+
+          const t2 = t + 0.06;
+          const n2 = ctx.createOscillator();
+          const g2 = ctx.createGain();
+          n2.type = 'sine';
+          n2.frequency.setValueAtTime(987.77, t2);
+          g2.gain.setValueAtTime(0.3, t2);
+          g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.055);
+          n2.connect(g2);
+          g2.connect(destination);
+          n2.start(t2);
+          n2.stop(t2 + 0.06);
+          setTimeout(releaseVoice, 120);
+          break;
+        }
+
+        case 'ui-wave': {
+          // Dinner bell chime / triangle gong (pure warm triangle 784 Hz chime, 220ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(783.99, t);
+          gain.gain.setValueAtTime(0.42, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 230);
+          break;
+        }
+
+        case 'ui-win': {
+          // Culinary triumph fanfare (G major kitchen feast: 392, 493.88, 587.33, 783.99 Hz, 500ms)
+          const chord = [392.0, 493.88, 587.33, 783.99];
+          for (let i = 0; i < chord.length; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(chord[i], t);
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.linearRampToValueAtTime(0.18, t + 0.24);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            osc.connect(gain);
+            gain.connect(destination);
+            osc.start(t);
+            osc.stop(t + 0.52);
+          }
+          setTimeout(releaseVoice, 520);
+          break;
+        }
+
+        case 'ui-lose': {
+          // Spoiled dinner / dropped pie dirge (349.23 -> 293.66 -> 220 Hz, 480ms)
+          const notes = [349.23, 293.66, 220.0];
+          const dur = 0.16;
+          for (let i = 0; i < notes.length; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const noteT = t + i * dur;
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(notes[i], noteT);
+            gain.gain.setValueAtTime(0.24, noteT);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteT + dur);
+            osc.connect(gain);
+            gain.connect(destination);
+            osc.start(noteT);
+            osc.stop(noteT + dur + 0.02);
+          }
+          setTimeout(releaseVoice, 500);
+          break;
+        }
+
+        default:
+          releaseVoice();
+          break;
+      }
+    } catch {
+      releaseVoice();
+    }
+  }
+
+  private synthesizeLawn(ev: SoundEvent): void {
+    const ctx = this.ctx;
+    const destination = this.compressor;
+    if (!ctx || !destination) return;
+
+    this.activeVoices++;
+    let voiceFinished = false;
+    const releaseVoice = () => {
+      if (!voiceFinished) {
+        voiceFinished = true;
+        this.activeVoices = Math.max(0, this.activeVoices - 1);
+      }
+    };
+
+    const t = ctx.currentTime;
+
+    try {
+      switch (ev) {
+        case 'shot-pulse': {
+          // Bug Zapper: electric crackle & sizzle pop (bright buzzing saw 920->240 Hz + electric spark noise, 55ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(920, t);
+          osc.frequency.exponentialRampToValueAtTime(240, t + 0.055);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.05, 3800, 0.42, 'highpass');
+          osc.start(t);
+          osc.stop(t + 0.06);
+          setTimeout(releaseVoice, 60);
+          break;
+        }
+
+        case 'shot-overcharge': {
+          // UV Tesla Coil: heavy electric arc zap (dual sawtooth 1340->310 Hz, 80ms)
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc1.type = 'sawtooth';
+          osc1.frequency.setValueAtTime(1340, t);
+          osc1.frequency.exponentialRampToValueAtTime(310, t + 0.08);
+          osc2.type = 'sawtooth';
+          osc2.frequency.setValueAtTime(1380, t);
+          osc2.frequency.exponentialRampToValueAtTime(290, t + 0.08);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.075, 4200, 0.45, 'highpass');
+          osc1.start(t);
+          osc2.start(t);
+          osc1.stop(t + 0.085);
+          osc2.stop(t + 0.085);
+          setTimeout(releaseVoice, 85);
+          break;
+        }
+
+        case 'shot-plasma': {
+          // Garden Gnome: firecracker pop / pinecone mortar launch (sharp pop 440->80 Hz + gunpowder crackle, 130ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, t);
+          osc.frequency.exponentialRampToValueAtTime(80, t + 0.12);
+          gain.gain.setValueAtTime(0.55, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.11, 1600, 0.48, 'bandpass', 2.0);
+          osc.start(t);
+          osc.stop(t + 0.13);
+          setTimeout(releaseVoice, 130);
+          break;
+        }
+
+        case 'shot-stasis': {
+          // Lawn Thumper: deep rhythmic seismic ground thud (sub-bass punch 120->35 Hz + sprinkler hiss, 180ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(120, t);
+          osc.frequency.exponentialRampToValueAtTime(35, t + 0.17);
+          gain.gain.setValueAtTime(0.65, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.17);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t + 0.03, 0.14, 520, 0.35, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.18);
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
+        case 'shot-rail': {
+          // Mole Spade: heavy garden spade clang / earth slice (metallic iron ring 880->220 Hz + dirt crunch, 140ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(880, t);
+          osc.frequency.exponentialRampToValueAtTime(220, t + 0.12);
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.12, 1400, 0.42, 'bandpass', 1.8);
+          osc.start(t);
+          osc.stop(t + 0.13);
+          setTimeout(releaseVoice, 140);
+          break;
+        }
+
+        case 'shot-swarm': {
+          // Hose Turret: pressurized water burst / high-pressure stream blast (rushing water blast 1200->600 Hz noise, 95ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(480, t);
+          osc.frequency.exponentialRampToValueAtTime(180, t + 0.09);
+          gain.gain.setValueAtTime(0.35, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.095, 2100, 0.5, 'bandpass', 1.0);
+          osc.start(t);
+          osc.stop(t + 0.1);
+          setTimeout(releaseVoice, 100);
+          break;
+        }
+
+        case 'shot-mine': {
+          // Underground sprinkler head / lawn trap pop (plunk click 380->140 Hz, 80ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(380, t);
+          osc.frequency.exponentialRampToValueAtTime(140, t + 0.08);
+          gain.gain.setValueAtTime(0.38, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.085);
+          setTimeout(releaseVoice, 85);
+          break;
+        }
+
+        case 'impact-plasma': {
+          // Pinecone / firecracker explosion (reverberant lawn blast 140->35 Hz + pine needle debris, 200ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(140, t);
+          osc.frequency.exponentialRampToValueAtTime(35, t + 0.2);
+          gain.gain.setValueAtTime(0.68, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.2, 750, 0.48);
+          osc.start(t);
+          osc.stop(t + 0.21);
+          setTimeout(releaseVoice, 210);
+          break;
+        }
+
+        case 'impact-missile': {
+          // Water blast splash / hydro impact (wet splash noise + watery pop 420->120 Hz, 120ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, t);
+          osc.frequency.exponentialRampToValueAtTime(120, t + 0.11);
+          gain.gain.setValueAtTime(0.48, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.12, 1600, 0.42);
+          osc.start(t);
+          osc.stop(t + 0.12);
+          setTimeout(releaseVoice, 120);
+          break;
+        }
+
+        case 'impact-mine': {
+          // Lawn eruption / sprinkler burst boom (earthen rupture 150->30 Hz + turf scatter, 200ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(150, t);
+          osc.frequency.exponentialRampToValueAtTime(30, t + 0.2);
+          gain.gain.setValueAtTime(0.7, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.2, 580, 0.5, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.21);
+          setTimeout(releaseVoice, 210);
+          break;
+        }
+
+        case 'sonar-ping': {
+          // Garden wind chime (delicate metallic wind chime 1174 Hz + 1760 Hz harmonic, 350ms)
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(1174.66, t);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(1760.0, t);
+          gain.gain.setValueAtTime(0.38, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(destination);
+          osc1.start(t);
+          osc2.start(t);
+          osc1.stop(t + 0.36);
+          osc2.stop(t + 0.36);
+          setTimeout(releaseVoice, 360);
+          break;
+        }
+
+        case 'dust-storm': {
+          // Backyard pollen squall / dry leaf gust (rustling grass noise, 280ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(100, t);
+          osc.frequency.exponentialRampToValueAtTime(65, t + 0.28);
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.28, 700, 0.4, 'bandpass', 1.0);
+          osc.start(t);
+          osc.stop(t + 0.29);
+          setTimeout(releaseVoice, 290);
+          break;
+        }
+
+        case 'enrage': {
+          // Burrow tremor / insect swarm buzz (buzzing insect roar 180->360->240 Hz, 260ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, t);
+          osc.frequency.linearRampToValueAtTime(360, t + 0.12);
+          osc.frequency.exponentialRampToValueAtTime(240, t + 0.26);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.27);
+          setTimeout(releaseVoice, 270);
+          break;
+        }
+
+        case 'fridge-open': {
+          // Icy chime + cool air whoosh
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.22);
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.24, 680, 0.3, 'lowpass');
+          osc.start(t);
+          osc.stop(t + 0.23);
+          setTimeout(releaseVoice, 240);
+          break;
+        }
+
+        case 'centipede-split': {
+          // Crisp double-snap pop
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(980, t);
+          osc1.frequency.exponentialRampToValueAtTime(320, t + 0.04);
+          gain1.gain.setValueAtTime(0.35, t);
+          gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc1.connect(gain1);
+          gain1.connect(destination);
+          osc1.start(t);
+          osc1.stop(t + 0.045);
+
+          const t2 = t + 0.04;
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1180, t2);
+          osc2.frequency.exponentialRampToValueAtTime(380, t2 + 0.045);
+          gain2.gain.setValueAtTime(0.38, t2);
+          gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.045);
+          osc2.connect(gain2);
+          gain2.connect(destination);
+          osc2.start(t2);
+          osc2.stop(t2 + 0.05);
+
+          this.playNoiseBurst(ctx, destination, t, 0.035, 3200, 0.35, 'bandpass', 2.0);
+          this.playNoiseBurst(ctx, destination, t2, 0.04, 3600, 0.38, 'bandpass', 2.0);
+          setTimeout(releaseVoice, 90);
+          break;
+        }
+
+        case 'mole-flush': {
+          // Earthen thump + pop-up chirp
+          const oscThump = ctx.createOscillator();
+          const gainThump = ctx.createGain();
+          oscThump.type = 'sine';
+          oscThump.frequency.setValueAtTime(130, t);
+          oscThump.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+          gainThump.gain.setValueAtTime(0.55, t);
+          gainThump.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          oscThump.connect(gainThump);
+          gainThump.connect(destination);
+          oscThump.start(t);
+          oscThump.stop(t + 0.13);
+
+          const tChirp = t + 0.05;
+          const oscChirp = ctx.createOscillator();
+          const gainChirp = ctx.createGain();
+          oscChirp.type = 'triangle';
+          oscChirp.frequency.setValueAtTime(280, tChirp);
+          oscChirp.frequency.exponentialRampToValueAtTime(640, tChirp + 0.12);
+          gainChirp.gain.setValueAtTime(0.35, tChirp);
+          gainChirp.gain.exponentialRampToValueAtTime(0.001, tChirp + 0.12);
+          oscChirp.connect(gainChirp);
+          gainChirp.connect(destination);
+          oscChirp.start(tChirp);
+          oscChirp.stop(tChirp + 0.13);
+
+          this.playNoiseBurst(ctx, destination, t, 0.14, 450, 0.35, 'lowpass');
+          setTimeout(releaseVoice, 180);
+          break;
+        }
+
+        case 'kill': {
+          // Bug zap / shell crack (crunchy snap 520->160 Hz, 80ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520, t);
+          osc.frequency.exponentialRampToValueAtTime(160, t + 0.08);
+          gain.gain.setValueAtTime(0.45, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.07, 2400, 0.35);
+          osc.start(t);
+          osc.stop(t + 0.085);
+          setTimeout(releaseVoice, 85);
+          break;
+        }
+
+        case 'boss-phase': {
+          // Millipede Queen screech & earthquake tremor (chittering sawtooth 440->880 Hz + deep sub 75->30 Hz, 380ms)
+          const oscScreech = ctx.createOscillator();
+          const oscTremor = ctx.createOscillator();
+          const gain = ctx.createGain();
+          oscScreech.type = 'sawtooth';
+          oscScreech.frequency.setValueAtTime(440, t);
+          oscScreech.frequency.linearRampToValueAtTime(880, t + 0.2);
+          oscScreech.frequency.exponentialRampToValueAtTime(320, t + 0.38);
+          oscTremor.type = 'sine';
+          oscTremor.frequency.setValueAtTime(75, t);
+          oscTremor.frequency.exponentialRampToValueAtTime(30, t + 0.38);
+          gain.gain.setValueAtTime(0.52, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+          oscScreech.connect(gain);
+          oscTremor.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.25, 1800, 0.4);
+          oscScreech.start(t);
+          oscTremor.start(t);
+          oscScreech.stop(t + 0.39);
+          oscTremor.stop(t + 0.39);
+          setTimeout(releaseVoice, 390);
+          break;
+        }
+
+        case 'leak': {
+          // Porch screen door slam / pest intrusion buzzer (screen slam 220->50 Hz, 260ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, t);
+          osc.frequency.exponentialRampToValueAtTime(50, t + 0.25);
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          osc.connect(gain);
+          gain.connect(destination);
+          this.playNoiseBurst(ctx, destination, t, 0.15, 1200, 0.4);
+          osc.start(t);
+          osc.stop(t + 0.26);
+          setTimeout(releaseVoice, 260);
+          break;
+        }
+
+        case 'ui-place': {
+          // Garden stone paving tap (earthy stone tap 620 Hz triangle, 75ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(620, t);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.075);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.08);
+          setTimeout(releaseVoice, 80);
+          break;
+        }
+
+        case 'ui-upgrade': {
+          // Watering can sprinkle chime (bright climbing chime 587 -> 880 Hz, 120ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, t);
+          osc.frequency.exponentialRampToValueAtTime(880, t + 0.12);
+          gain.gain.setValueAtTime(0.36, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.13);
+          setTimeout(releaseVoice, 130);
+          break;
+        }
+
+        case 'ui-sell': {
+          // Seed packet rustle / clink (740 Hz triangle, 80ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(739.99, t);
+          gain.gain.setValueAtTime(0.32, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.085);
+          setTimeout(releaseVoice, 85);
+          break;
+        }
+
+        case 'ui-error': {
+          // Dry stick snap / denied thud (150 Hz triangle, 90ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(150, t);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.095);
+          setTimeout(releaseVoice, 95);
+          break;
+        }
+
+        case 'ui-share': {
+          // Wooden fence bird chirp pair (784 -> 1174 Hz, 120ms)
+          const n1 = ctx.createOscillator();
+          const g1 = ctx.createGain();
+          n1.type = 'sine';
+          n1.frequency.setValueAtTime(783.99, t);
+          g1.gain.setValueAtTime(0.3, t);
+          g1.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
+          n1.connect(g1);
+          g1.connect(destination);
+          n1.start(t);
+          n1.stop(t + 0.06);
+
+          const t2 = t + 0.06;
+          const n2 = ctx.createOscillator();
+          const g2 = ctx.createGain();
+          n2.type = 'sine';
+          n2.frequency.setValueAtTime(1174.66, t2);
+          g2.gain.setValueAtTime(0.3, t2);
+          g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.055);
+          n2.connect(g2);
+          g2.connect(destination);
+          n2.start(t2);
+          n2.stop(t2 + 0.06);
+          setTimeout(releaseVoice, 120);
+          break;
+        }
+
+        case 'ui-wave': {
+          // Backyard dinner triangle / garden bell (bright ring 880 Hz, 240ms)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(880.0, t);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+          osc.connect(gain);
+          gain.connect(destination);
+          osc.start(t);
+          osc.stop(t + 0.25);
+          setTimeout(releaseVoice, 250);
+          break;
+        }
+
+        case 'ui-win': {
+          // Garden bloom triumph fanfare (F major backyard flourish: 349.23, 440.0, 523.25, 698.46 Hz, 520ms)
+          const chord = [349.23, 440.0, 523.25, 698.46];
+          for (let i = 0; i < chord.length; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(chord[i], t);
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.linearRampToValueAtTime(0.18, t + 0.25);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.52);
+            osc.connect(gain);
+            gain.connect(destination);
+            osc.start(t);
+            osc.stop(t + 0.54);
+          }
+          setTimeout(releaseVoice, 540);
+          break;
+        }
+
+        case 'ui-lose': {
+          // Ruined lawn garden wilt dirge (293.66 -> 246.94 -> 196.0 Hz, 480ms)
+          const notes = [293.66, 246.94, 196.0];
+          const dur = 0.16;
+          for (let i = 0; i < notes.length; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const noteT = t + i * dur;
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(notes[i], noteT);
+            gain.gain.setValueAtTime(0.25, noteT);
             gain.gain.exponentialRampToValueAtTime(0.001, noteT + dur);
             osc.connect(gain);
             gain.connect(destination);
