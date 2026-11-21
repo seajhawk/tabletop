@@ -235,6 +235,7 @@ const MARS_THEME: TheaterTheme = {
     stasis: 'CRYO',
     railgun: 'RAIL',
     swarm: 'DRONE',
+    healer: 'HEAL',
   },
   turrets: {
     pulse: { shortName: 'Pulse Laser', fullName: 'Dust-Blaster Laser', upgrades: ['Twin Optics', 'Thermal Beam'], color: 0x4cd9ef },
@@ -242,6 +243,7 @@ const MARS_THEME: TheaterTheme = {
     stasis: { shortName: 'Cryo Thump', fullName: 'Cryo-Seismic Thumper', upgrades: ['Deep Freeze', 'Shield Quake'], color: 0x75e8ff },
     railgun: { shortName: 'Mass Driver', fullName: 'Mass Driver', upgrades: ['Capacitor Bank', 'Hyper-Pierce'], color: 0xe8c768 },
     swarm: { shortName: 'Drone Pod', fullName: 'Orbital Drone Pod', upgrades: ['Swarm Array', 'Blast Drones'], color: 0xf27ec8 },
+    healer: { shortName: 'Repair Bot', fullName: 'Repair Rover Bay', upgrades: ['Servo Boost', 'Nano Welder'], color: 0x34d399 },
   },
   enemies: {
     scout: { name: 'Sand Skimmer', color: 0xd99564 },
@@ -295,6 +297,7 @@ const MEDIEVAL_THEME: TheaterTheme = {
     stasis: 'FROST',
     railgun: 'BOLT',
     swarm: 'KNIGHT',
+    healer: 'HEAL',
   },
   turrets: {
     pulse: { shortName: 'Archers', fullName: 'Archer Tower', upgrades: ['Twin Volleys', 'Elven Longbows'], color: 0xe8c866 },
@@ -302,6 +305,7 @@ const MEDIEVAL_THEME: TheaterTheme = {
     stasis: { shortName: 'Frost Mage', fullName: 'Frost Mage Spire', upgrades: ['Blizzard', 'Dispel Ward'], color: 0x6ce3ff },
     railgun: { shortName: 'Ballista', fullName: 'Heavy Ballista', upgrades: ['Windlass', 'Dragon-Piercer'], color: 0xd9be8a },
     swarm: { shortName: 'Stable', fullName: 'Knight Stable', upgrades: ['3 Knights', '5 Royal Knights'], color: 0x60a5fa },
+    healer: { shortName: 'Healer', fullName: 'Healer Sanctuary', upgrades: ['Swift Blessing', 'Arch-Cleric'], color: 0x34d399 },
   },
   enemies: {
     scout: { name: 'Goblin Raider', color: 0x6ca34e },

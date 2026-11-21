@@ -8,6 +8,9 @@ export interface TheaterTextureSet extends MilitaryTextureSet {
   moleMound?: Texture;
   knight?: Texture;
   roomba?: Texture;
+  healer?: Texture;
+  healerBase?: Texture;
+  healerTurrets?: [Texture, Texture, Texture];
 }
 
 export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
@@ -4183,6 +4186,131 @@ const THEME_PAINTERS: Record<TheaterTheme, ThemePainters> = {
   },
 };
 
+function paintMarsHealerTurret(tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, 18, 20, 56, 56, 10);
+      ctx.fillStyle = tier === 2 ? '#1e3a34' : tier === 1 ? '#22332e' : '#262f2c';
+      ctx.fill();
+    });
+    strokeInk(ctx, 1.8);
+    // Rover launch bay ramp facing +X
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(54, c - 14, 22, 28);
+    strokeInk(ctx, 1.4);
+    // Glowing emerald repair cross on roof dome
+    ctx.fillStyle = tier === 2 ? '#10b981' : '#34d399';
+    ctx.beginPath();
+    ctx.arc(c - 4, c, 17 + tier * 2, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.6);
+    ctx.fillStyle = '#ecfdf5';
+    ctx.fillRect(c - 7, c - 11, 6, 22);
+    ctx.fillRect(c - 15, c - 3, 22, 6);
+    if (tier >= 1) {
+      // Twin servo repair beacons
+      for (const sy of [c - 20, c + 20]) {
+        ctx.fillStyle = '#6ee7b7';
+        ctx.beginPath();
+        ctx.arc(c + 12, sy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+      }
+    }
+  });
+}
+
+function paintMarsHealerUnit(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    // Tracked rover treads top/bottom
+    ctx.fillStyle = '#1f2937';
+    roundedRectPath(ctx, c - 16, c - 15, 32, 7, 3);
+    ctx.fill();
+    strokeInk(ctx, 1.4);
+    roundedRectPath(ctx, c - 16, c + 8, 32, 7, 3);
+    ctx.fill();
+    strokeInk(ctx, 1.4);
+    // Emerald-white rover chassis
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, c - 13, c - 11, 26, 22, 6);
+      ctx.fillStyle = '#10b981';
+      ctx.fill();
+    });
+    strokeInk(ctx, 1.6);
+    // Glowing white repair cross emblem
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(c - 3, c - 7, 5, 14);
+    ctx.fillRect(c - 7.5, c - 2.5, 14, 5);
+    // Front nano-welder emitter facing +X
+    ctx.fillStyle = '#6ee7b7';
+    ctx.beginPath();
+    ctx.arc(c + 15, c, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.3);
+  });
+}
+
+function paintMedievalHealerTurret(tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, 18, 20, 54, 56, 8);
+      ctx.fillStyle = tier === 2 ? '#1e3f35' : tier === 1 ? '#284238' : '#35483d';
+      ctx.fill();
+    });
+    strokeInk(ctx, 1.8);
+    // Sanctuary archway facing +X
+    ctx.fillStyle = '#d6c7a9';
+    ctx.fillRect(54, c - 12, 20, 24);
+    strokeInk(ctx, 1.3);
+    // Gilded emerald sanctuary dome & cross
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(c - 4, c, 17 + tier * 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+    ctx.fillStyle = '#fef3c7';
+    ctx.fillRect(c - 7, c - 11, 6, 22);
+    ctx.fillRect(c - 15, c - 3, 22, 6);
+  });
+}
+
+function paintMedievalHealerUnit(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    // Emerald & gold cleric cloak
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.arc(c - 1, c, 13, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // White healing cross on cloak
+    ctx.fillStyle = '#ecfdf5';
+    ctx.fillRect(c - 4, c - 7, 5, 14);
+    ctx.fillRect(c - 8.5, c - 2.5, 14, 5);
+    // Golden healing staff extending +X
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(c - 4, c + 9);
+    ctx.lineTo(c + 16, c + 4);
+    ctx.stroke();
+    ctx.fillStyle = '#6ee7b7';
+    ctx.beginPath();
+    ctx.arc(c + 17, c + 4, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    strokeInk(ctx, 1.2);
+  });
+}
+
 export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
   if (typeof document === 'undefined') {
     const bases: Record<string, Texture> = {};
@@ -4218,6 +4346,14 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     }
     if (theme === 'medieval') {
       result.knight = Texture.EMPTY;
+      result.healer = Texture.EMPTY;
+      result.healerBase = Texture.EMPTY;
+      result.healerTurrets = [Texture.EMPTY, Texture.EMPTY, Texture.EMPTY];
+    }
+    if (theme === 'mars') {
+      result.healer = Texture.EMPTY;
+      result.healerBase = Texture.EMPTY;
+      result.healerTurrets = [Texture.EMPTY, Texture.EMPTY, Texture.EMPTY];
     }
     if (theme === 'kitchen') {
       result.roomba = Texture.EMPTY;
@@ -4274,9 +4410,23 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     result.mine = track(paintNavalMine());
   } else if (theme === 'mars') {
     result.boost = track(paintMarsBoost());
+    result.healer = track(paintMarsHealerUnit());
+    result.healerBase = bases.stasis;
+    result.healerTurrets = [
+      track(paintMarsHealerTurret(0)),
+      track(paintMarsHealerTurret(1)),
+      track(paintMarsHealerTurret(2)),
+    ];
   } else if (theme === 'medieval') {
     result.boost = track(paintMedievalBoost());
     result.knight = track(paintMedievalKnight());
+    result.healer = track(paintMedievalHealerUnit());
+    result.healerBase = bases.swarm;
+    result.healerTurrets = [
+      track(paintMedievalHealerTurret(0)),
+      track(paintMedievalHealerTurret(1)),
+      track(paintMedievalHealerTurret(2)),
+    ];
   } else if (theme === 'kitchen') {
     result.boost = track(paintKitchenBoost());
     result.base = track(paintKitchenCoreBase());

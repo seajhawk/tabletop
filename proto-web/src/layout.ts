@@ -14,7 +14,17 @@ export const BOARD: Rect = { x: 192, y: 144, w: BOARD_W, h: BOARD_H };
 export const DOCK_W = 472;
 export const DOCK_H = 120;
 export const TURRET_ORDER = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
-export function slotRect(i: number): Rect { return { x: 9 + i * 92, y: 30, w: 86, h: 84 }; }
+export const TURRET_ORDER_WITH_HEALER = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm', 'healer'] as const;
+export function mapHasHealer(mechanic?: string): boolean {
+  return mechanic === 'mars-storms' || mechanic === 'medieval-frenzy';
+}
+export function activeTurretOrder(mechanic?: string): readonly string[] {
+  return mapHasHealer(mechanic) ? TURRET_ORDER_WITH_HEALER : TURRET_ORDER;
+}
+export function slotRect(i: number, slotCount = 5): Rect {
+  if (slotCount === 6) return { x: 7 + i * 77, y: 30, w: 73, h: 84 };
+  return { x: 9 + i * 92, y: 30, w: 86, h: 84 };
+}
 export function creditChipRect(): Rect { return { x: 296, y: 2, w: 168, h: 26 }; }
 
 /** `w`/`h` are logical (dock-local) size; `scale` is the physical scale, so the world footprint is w*scale x h*scale. */
@@ -87,9 +97,9 @@ export function rectsOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 /** Slot index under a world point, or -1. */
-export function hitDockSlot(d: Dock, wx: number, wy: number): number {
+export function hitDockSlot(d: Dock, wx: number, wy: number, slotCount = 5): number {
   const l = worldToDock(d, wx, wy);
-  for (let i = 0; i < TURRET_ORDER.length; i++) if (inRect(slotRect(i), l.x, l.y)) return i;
+  for (let i = 0; i < slotCount; i++) if (inRect(slotRect(i, slotCount), l.x, l.y)) return i;
   return -1;
 }
 export function hitCreditChip(d: Dock, wx: number, wy: number): boolean {

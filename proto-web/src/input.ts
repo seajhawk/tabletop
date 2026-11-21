@@ -3,8 +3,8 @@ import type { Game, PlaceResult } from './sim/game';
 import type { SoundEvent } from './types';
 import { getTheater } from './theme';
 import {
-  boardCellCenter, cellAt, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton, hitSettingsButton,
-  hitSummaryButton, inRect, settingsPanelRect, TURRET_ORDER, type ButtonId, type Dock, type LayoutDef, type RadialAction,
+  activeTurretOrder, boardCellCenter, cellAt, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton, hitSettingsButton,
+  hitSummaryButton, inRect, settingsPanelRect, type ButtonId, type Dock, type LayoutDef, type RadialAction,
 } from './layout';
 
 export interface DragState {
@@ -53,7 +53,8 @@ export const REASON_TEXT: Record<string, string> = {
   ok: 'Placed', outside: 'Outside grid', reserved: 'Reserved cell', asteroid: 'Asteroid',
   occupied: 'Occupied', enemy: 'Enemy in cell', funds: 'Not enough credits',
   'blocks-path': 'Would block route', 'unknown-player': 'Unknown player',
-  'unknown-turret': 'Unknown turret', over: 'Match over', 'full-hp': 'Already full HP',
+  'unknown-turret': 'Unknown turret', 'healer-limit': 'Max 1 Healer per player',
+  over: 'Match over', 'full-hp': 'Already full HP',
 };
 
 const THEATER_REASON_OVERRIDES: Record<string, Record<string, string>> = {
@@ -191,12 +192,13 @@ export class InputController {
         this.pointers.set(id, { kind: 'credit' });
         return;
       }
-      const slot = hitDockSlot(dock, x, y);
+      const order = activeTurretOrder(this.game.currentMap.mechanic);
+      const slot = hitDockSlot(dock, x, y, order.length);
       if (slot < 0) continue;
       const up = dockUp(dock);
       // Ownership is captured here, at drag start, and never recomputed from position.
       const d: DragState = {
-        pointerId: id, owner: dock.player, turretId: TURRET_ORDER[slot], px: x, py: y, ax: x, ay: y,
+        pointerId: id, owner: dock.player, turretId: order[slot], px: x, py: y, ax: x, ay: y,
         upx: up.x, upy: up.y, touch: type !== 'mouse', cell: null, result: null,
       };
       this.drags.set(id, d);

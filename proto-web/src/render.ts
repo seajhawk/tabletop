@@ -10,10 +10,10 @@ import { formatWaveName, getTheater, type TheaterTheme, type ThemeId } from './t
 import { buildMilitaryTextures, type MilitaryTextureSet } from './militarySprites';
 import { buildTheaterTextures, type TheaterTextureSet } from './theaterSprites';
 import {
-  boardCellCenter, boardCellSize, boardLocalToWorld, CELL, creditChipRect, dockToWorld, GRID_H, GRID_W, HUD_BUTTON_IDS, isPhoneLayout,
+  activeTurretOrder, boardCellCenter, boardCellSize, boardLocalToWorld, CELL, creditChipRect, dockToWorld, GRID_H, GRID_W, HUD_BUTTON_IDS, isPhoneLayout,
   PHONE_SETTINGS, RADIAL_BTN_R, RADIAL_RADIUS, radialButtons, SETTINGS_BUTTON_IDS,
   settingsButtonRects, settingsPanelRect, slotRect, SUMMARY_BUTTON_IDS,
-  summaryButtonRects, summaryCardRect, TURRET_ORDER,
+  summaryButtonRects, summaryCardRect,
   type ButtonId, type HudButtonId, type LayoutDef, type Rect,
   type SettingsButtonId, type SummaryButtonId,
 } from './layout';
@@ -22,6 +22,8 @@ import type { PwaController } from './pwa';
 
 const BOARD_W = GRID_W * CELL;
 const BOARD_H = GRID_H * CELL;
+declare const __APP_VERSION__: string | undefined;
+export const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '2026.11.21.0906';
 
 type PwaView = Pick<PwaController, 'installLabel' | 'installDisabled' | 'updateLabel' | 'updateDisabled' | 'updateAvailable' | 'statusText'>;
 
@@ -205,6 +207,10 @@ function drawTurretHead(
     }
     const [tipX, tipY] = rp(cx, cy, r * 0.55, 0, cos, sin);
     g.circle(tipX, tipY, r * 0.12).fill({ color: 0xffffff, alpha: alpha * 0.8 });
+  } else if (id === 'healer') {
+    g.circle(cx, cy, r * 0.62).fill({ color: C.panel, alpha }).stroke({ width: 2, color, alpha });
+    g.rect(cx - r * 0.14, cy - r * 0.38, r * 0.28, r * 0.76).fill({ color: 0xffffff, alpha: alpha * 0.92 });
+    g.rect(cx - r * 0.38, cy - r * 0.14, r * 0.76, r * 0.28).fill({ color: 0xffffff, alpha: alpha * 0.92 });
   }
 }
 
@@ -305,6 +311,7 @@ export class Renderer {
   private healthC = new Container();
   private healthG = new Graphics();
   private healthText = mkText('', 11, 0xffffff, { bold: true });
+  private versionText = mkText(`v${APP_VERSION}`, 11, C.ice, { bold: true });
   private lastLives = 0;
   private damageFlash = 0;
   private healthKey = '';
@@ -1081,10 +1088,11 @@ export class Renderer {
 
       c.addChild(name, wallet, chipG, chipText);
 
+      const order = activeTurretOrder(this.game.currentMap.mechanic);
       const slots: Container[] = [];
-      TURRET_ORDER.forEach((id, i) => {
+      order.forEach((id, i) => {
         const def = this.game.turretById.get(id)!;
-        const r = slotRect(i);
+        const r = slotRect(i, order.length);
         const sc = new Container();
         sc.position.set(r.x, r.y);
         const tcol = this.turretColor(id);
@@ -1093,12 +1101,14 @@ export class Renderer {
           color: tcol,
           alpha: hasSprites ? 0.65 : 0.85,
         }));
-        if (hasSprites && sprites?.turrets[id]?.[0]) {
-          const sp = new Sprite(sprites.turrets[id][0]);
+        const slotTex = id === 'healer' ? sprites?.healerTurrets?.[0] : sprites?.turrets[id]?.[0];
+        if (hasSprites && slotTex) {
+          const sp = new Sprite(slotTex);
           sp.anchor.set(0.5);
           sp.position.set(r.w / 2, 26);
-          sp.width = 50;
-          sp.height = 50;
+          const iconSz = order.length === 6 ? 44 : 50;
+          sp.width = iconSz;
+          sp.height = iconSz;
           sp.rotation = -Math.PI / 2;
           sc.addChild(sp);
 
@@ -1118,7 +1128,7 @@ export class Renderer {
           drawIcon(icon, id, r.w / 2, 30, 15, tcol, 1, -Math.PI / 2, theme.id);
           sc.addChild(icon);
         }
-        const nm = mkText(theme.turrets[id]?.shortName ?? SHORT_TURRET_NAME[id] ?? def.name, 11.5, textCol, { bold: true });
+        const nm = mkText(theme.turrets[id]?.shortName ?? SHORT_TURRET_NAME[id] ?? def.name, order.length === 6 ? 10.5 : 11.5, textCol, { bold: true });
         nm.anchor.set(0.5, 0); nm.position.set(r.w / 2, 52);
         const cost = mkText(`${def.cost} cr`, 11, tcol, { bold: true });
         cost.anchor.set(0.5, 0); cost.position.set(r.w / 2, 68);
@@ -1140,7 +1150,7 @@ export class Renderer {
       this.dockLayer.addChild(c);
       this.dockViews.push({
         container: c, borderG, wallet, chipG, chipText, last: '',
-        slots, aff: TURRET_ORDER.map(() => true), chipAff: true, player: d.player,
+        slots, aff: order.map(() => true), chipAff: true, player: d.player,
       });
     }
 
@@ -1172,6 +1182,9 @@ export class Renderer {
     this.statsText.style.fill = textCol;
     this.statsText.position.set(layout.statsOrigin.x, layout.statsOrigin.y);
     this.statsText.visible = this.showStats();
+    this.versionText.visible = !isPhoneLayout(layout);
+    this.versionText.style.fill = hasSprites ? 0xa3b8aa : theme.borderColor;
+    this.versionText.position.set(layout.stageW - 12, layout.stageH - 8);
 
     for (const b of this.buttons) {
       b.rect = layout.hudButtons[b.id];
@@ -1235,7 +1248,11 @@ export class Renderer {
       this.buttons.push({ id, rect, bg, label, state: '', text: '' });
     }
     this.statsText.visible = this.showStats();
-    this.hudLayer.addChild(this.statsText);
+    this.versionText.anchor.set(1, 1);
+    this.versionText.alpha = 0.68;
+    this.versionText.visible = !isPhoneLayout(this.getLayout());
+    this.versionText.position.set(this.getLayout().stageW - 12, this.getLayout().stageH - 8);
+    this.hudLayer.addChild(this.statsText, this.versionText);
 
     this.healthText.anchor.set(1, 0.5);
     this.healthC.addChild(this.healthG, this.healthText);
@@ -1661,7 +1678,7 @@ export class Renderer {
         mt.container.visible = true;
         const cx = (t.x + 0.5) * CELL, cy = (t.y + 0.5) * CELL;
         mt.container.position.set(cx, cy);
-        const bTex = sprites.bases[t.def.id] ?? Texture.EMPTY;
+        const bTex = (t.def.id === 'healer' ? sprites.healerBase : undefined) ?? sprites.bases[t.def.id] ?? Texture.EMPTY;
         if (mt.base.texture !== bTex) mt.base.texture = bTex;
         mt.base.width = CELL * 1.16;
         mt.base.height = CELL * 1.16;
@@ -1669,7 +1686,7 @@ export class Renderer {
         mt.base.tint = t.hp <= 0 ? 0x9a7575 : 0xffffff;
 
         const tierIdx = Math.min(2, t.tier);
-        const hTex = sprites.turrets[t.def.id]?.[tierIdx] ?? Texture.EMPTY;
+        const hTex = (t.def.id === 'healer' ? sprites.healerTurrets?.[tierIdx] : undefined) ?? sprites.turrets[t.def.id]?.[tierIdx] ?? Texture.EMPTY;
         if (mt.head.texture !== hTex) mt.head.texture = hTex;
         mt.head.width = CELL * 1.28;
         mt.head.height = CELL * 1.28;
@@ -1853,8 +1870,9 @@ export class Renderer {
     const sprites = this.activeSprites(this.theme().id);
     const knightTex = sprites?.knight;
     const roombaTex = sprites?.roomba;
+    const healerTex = sprites?.healer;
     const knights = this.game.knights;
-    if (!knightTex && !roombaTex) {
+    if (!knightTex && !roombaTex && !healerTex) {
       for (const item of this.knightPool) {
         if (item.container.visible) item.container.visible = false;
       }
@@ -1865,7 +1883,8 @@ export class Renderer {
     for (const k of knights) {
       if (!k.active) continue;
       const isRoomba = k.kind === 'roomba';
-      const tex = isRoomba ? roombaTex : knightTex;
+      const isHealer = k.kind === 'healer';
+      const tex = isHealer ? healerTex : isRoomba ? roombaTex : knightTex;
       if (!tex) continue;
       if (idx >= this.knightPool.length) {
         const container = new Container();
@@ -1880,23 +1899,25 @@ export class Renderer {
       item.container.visible = true;
       item.container.position.set(k.x * CELL, k.y * CELL);
       if (item.sprite.texture !== tex) item.sprite.texture = tex;
-      const sz = isRoomba ? (k.tier >= 2 ? 30 : 26) : (k.tier >= 2 ? 32 : 28);
+      const sz = isHealer ? (k.tier >= 2 ? 30 : 27) : isRoomba ? (k.tier >= 2 ? 30 : 26) : (k.tier >= 2 ? 32 : 28);
       item.sprite.width = sz;
       item.sprite.height = sz;
       const speedSq = k.vx * k.vx + k.vy * k.vy;
       item.sprite.rotation = speedSq > 1e-4 ? Math.atan2(k.vy, k.vx) : Math.PI;
 
       const hb = item.hpBar;
-      hb.rotation = rotated ? -Math.PI / 2 : 0;
-      const bw = 20, bh = 3;
-      const bx = -bw / 2, by = -18;
-      const frac = Math.max(0, Math.min(1, k.hp / Math.max(1, k.maxHp)));
-      const fillCol = isRoomba ? 0x34d399 : 0x38bdf8;
-      const borderCol = isRoomba ? 0x38bdf8 : 0xffd166;
       hb.clear();
-      hb.rect(bx, by, bw, bh).fill({ color: 0x0a1420, alpha: 0.78 });
-      if (frac > 0) hb.rect(bx, by, bw * frac, bh).fill({ color: fillCol });
-      hb.rect(bx, by, bw, bh).stroke({ width: 0.9, color: borderCol, alpha: 0.9 });
+      if (!isHealer) {
+        hb.rotation = rotated ? -Math.PI / 2 : 0;
+        const bw = 20, bh = 3;
+        const bx = -bw / 2, by = -18;
+        const frac = Math.max(0, Math.min(1, k.hp / Math.max(1, k.maxHp)));
+        const fillCol = isRoomba ? 0x34d399 : 0x38bdf8;
+        const borderCol = isRoomba ? 0x38bdf8 : 0xffd166;
+        hb.rect(bx, by, bw, bh).fill({ color: 0x0a1420, alpha: 0.78 });
+        if (frac > 0) hb.rect(bx, by, bw * frac, bh).fill({ color: fillCol });
+        hb.rect(bx, by, bw, bh).stroke({ width: 0.9, color: borderCol, alpha: 0.9 });
+      }
     }
     for (let i = idx; i < this.knightPool.length; i++) {
       if (this.knightPool[i].container.visible) this.knightPool[i].container.visible = false;
@@ -1929,6 +1950,20 @@ export class Renderer {
       const mx = m.x * CELL, my = m.y * CELL;
       const blink = Math.sin(gm.time * 8 + m.x * 3 + m.y * 5) > 0;
       g.circle(mx, my, blink ? 2.8 : 1.7).fill({ color: blink ? 0xff4242 : 0x991f1f, alpha: blink ? 0.95 : 0.72 });
+    }
+
+    // Healer active repair beam & emerald aura when healing a damaged tower
+    for (const k of gm.knights) {
+      if (!k.active || k.kind !== 'healer' || !k.targetTowerId) continue;
+      const target = gm.towerById(k.targetTowerId);
+      if (!target || target.hp >= target.maxHp) continue;
+      const kx = k.x * CELL, ky = k.y * CELL;
+      const tx = (target.x + 0.5) * CELL, ty = (target.y + 0.5) * CELL;
+      if (Math.hypot(target.x + 0.5 - k.x, target.y + 0.5 - k.y) <= 0.85) {
+        const pulse = 0.5 + 0.5 * Math.sin(gm.time * 10);
+        glow.circle(tx, ty, 14 + pulse * 4).fill({ color: 0x34d399, alpha: 0.18 });
+        g.moveTo(kx, ky).lineTo(tx, ty).stroke({ width: 2.2, color: 0x6ee7b7, alpha: 0.85 });
+      }
     }
 
     // Roomba 360° vacuum-sweep ring
@@ -2705,8 +2740,10 @@ export class Renderer {
           v.chipText.alpha = chipAff ? 1 : 0.4;
         }
       }
-      TURRET_ORDER.forEach((id, i) => {
-        const aff = credits + 1e-9 >= this.game.turretById.get(id)!.cost;
+      const order = activeTurretOrder(this.game.currentMap.mechanic);
+      order.forEach((id, i) => {
+        const hasLimit = id === 'healer' && this.game.playerHasHealer(v.player);
+        const aff = !hasLimit && credits + 1e-9 >= this.game.turretById.get(id)!.cost;
         if (aff !== v.aff[i]) { v.aff[i] = aff; v.slots[i].alpha = aff ? 1 : 0.45; }
       });
     }

@@ -144,6 +144,7 @@ describe('theater themes', () => {
       stasis: 'CRYO',
       railgun: 'RAIL',
       swarm: 'DRONE',
+      healer: 'HEAL',
     });
 
     expect(mars.enemies.scout.name).toBe('Sand Skimmer');
@@ -190,6 +191,7 @@ describe('theater themes', () => {
       stasis: 'FROST',
       railgun: 'BOLT',
       swarm: 'KNIGHT',
+      healer: 'HEAL',
     });
 
     expect(med.enemies.scout.name).toBe('Goblin Raider');

@@ -64,8 +64,17 @@ describe('buildTheaterTextures', () => {
 
       if (theme === 'medieval') {
         expect(set.knight).toBe(Texture.EMPTY);
+        expect(set.healer).toBe(Texture.EMPTY);
+        expect(set.healerBase).toBe(Texture.EMPTY);
+        expect(set.healerTurrets).toEqual([Texture.EMPTY, Texture.EMPTY, Texture.EMPTY]);
+      } else if (theme === 'mars') {
+        expect(set.knight).toBeUndefined();
+        expect(set.healer).toBe(Texture.EMPTY);
+        expect(set.healerBase).toBe(Texture.EMPTY);
+        expect(set.healerTurrets).toEqual([Texture.EMPTY, Texture.EMPTY, Texture.EMPTY]);
       } else {
         expect(set.knight).toBeUndefined();
+        expect(set.healer).toBeUndefined();
       }
 
       if (theme === 'kitchen') {

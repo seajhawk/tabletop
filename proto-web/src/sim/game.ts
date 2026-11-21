@@ -27,8 +27,45 @@ const MAX_ACTIVE_PARTICLES = 120;
 
 export type PlaceReason =
   | 'ok' | 'outside' | 'reserved' | 'asteroid' | 'occupied' | 'enemy'
-  | 'funds' | 'blocks-path' | 'unknown-player' | 'unknown-turret' | 'over';
+  | 'funds' | 'blocks-path' | 'unknown-player' | 'unknown-turret' | 'healer-limit' | 'over';
 export interface PlaceResult { ok: boolean; reason: PlaceReason; cost?: number }
+
+export const HEALER_TURRET_DEF: TurretDef = {
+  id: 'healer',
+  name: 'Repair Bay',
+  cost: 125,
+  range: 8.5,
+  fireRate: 0.25,
+  damage: 18,
+  projectileSpeed: 1.45,
+  splashRadius: 0,
+  slowFactor: 1,
+  slowDuration: 0,
+  targetsAir: false,
+  armorPierce: false,
+  pierceCount: 0,
+  missileCount: 1,
+  shieldMultiplier: 1,
+  burnDps: 0,
+  burnDuration: 0,
+  color: '#34D399',
+  upgrades: [
+    {
+      name: 'Fast Mend',
+      cost: 95,
+      damageMultiplier: 1.65,
+      rangeBonus: 1.5,
+      fireRateMultiplier: 1.42,
+    },
+    {
+      name: 'Master Healer',
+      cost: 145,
+      damageMultiplier: 2.55,
+      rangeBonus: 3.0,
+      fireRateMultiplier: 1.90,
+    },
+  ],
+};
 
 export interface Tower {
   id: number;
@@ -117,6 +154,10 @@ export interface Enemy {
   breathTargetId?: number;
   breathTx?: number;
   breathTy?: number;
+  breathUsed?: boolean;
+  dodgedFirstAttack?: boolean;
+  dodgeT?: number;
+  dodgeDir?: number;
   divertDx?: number;
   divertDy?: number;
   divertSteps?: number;
@@ -160,7 +201,7 @@ export interface Projectile {
 
 export interface Knight {
   active: boolean;
-  kind: 'knight' | 'roomba';
+  kind: 'knight' | 'roomba' | 'healer';
   id: number;
   owner: number;
   towerId: number;
@@ -175,6 +216,8 @@ export interface Knight {
   speed: number;
   tier: number;
   life: number;
+  targetTowerId?: number;
+  healRate?: number;
 }
 
 export interface FireZone {
@@ -342,6 +385,7 @@ export class Game {
     this.w = this.currentMap.width;
     this.h = this.currentMap.height;
     for (const t of data.turrets) this.turretById.set(t.id, t);
+    this.turretById.set(HEALER_TURRET_DEF.id, HEALER_TURRET_DEF);
     for (const e of data.enemies) this.enemyById.set(e.id, e);
     this.baseOrdinaryWaves = data.waves.filter(w => !w.stress).sort((a, b) => a.index - b.index);
     this.ordinaryWaves = this.buildWavePlan(this.baseOrdinaryWaves, this.waveCount);
@@ -628,13 +672,42 @@ export class Game {
     return req;
   }
 
+  hasDefeatableDefenses(): boolean {
+    const m = this.currentMap.mechanic;
+    return m === 'mars-storms' || m === 'medieval-frenzy';
+  }
+
+  playerHasHealer(owner: number): boolean {
+    for (const t of this.towers) {
+      if (t.owner === owner && t.def.id === 'healer') return true;
+    }
+    return false;
+  }
+
+  healerStats(t: Tower): { healRate: number; speed: number; range: number } {
+    const u = t.tier > 0 ? t.def.upgrades[t.tier - 1] : undefined;
+    let healRate = t.def.damage * (u?.damageMultiplier ?? 1);
+    let speed = t.def.projectileSpeed * (u?.fireRateMultiplier ?? 1);
+    let range = t.def.range + (u?.rangeBonus ?? 0);
+    if (t.boosted) {
+      healRate *= 1.25;
+      speed *= 1.20;
+      range *= 1.20;
+    }
+    if (t.onWall) range *= 1.15;
+    if (t.hp > 0 && t.hp < t.maxHp * 0.5) healRate *= 0.80;
+    return { healRate, speed, range };
+  }
+
   /** Pure validation (no mutation). */
   check(owner: number, turretId: string, x: number, y: number, ignoreFunds = false): PlaceResult {
     const fail = (reason: PlaceReason): PlaceResult => ({ ok: false, reason });
     const def = this.turretById.get(turretId);
     if (!def) return fail('unknown-turret');
+    if (turretId === 'healer' && !this.hasDefeatableDefenses()) return fail('unknown-turret');
     if (!Number.isInteger(owner) || owner < 0 || owner >= this.playerCount) return fail('unknown-player');
     if (this.over) return fail('over');
+    if (turretId === 'healer' && this.playerHasHealer(owner)) return fail('healer-limit');
     if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= this.w || y >= this.h) return fail('outside');
     const i = this.idx(x, y);
     if (this.reserved[i]) return fail('reserved');
@@ -730,6 +803,9 @@ export class Game {
     if (t.onWall) {
       stats.range *= 1.15;
     }
+    if (this.currentMap.mechanic === 'medieval-frenzy' && t.def.id === 'plasma') {
+      stats.fireRate *= 0.50;
+    }
     if (this.currentMap.mechanic === 'mars-storms' && this.stormActive && !t.boosted && t.tier < 2) {
       stats.range *= 0.80;
     }
@@ -768,6 +844,16 @@ export class Game {
     } else if (t.tier === 2) {
       t.maxHp = 165;
       t.hp = Math.min(t.maxHp, t.hp + 35);
+    }
+    if (t.def.id === 'healer') {
+      const hs = this.healerStats(t);
+      for (const k of this.knights) {
+        if (k.active && k.kind === 'healer' && k.towerId === t.id) {
+          k.tier = t.tier;
+          k.speed = hs.speed;
+          k.healRate = hs.healRate;
+        }
+      }
     }
     this.towerVersion++;
     return { ok: true, reason: 'ok', cost: u.cost, tier: t.tier, name: u.name };
@@ -835,6 +921,7 @@ export class Game {
     this.blocked[i] = 0;
     this.towers.splice(this.towers.indexOf(t), 1);
     for (const m of this.mines) if (m.active && m.towerId === t.id) m.active = false;
+    for (const k of this.knights) if (k.active && k.towerId === t.id) k.active = false;
     this.rebuild();
     return refund;
   }
@@ -928,8 +1015,42 @@ export class Game {
     this.over = null;
     this.paused = true;
     this.runId++;
+    this.clearBattlefieldFxAndTroops();
     this.emitSound('ui-wave');
     return true;
+  }
+
+  private clearTroops(): void {
+    let anyCleared = false;
+    for (const k of this.knights) {
+      if (k.active) {
+        k.active = false;
+        anyCleared = true;
+      }
+    }
+    if (anyCleared) {
+      for (const t of this.towers) {
+        if (t.def.id === 'swarm' || t.def.id === 'healer') {
+          t.cooldown = 0.25;
+        }
+      }
+    }
+  }
+
+  private clearBattlefieldFxAndTroops(): void {
+    for (const k of this.knights) k.active = false;
+    for (const fz of this.fireZones) fz.active = false;
+    for (const p of this.projectiles) p.active = false;
+    for (const b of this.beams) b.active = false;
+    for (const r of this.rings) r.active = false;
+    for (const pt of this.particles) pt.active = false;
+    for (const pop of this.popups) pop.active = false;
+    for (const m of this.meteors) m.active = false;
+    for (const t of this.towers) {
+      if (t.def.id === 'swarm' || t.def.id === 'healer') {
+        t.cooldown = 0.25;
+      }
+    }
   }
 
   activeBoss(): Enemy | null {
@@ -1080,7 +1201,9 @@ export class Game {
     this.updateEffects(dt);
     this.compactEnemies();
     if (!this.over && this.mode === 'normal' && this.launched && this.spawners.length === 0 && this.enemies.length === 0) {
+      this.clearTroops();
       if (this.waveCursor >= this.ordinaryWaves.length) {
+        this.clearBattlefieldFxAndTroops();
         this.over = 'won';
         this.emitSound('ui-win');
       } else if (this.autoWave) {
@@ -1265,6 +1388,9 @@ export class Game {
       if (e.revealedT > 0) e.revealedT = Math.max(0, e.revealedT - dt);
 
       if (this.currentMap.mechanic === 'medieval-frenzy' && e.def.flying && e.def.id === 'phase') {
+        if ((e.dodgeT ?? 0) > 0) {
+          e.dodgeT = Math.max(0, (e.dodgeT ?? 0) - dt);
+        }
         const curBreathT = e.breathT ?? 0;
         if (curBreathT > 0) {
           const target = this.towerById(e.breathTargetId ?? 0);
@@ -1285,7 +1411,7 @@ export class Game {
               this.spawnParticles(target.x + 0.5, target.y + 0.5, 1, 0xff6b2b, 1.8, 2.0);
             }
           }
-        } else {
+        } else if (!e.breathUsed) {
           e.breathCooldown = (e.breathCooldown ?? 1.2) - dt;
           if (e.breathCooldown <= 0) {
             let best: Tower | null = null;
@@ -1299,6 +1425,7 @@ export class Game {
               }
             }
             if (best) {
+              e.breathUsed = true;
               e.breathTargetId = best.id;
               e.breathTx = best.x + 0.5;
               e.breathTy = best.y + 0.5;
@@ -1318,7 +1445,7 @@ export class Game {
         this.currentMap.mechanic === 'kitchen-rush' && this.rushActive
           ? (e.slowT > 0 ? 0.80 : 1.30)
           : 1;
-      const dragonBreathMult = (e.breathT ?? 0) > 0 ? 0.38 : 1;
+      const dragonBreathMult = (e.breathT ?? 0) > 0 ? 0.38 : ((e.dodgeT ?? 0) > 0 ? 1.35 : 1);
       const spd = e.def.speed * speedMult * enragedMult * rushMult * dragonBreathMult * (e.slowT > 0 ? e.slowF : 1);
       if (e.slowT > 0) {
         e.slowT -= dt;
@@ -1595,6 +1722,27 @@ export class Game {
 
   private damageEnemy(e: Enemy, rawDamage: number, owner: number, opts: HitOpts, tower?: Tower): void {
     if (e.dead) return;
+    if (
+      this.currentMap.mechanic === 'medieval-frenzy' &&
+      e.def.flying &&
+      e.def.id === 'phase' &&
+      !e.dodgedFirstAttack &&
+      rawDamage > 0
+    ) {
+      e.dodgedFirstAttack = true;
+      e.dodgeT = 0.38;
+      const dir = e.id % 2 === 0 ? 1 : -1;
+      e.dodgeDir = dir;
+      const px = -Math.sin(e.ang) * dir;
+      const py = Math.cos(e.ang) * dir;
+      e.x = Math.max(0.5, Math.min(this.w - 0.5, e.x + px * 0.55));
+      e.y = Math.max(0.5, Math.min(this.h - 0.5, e.y + py * 0.55));
+      e.cx = Math.max(0, Math.min(this.w - 1, Math.floor(e.x)));
+      e.cy = Math.max(0, Math.min(this.h - 1, Math.floor(e.y)));
+      this.spawnParticles(e.x, e.y, 5, 0x75e8ff, 2.2, 2.0);
+      this.spawnPopup(e.x, e.y - 0.25, 'DODGE!', 0x75e8ff, 0.75, -0.85);
+      return;
+    }
     const { shieldDamage, hpDamage } = computeHitDamage(
       rawDamage,
       e.def.armor,
@@ -1672,9 +1820,84 @@ export class Game {
     const isNaval = this.currentMap.mechanic === 'naval-subs-mines';
     const isLawn = this.currentMap.mechanic === 'lawn-split-burrow';
     const isMedieval = this.currentMap.mechanic === 'medieval-frenzy';
+    const isMars = this.currentMap.mechanic === 'mars-storms';
     const isKitchen = this.currentMap.mechanic === 'kitchen-rush';
     for (const t of this.towers) {
       if (t.hp <= 0) continue;
+      if ((isMedieval || isMars) && t.def.id === 'healer') {
+        const hs = this.healerStats(t);
+        const baseCd = t.tier === 0 ? 2.4 : t.tier === 1 ? 1.8 : 1.3;
+        const cd = t.boosted ? baseCd / 1.25 : baseCd;
+        t.stableMaxCd = cd;
+
+        // Each player can have at most 1 active healer unit at a time
+        let existingHealer: Knight | null = null;
+        for (const k of this.knights) {
+          if (k.active && k.kind === 'healer' && (k.towerId === t.id || k.owner === t.owner)) {
+            existingHealer = k;
+            break;
+          }
+        }
+        if (existingHealer) {
+          existingHealer.tier = t.tier;
+          existingHealer.speed = hs.speed;
+          existingHealer.healRate = hs.healRate;
+          t.cooldown = 0;
+          continue;
+        }
+
+        t.cooldown -= dt;
+        if (t.cooldown > 0) continue;
+
+        // Check if any damaged defense exists that does not already have a healer assigned
+        const claimed = new Set<number>();
+        for (const k of this.knights) {
+          if (k.active && k.kind === 'healer' && k.targetTowerId) claimed.add(k.targetTowerId);
+        }
+        let bestTarget: Tower | null = null;
+        let bestScore = Infinity;
+        for (const other of this.towers) {
+          if (other.hp >= other.maxHp || claimed.has(other.id)) continue;
+          const dist = Math.hypot(other.x - t.x, other.y - t.y);
+          const hpFrac = other.hp / Math.max(1, other.maxHp);
+          const score = hpFrac * 10 + dist * 0.25;
+          if (score < bestScore) {
+            bestScore = score;
+            bestTarget = other;
+          }
+        }
+        if (bestTarget) {
+          const hk = acquire<Knight>(this.knights, () => ({
+            active: false, kind: 'healer', id: 0, owner: 0, towerId: 0, x: 0, y: 0, vx: 0, vy: 0,
+            hp: 0, maxHp: 0, damage: 0, attackCd: 0, speed: 0, tier: 0, life: 0,
+          }));
+          Object.assign(hk, {
+            active: true,
+            kind: 'healer',
+            id: this.nextKnightId++,
+            owner: t.owner,
+            towerId: t.id,
+            x: t.x + 0.5,
+            y: t.y + 0.5,
+            vx: 0,
+            vy: 0,
+            hp: 100,
+            maxHp: 100,
+            damage: 0,
+            attackCd: 0,
+            speed: hs.speed,
+            tier: t.tier,
+            life: 999,
+            targetTowerId: bestTarget.id,
+            healRate: hs.healRate,
+          });
+          t.cooldown = cd;
+          this.emitSound('ui-repair');
+        } else {
+          t.cooldown = 0;
+        }
+        continue;
+      }
       if ((isMedieval || isKitchen) && t.def.id === 'swarm') {
         const baseCd = isKitchen
           ? (t.tier === 0 ? 7.5 : t.tier === 1 ? 7.0 : 6.5)
@@ -2349,9 +2572,178 @@ export class Game {
     }
   }
 
+  private steerHealerStep(x: number, y: number, tx: number, ty: number, step: number, targetTower?: Tower): { nx: number; ny: number; vx: number; vy: number } {
+    const dx = tx - x;
+    const dy = ty - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 1e-6) return { nx: x, ny: y, vx: 0, vy: 0 };
+    let ux = dx / dist;
+    let uy = dy / dist;
+
+    // Steer around active trebuchet fireZones and incoming Mars meteors
+    for (const fz of this.fireZones) {
+      if (!fz.active) continue;
+      const safeR = fz.radius + 0.55;
+      const hx = fz.x - x;
+      const hy = fz.y - y;
+      const hd = Math.hypot(hx, hy);
+      if (hd < safeR + 0.45 && hd > 1e-5) {
+        const dot = (hx * ux + hy * uy) / hd;
+        if (dot > -0.15 || hd < safeR) {
+          const rx = hx / hd;
+          const ry = hy / hd;
+          // Pick tangent (-ry, rx) or (ry, -rx) pointing closer to target (tx, ty)
+          const t1x = -ry, t1y = rx;
+          const t2x = ry, t2y = -rx;
+          const use1 = t1x * dx + t1y * dy >= t2x * dx + t2y * dy;
+          const tanX = use1 ? t1x : t2x;
+          const tanY = use1 ? t1y : t2y;
+          const pushOut = hd < safeR ? (safeR - hd) / safeR : 0;
+          ux = tanX - rx * pushOut * 1.4;
+          uy = tanY - ry * pushOut * 1.4;
+          const len = Math.hypot(ux, uy) || 1;
+          ux /= len;
+          uy /= len;
+        }
+      }
+    }
+    for (const m of this.meteors) {
+      if (!m.active) continue;
+      const safeR = m.radius + 0.45;
+      const hx = m.tx - x;
+      const hy = m.ty - y;
+      const hd = Math.hypot(hx, hy);
+      if (hd < safeR + 0.35 && hd > 1e-5) {
+        const rx = hx / hd;
+        const ry = hy / hd;
+        const t1x = -ry, t1y = rx;
+        const t2x = ry, t2y = -rx;
+        const use1 = t1x * dx + t1y * dy >= t2x * dx + t2y * dy;
+        ux = (use1 ? t1x : t2x) - rx * 0.6;
+        uy = (use1 ? t1y : t2y) - ry * 0.6;
+        const len = Math.hypot(ux, uy) || 1;
+        ux /= len;
+        uy /= len;
+      }
+    }
+
+    // Also steer around nearby terrain obstacle cells (asteroids/forest/canyon)
+    const cx0 = Math.floor(x);
+    const cy0 = Math.floor(y);
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        const ax = cx0 + ox;
+        const ay = cy0 + oy;
+        if (ax < 0 || ay < 0 || ax >= this.w || ay >= this.h) continue;
+        if (targetTower && ax === targetTower.x && ay === targetTower.y) continue;
+        if (this.asteroid[this.idx(ax, ay)] !== 1) continue;
+        const hx = (ax + 0.5) - x;
+        const hy = (ay + 0.5) - y;
+        const hd = Math.hypot(hx, hy);
+        const safeR = 0.78;
+        if (hd < safeR + 0.25 && hd > 1e-5) {
+          const dot = (hx * ux + hy * uy) / hd;
+          if (dot > -0.1 || hd < safeR) {
+            const rx = hx / hd;
+            const ry = hy / hd;
+            const t1x = -ry, t1y = rx;
+            const t2x = ry, t2y = -rx;
+            const use1 = t1x * dx + t1y * dy >= t2x * dx + t2y * dy;
+            const pushOut = hd < safeR ? (safeR - hd) / safeR : 0;
+            ux = (use1 ? t1x : t2x) - rx * pushOut * 1.2;
+            uy = (use1 ? t1y : t2y) - ry * pushOut * 1.2;
+            const len = Math.hypot(ux, uy) || 1;
+            ux /= len;
+            uy /= len;
+          }
+        }
+      }
+    }
+
+    let nx = Math.max(0.3, Math.min(this.w - 0.3, x + ux * step));
+    let ny = Math.max(0.3, Math.min(this.h - 0.3, y + uy * step));
+    for (const fz of this.fireZones) {
+      if (!fz.active) continue;
+      const minR = fz.radius + 0.18;
+      const fx = nx - fz.x;
+      const fy = ny - fz.y;
+      const fd = Math.hypot(fx, fy);
+      if (fd < minR) {
+        const ang = fd > 1e-5 ? Math.atan2(fy, fx) : Math.atan2(y - fz.y || 0.5, x - fz.x);
+        nx = Math.max(0.3, Math.min(this.w - 0.3, fz.x + Math.cos(ang) * minR));
+        ny = Math.max(0.3, Math.min(this.h - 0.3, fz.y + Math.sin(ang) * minR));
+      }
+    }
+    return { nx, ny, vx: ux, vy: uy };
+  }
+
   private updateKnights(dt: number): void {
     for (const k of this.knights) {
       if (!k.active) continue;
+      if (k.kind === 'healer') {
+        const home = this.towerById(k.towerId);
+        if (!home || home.hp <= 0) {
+          k.active = false;
+          continue;
+        }
+        // Each damaged defense can only have 1 healer assigned to it at a time
+        const claimed = new Set<number>();
+        for (const other of this.knights) {
+          if (other.active && other.kind === 'healer' && other.id !== k.id && other.targetTowerId) {
+            claimed.add(other.targetTowerId);
+          }
+        }
+        let target = k.targetTowerId ? this.towerById(k.targetTowerId) : null;
+        if (!target || target.hp >= target.maxHp || claimed.has(target.id)) {
+          target = null;
+          let bestScore = Infinity;
+          for (const t of this.towers) {
+            if (t.hp >= t.maxHp || claimed.has(t.id)) continue;
+            const d = Math.hypot(t.x + 0.5 - k.x, t.y + 0.5 - k.y);
+            const score = (t.hp / Math.max(1, t.maxHp)) * 10 + d * 0.25;
+            if (score < bestScore) {
+              bestScore = score;
+              target = t;
+            }
+          }
+          k.targetTowerId = target ? target.id : 0;
+        }
+
+        const goalTower = target ?? home;
+        const tx = goalTower.x + 0.5;
+        const ty = goalTower.y + 0.5;
+        const dist = Math.hypot(tx - k.x, ty - k.y);
+        const stopDist = target ? 0.72 : 0.35;
+        if (dist > stopDist) {
+          const move = Math.min(k.speed * dt, dist - stopDist + 0.02);
+          const stepped = this.steerHealerStep(k.x, k.y, tx, ty, move, goalTower);
+          k.x = stepped.nx;
+          k.y = stepped.ny;
+          k.vx = stepped.vx * k.speed;
+          k.vy = stepped.vy * k.speed;
+        } else if (dist > 1e-5) {
+          k.vx = ((tx - k.x) / dist) * 0.01;
+          k.vy = ((ty - k.y) / dist) * 0.01;
+        }
+
+        k.attackCd = Math.max(0, k.attackCd - dt);
+        if (target && dist <= 0.80 && target.hp < target.maxHp) {
+          const prevHp = target.hp;
+          const rate = k.healRate ?? 18;
+          target.hp = Math.min(target.maxHp, target.hp + rate * dt);
+          if (Math.floor(prevHp) !== Math.floor(target.hp) || (prevHp <= 0 && target.hp > 0) || target.hp >= target.maxHp) {
+            this.towerVersion++;
+          }
+          if (prevHp <= 0 && target.hp > 0) {
+            this.spawnPopup(target.x + 0.5, target.y + 0.2, 'ONLINE!', 0x34d399);
+          }
+          if (k.attackCd <= 0) {
+            k.attackCd = 0.55;
+            this.spawnParticles(target.x + 0.5, target.y + 0.5, 4, 0x34d399, 1.8, 2.0);
+          }
+        }
+        continue;
+      }
       k.life -= dt;
       if (k.life <= 0 || k.hp <= 0) {
         k.active = false;

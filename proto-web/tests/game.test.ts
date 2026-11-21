@@ -1746,4 +1746,176 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     expect(cruiserPortals.size).toBe(3);
     expect(scoutPortals.size).toBe(3);
   });
+
+  it('clears all troops (knights, roombas, healers) when a wave finishes and clears explosions + troops on victory / addMoreWaves', () => {
+    const g = newGame(2);
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    g.setMap(keepIdx);
+    g.grant(0, 500);
+    expect(g.tryPlace(0, 'swarm', 10, 8).ok).toBe(true);
+    expect(g.tryPlace(0, 'healer', 12, 8).ok).toBe(true);
+    expect(g.tryPlace(0, 'pulse', 14, 8).ok).toBe(true);
+    g.towers[2].hp = 40; // damaged tower so healer deploys
+
+    g.launchWave();
+    g.spawners = [];
+    const enemy = makeEnemy(g, 9910, 'scout', 11.5, 8.5, { hp: 500, maxHp: 500 });
+    g.enemies = [enemy];
+    // Step so stable deploys a knight and healer station deploys a healer
+    for (const t of g.towers) t.cooldown = 0.01;
+    g.step(1 / 60);
+    expect(g.knights.filter(k => k.active).length).toBeGreaterThanOrEqual(2);
+
+    // Kill the last enemy so the wave finishes -> all troops clear immediately
+    enemy.dead = true;
+    g.step(1 / 60);
+    expect(g.knights.some(k => k.active)).toBe(false);
+
+    // Now test wave-set finish + addMoreWaves(5) clearing lingering explosions/fireZones and troops
+    g.waveCursor = g.ordinaryWaves.length;
+    g.knights[0].active = true;
+    g.fireZones.push({ active: true, x: 10, y: 8, radius: 1.5, dps: 18, ttl: 4, max: 4.5, owner: 0, towerId: 1 });
+    g.rings.push({ active: true, x: 10, y: 8, r: 2, ttl: 0.5, max: 0.5, color: 0xff6b2b });
+    g.step(1 / 60);
+    expect(g.over).toBe('won');
+    expect(g.knights.some(k => k.active)).toBe(false);
+    expect(g.fireZones.some(fz => fz.active)).toBe(false);
+    expect(g.rings.some(r => r.active)).toBe(false);
+
+    // Re-dirty and verify addMoreWaves(5) also clears everything
+    g.knights[0].active = true;
+    g.fireZones[0].active = true;
+    expect(g.addMoreWaves(5)).toBe(true);
+    expect(g.knights.some(k => k.active)).toBe(false);
+    expect(g.fireZones.some(fz => fz.active)).toBe(false);
+  });
+
+  it('dragon dodges first attack, breathes fire only 1 time then heads to destination, and trebuchet fire rate is reduced by 50%', () => {
+    const g = newGame(2);
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    g.setMap(keepIdx);
+    g.grant(0, 500);
+
+    // Trebuchet (plasma) fireRate on Ironhold Keep is 50% of base (0.60 * 0.50 = 0.30)
+    expect(g.tryPlace(0, 'plasma', 10, 8).ok).toBe(true);
+    const treb = g.towers[0];
+    expect(g.towerStats(treb).fireRate).toBeCloseTo(treb.def.fireRate * 0.5, 6);
+
+    // Place an offline dummy tower for the dragon to breathe on (so it doesn't shoot the dragon first)
+    expect(g.tryPlace(0, 'stasis', 12, 7).ok).toBe(true);
+    const dummy = g.towers[1];
+    g.launchWave();
+    g.spawners = [];
+
+    const dragon = makeEnemy(g, 9920, 'phase', 10.5, 7.5, {
+      hp: 500, maxHp: 500, shield: 0, maxShield: 0, breathCooldown: 0.05, breathT: 0,
+    });
+    g.enemies = [dragon];
+
+    // First attack against dragon is dodged (0 damage taken, sideways jink)
+    const startY = dragon.y;
+    expect(g.tryPlace(0, 'pulse', 9, 7).ok).toBe(true);
+    const archer = g.towers[2];
+    archer.cooldown = 0.01;
+    g.step(1 / 60);
+    expect(dragon.dodgedFirstAttack).toBe(true);
+    expect(dragon.hp).toBe(500);
+    expect(dragon.y).not.toBe(startY);
+
+    // Subsequent attack damages dragon normally
+    archer.cooldown = 0.01;
+    g.step(1 / 60);
+    expect(dragon.hp).toBeLessThan(500);
+    // Disable archer so dragon can complete its single breath test uninterrupted
+    archer.hp = 0;
+
+    // Dragon breathes fire ONCE on dummy tower
+    run(g, 0.2);
+    expect(dragon.breathUsed).toBe(true);
+    expect(dragon.breathT).toBeGreaterThan(0);
+
+    // Advance past the 1.35s breath duration + 5s -> dragon never breathes fire a second time
+    run(g, 6.0);
+    expect(dragon.breathT).toBe(0);
+    const hpAfterFirstBreath = dummy.hp;
+    dragon.x = dummy.x + 0.2;
+    dragon.y = dummy.y + 0.2;
+    dragon.breathCooldown = 0;
+    run(g, 1.0);
+    expect(dragon.breathT).toBe(0);
+    expect(dummy.hp).toBe(hpAfterFirstBreath);
+  });
+
+  it('healer defense: only on Mars/Keep, max 1 per player, 1 healer per damaged tower, steers around fireZones, and upgrades boost heal/move speed', () => {
+    const g = newGame(2);
+    // Not available on Orbital Crossing (space)
+    g.grant(0, 500);
+    expect(g.tryPlace(0, 'healer', 5, 5)).toMatchObject({ ok: false, reason: 'unknown-turret' });
+
+    // Available on Ironhold Keep & Mars Outpost
+    const keepIdx = g.data.maps.findIndex(m => m.id === 'ironhold-keep');
+    g.setMap(keepIdx);
+    g.grant(0, 1000);
+    g.grant(1, 1000);
+
+    expect(g.tryPlace(0, 'healer', 13, 8).ok).toBe(true);
+    const h0 = g.towers[0];
+    expect(h0.def.cost).toBe(125);
+    // Player 0 cannot build a second healer
+    expect(g.tryPlace(0, 'healer', 13, 9)).toMatchObject({ ok: false, reason: 'healer-limit' });
+    // Player 1 can build their own 1 healer
+    expect(g.tryPlace(1, 'healer', 13, 11).ok).toBe(true);
+    const h1 = g.towers[1];
+
+    // Upgrades increase both healRate and move speed
+    const t0Stats = g.healerStats(h0);
+    expect(g.upgradeTower(h0.id).ok).toBe(true);
+    const t1Stats = g.healerStats(h0);
+    expect(t1Stats.healRate).toBeGreaterThan(t0Stats.healRate);
+    expect(t1Stats.speed).toBeGreaterThan(t0Stats.speed);
+    expect(g.upgradeTower(h0.id).ok).toBe(true);
+    const t2Stats = g.healerStats(h0);
+    expect(t2Stats.healRate).toBeGreaterThan(t1Stats.healRate);
+    expect(t2Stats.speed).toBeGreaterThan(t1Stats.speed);
+
+    // Place 2 damaged towers and a FireZone directly between h0 (13,8) and damaged tower A (19,8)
+    expect(g.tryPlace(0, 'pulse', 19, 8).ok).toBe(true);
+    expect(g.tryPlace(1, 'pulse', 19, 11).ok).toBe(true);
+    const dmgA = g.towers[2];
+    const dmgB = g.towers[3];
+    dmgA.hp = 20;
+    dmgB.hp = 30;
+
+    g.launchWave();
+    g.spawners = [];
+    // Keep 1 dummy enemy alive far away so wave stays active
+    g.enemies = [makeEnemy(g, 9930, 'cruiser', 1.5, 6.5, { hp: 5000, maxHp: 5000 })];
+    g.fireZones.push({
+      active: true, x: 16.5, y: 8.5, radius: 1.1, dps: 25, ttl: 20, max: 20, owner: 0, towerId: 1,
+    });
+
+    h0.cooldown = 0.01;
+    h1.cooldown = 0.01;
+    g.step(1 / 60);
+
+    const healers = g.knights.filter(k => k.active && k.kind === 'healer');
+    expect(healers.length).toBe(2);
+    // Each damaged tower has at most 1 healer assigned (no double-stacking on the same tower)
+    expect(healers[0].targetTowerId).not.toBe(healers[1].targetTowerId);
+
+    // Step while healers walk around the FireZone and heal both damaged towers
+    let minFireDist = Infinity;
+    for (let i = 0; i < 60 * 6; i++) {
+      g.step(1 / 60);
+      for (const hk of healers) {
+        const d = Math.hypot(hk.x - 16.5, hk.y - 8.5);
+        if (d < minFireDist) minFireDist = d;
+      }
+    }
+    // Healer walked around the 1.1-radius FireZone center without walking through its core
+    expect(minFireDist).toBeGreaterThan(1.05);
+    expect(dmgA.hp).toBeGreaterThan(20);
+    expect(dmgB.hp).toBeGreaterThan(30);
+    expect(g.totalCredits()).toBeCloseTo(g.expectedCredits(), 5);
+  });
 });
