@@ -5,7 +5,7 @@ import { Game } from './sim/game';
 import { FixedStepper } from './sim/stepper';
 import { InputController } from './input';
 import { attachPointerInput } from './inputDom';
-import { adaptLayout, LAYOUTS, Viewport, type ButtonId, type LayoutDef } from './layout';
+import { LAYOUTS, Viewport, type ButtonId } from './layout';
 import { Renderer } from './render';
 import { ScoreBook, browserStorage } from './scores';
 import { createBrowserPwa, canApplyGameUpdate } from './pwa';
@@ -28,16 +28,7 @@ async function main(): Promise<void> {
   const phoneIdx = LAYOUTS.findIndex(l => l.id === '2p-phone');
   let layoutIdx = (phoneIdx >= 0 && window.innerHeight > window.innerWidth * 1.15) ? phoneIdx : 0;
   let showStats = false;
-  let adaptedScreenW = app.screen.width;
-  let adaptedScreenH = app.screen.height;
-  let adaptedLayout: LayoutDef = adaptLayout(LAYOUTS[layoutIdx], adaptedScreenW, adaptedScreenH);
-  const refreshLayout = (): LayoutDef => {
-    adaptedScreenW = app.screen.width;
-    adaptedScreenH = app.screen.height;
-    adaptedLayout = adaptLayout(LAYOUTS[layoutIdx], adaptedScreenW, adaptedScreenH);
-    return adaptedLayout;
-  };
-  const layout = () => adaptedLayout;
+  const layout = () => LAYOUTS[layoutIdx];
   const game = new Game(data, layout().playerCount);
   const scores = new ScoreBook((data.maps ?? [data.map]).map(m => m.id), browserStorage);
   updateSafe = () => canApplyGameUpdate(game); // ended, or fresh planning with no placement/economy activity
@@ -137,7 +128,6 @@ async function main(): Promise<void> {
       case 'layout': {
         const keepOpen = input.settingsOpen;
         layoutIdx = (layoutIdx + 1) % LAYOUTS.length;
-        refreshLayout();
         input.cancelAll(); // ownership / active players change: reset match and pointers together
         input.settingsOpen = keepOpen;
         game.reset(layout().playerCount);
@@ -206,13 +196,6 @@ async function main(): Promise<void> {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && wake.wanted) void acquireWake(); });
 
   app.ticker.add(ticker => {
-    if (app.screen.width !== adaptedScreenW || app.screen.height !== adaptedScreenH) {
-      const prev = adaptedLayout;
-      const next = refreshLayout();
-      if (next.stageW !== prev.stageW || next.stageH !== prev.stageH || next.board.w !== prev.board.w || next.board.h !== prev.board.h) {
-        renderer.setLayout(next);
-      }
-    }
     const l = layout();
     if (viewport.fit(app.screen.width, app.screen.height, l.stageW, l.stageH)) {
       renderer.applyViewport(viewport.scale, viewport.ox, viewport.oy);
