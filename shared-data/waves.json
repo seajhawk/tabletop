@@ -8,15 +8,21 @@
       "groups": [
         {
           "enemyId": "scout",
-          "count": 10,
+          "count": 7,
           "interval": 0.7,
           "spawnIndex": 0
         },
         {
           "enemyId": "scout",
-          "count": 10,
+          "count": 7,
           "interval": 0.7,
           "spawnIndex": 1
+        },
+        {
+          "enemyId": "scout",
+          "count": 6,
+          "interval": 0.75,
+          "spawnIndex": 2
         }
       ]
     },
@@ -27,15 +33,21 @@
       "groups": [
         {
           "enemyId": "swarmer",
-          "count": 30,
+          "count": 20,
           "interval": 0.18,
           "spawnIndex": 0
         },
         {
           "enemyId": "swarmer",
-          "count": 30,
+          "count": 20,
           "interval": 0.18,
           "spawnIndex": 1
+        },
+        {
+          "enemyId": "swarmer",
+          "count": 20,
+          "interval": 0.18,
+          "spawnIndex": 2
         }
       ]
     },
@@ -46,15 +58,39 @@
       "groups": [
         {
           "enemyId": "cruiser",
-          "count": 8,
-          "interval": 1.1,
+          "count": 3,
+          "interval": 1.15,
           "spawnIndex": 0
         },
         {
           "enemyId": "scout",
-          "count": 16,
-          "interval": 0.45,
+          "count": 6,
+          "interval": 0.5,
           "spawnIndex": 1
+        },
+        {
+          "enemyId": "cruiser",
+          "count": 3,
+          "interval": 1.15,
+          "spawnIndex": 2
+        },
+        {
+          "enemyId": "scout",
+          "count": 5,
+          "interval": 0.5,
+          "spawnIndex": 2
+        },
+        {
+          "enemyId": "cruiser",
+          "count": 2,
+          "interval": 1.2,
+          "spawnIndex": 1
+        },
+        {
+          "enemyId": "scout",
+          "count": 5,
+          "interval": 0.5,
+          "spawnIndex": 0
         }
       ]
     },

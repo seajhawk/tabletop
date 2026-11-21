@@ -1,6 +1,6 @@
 # Coordination handoff
 
-Updated: 2026-11-20 4:26 PM Pacific. Pass 18 complete: scaled all 7 layouts uniformly with strictly 1:1 square grid cells (`cw === ch`, up to `1036×592` on 2P and `1092×624` on 1P with zero circle/sprite distortion) and positioned the standard horizontal health pill behind the House/Exit squares rotated to match their screen orientation (-90° vertical on desktop 1×2 exits, horizontal on rotated phone 2×1 exits); pushed to `seajhawk/tabletop` and republished to `https://seajhawk.github.io/TTDefense/`.
+Updated: 2026-11-20 4:54 PM Pacific. Pass 19 complete: spread Waves 1–3 across all 3 portals (`spawnIndex: 0, 1, 2`) so the bottom/3rd portal can never be ignored, and randomized per-wave portal permutations, shuffled per-spawner portal bags, and ±16% spawn-interval jitter so enemy types emerge unpredictably from every portal; verified (**338/338** tests), pushed to `seajhawk/tabletop`, and republished to `https://seajhawk.github.io/TTDefense/`.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative 5-hour interval; rearmed
@@ -22,11 +22,12 @@ Godot remains a historical prototype, not feature parity. Full design in `docs/`
   - **Centipede Opposite-90° Split (`proto-web/src/sim/game.ts`)**: Split parts turn opposite 90° (one left `sign=-1`, one right `sign=+1`), separate cleanly (`0.28` cell nudge), advance up to 3 open squares before resuming BFS toward House, and snapshot `this.enemies.length` across all AoE loops (`stasis`, `plasma`, `missile`, `mines`, `meteors`, `roomba`, `fireZones`, `updateEnemies`) so killing splash blasts never damage newborn split halves on their birth frame.
   - **Strictly 1:1 Uniform Square Board Scaling (`proto-web/src/layout.ts`, `render.ts`)**: Enlarged all 7 layouts uniformly while preserving exact 1:1 square cells (`cw === ch`: `37×37` `1036×592` on `2p-opposing`, `39×39` `1092×624` on `1p-base`, `34×34` `952×544` on `4p-edges`/`4p-2x2`, `33×33` `528×924` on `2p-phone`/`1p-phone`, `32.5×32.5` `910×520` on `4p-corners`) so circles, fountains, and sprites never distort.
   - **Rotated Standard Health Pill Behind Exit Squares (`proto-web/src/render.ts`)**: Uses the standard horizontal health pill (`♥ 25/25` + bottom bar) inside `healthC`, placed behind the exit squares (`maxExitX + 1`) and rotated `-90°` vertically when the exit squares are vertical on screen (desktop) or `0°` horizontally when horizontal on screen (rotated phone).
+  - **Unpredictable All-Portal Wave Spawning (`shared-data/waves.json`, `proto-web/src/sim/game.ts`)**: Split Waves 1, 2, and 3 across all 3 portals (`spawnIndex: 0, 1, 2`, preserving exact wave unit totals) and added per-wave portal permutation + shuffled portal-bag mixing + `±16%` interval jitter in `startWave`/`runSpawners` so all 3 portals are active from Wave 1 and every enemy type mixes unpredictably across portals.
 
 ## Verified (2026-11-20)
 - `node scripts/validate-data.mjs` -> PASS (5 turrets, 6 enemies, 9 maps, 11 waves; all spawns reachable).
 - `npm --prefix proto-web run typecheck` -> PASS (0 errors).
-- `npm --prefix proto-web test` -> PASS (**337/337** across 12 suites, incl. `cw === ch` 1:1 square-cell invariant test across all 7 layouts and Gnome splash opposite-90° split test).
+- `npm --prefix proto-web test` -> PASS (**338/338** across 12 suites, incl. Wave 1–3 all-portal activation & enemy-type portal-mixing test, `cw === ch` 1:1 square-cell test, and Gnome splash opposite-90° split test).
 - Production builds (`/` and `VITE_BASE=/TTDefense/`) -> PASS (22 precached files).
 - Live Chromium `http://localhost:5173/` (`1280×800`) -> PASS (`0` console/page/network errors; confirmed 1:1 round patio circles/fountain on `1036×592` board and standard health pill rotated 90° vertically behind the 2 House squares). Archived in `.tasks/pass18-1to1-square-board-and-rotated-health-pill.png`.
 - Unverified: physical device multi-touch/DPI/thermal feel and native OS PWA installation.

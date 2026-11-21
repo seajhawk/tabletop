@@ -1707,4 +1707,43 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     expect(dock.stableMaxCd).toBe(6.5);
     expect(g.knights.filter(k => k.active && k.towerId === dock.id && k.kind === 'roomba').length).toBe(3);
   });
+
+  it('portal mixing: Waves 1–3 spawn from all 3 portals (including bottom/3rd portal) and mix enemy types across portals', () => {
+    const g = newGame(2);
+    g.setMap(6); // backyard-lawn: 3 portals [0,3], [0,8], [0,12]
+    const portalKey = (x: number, y: number) => `${x},${y}`;
+    const validPortals = new Set(g.currentMap.spawns.map(([x, y]) => portalKey(x, y)));
+    expect(validPortals.size).toBe(3);
+
+    // Wave 1 immediately activates all 3 portals on launch (no ignored bottom portal)
+    g.launchWave();
+    const wave1InitialPortals = new Set(g.enemies.map(e => portalKey(e.cx, e.cy)));
+    expect(wave1InitialPortals.size).toBe(3);
+
+    // Wave 3 mixes both cruisers and scouts across multiple portals
+    const cruiserPortals = new Set<string>();
+    const scoutPortals = new Set<string>();
+    for (let trial = 0; trial < 4; trial++) {
+      const gt = newGame(2);
+      gt.setMap(6);
+      gt.waveCursor = 2; // Wave 3
+      gt.launchWave();
+      const seenIds = new Set<number>();
+      for (let step = 0; step < 60 * 8; step++) {
+        for (const e of gt.enemies) {
+          if (!seenIds.has(e.id)) {
+            seenIds.add(e.id);
+            const pk = portalKey(e.cx, e.cy);
+            if (validPortals.has(pk)) {
+              if (e.def.id === 'cruiser') cruiserPortals.add(pk);
+              if (e.def.id === 'scout') scoutPortals.add(pk);
+            }
+          }
+        }
+        gt.step(1 / 60);
+      }
+    }
+    expect(cruiserPortals.size).toBe(3);
+    expect(scoutPortals.size).toBe(3);
+  });
 });

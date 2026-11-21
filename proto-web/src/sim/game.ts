@@ -243,6 +243,9 @@ interface Spawner {
   spawnIndex: number;
   hpScale: number;
   speedScale: number;
+  randomizePortals?: boolean;
+  firstSpawn?: boolean;
+  portalBag?: number[];
 }
 
 interface HitOpts {
@@ -934,17 +937,66 @@ export class Game {
     return null;
   }
 
+  private shuffledPortals(count: number): number[] {
+    const bag = Array.from({ length: count }, (_, i) => i);
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = bag[i];
+      bag[i] = bag[j];
+      bag[j] = tmp;
+    }
+    return bag;
+  }
+
+  private nextRandomPortal(s: Spawner, numSpawns: number): number {
+    if (numSpawns <= 1 || !s.randomizePortals) return s.spawnIndex % Math.max(1, numSpawns);
+    if (s.firstSpawn) {
+      s.firstSpawn = false;
+      return s.spawnIndex % numSpawns;
+    }
+    // 35% pure random draw, 65% draw from a shuffled bag of all portals so every portal stays active without a fixed cycle
+    if (Math.random() < 0.35) {
+      return Math.floor(Math.random() * numSpawns);
+    }
+    if (!s.portalBag || s.portalBag.length === 0) {
+      s.portalBag = this.shuffledPortals(numSpawns);
+    }
+    return s.portalBag.pop()! % numSpawns;
+  }
+
   private startWave(w: WaveDef): void {
     const baseHpScale = w.stress ? 1 : this.waveHealthScale(w.index);
     const speedScale = w.stress ? 1 : this.waveSpeedScale(w.index);
-    for (const g of w.groups) {
+    const numSpawns = Math.max(1, this.currentMap.spawns.length);
+    const perm = w.stress ? Array.from({ length: numSpawns }, (_, i) => i) : this.shuffledPortals(numSpawns);
+    if (!w.stress && w.index === 1) {
+      const zeroAt = perm.indexOf(0);
+      if (zeroAt > 0) { perm[zeroAt] = perm[0]; perm[0] = 0; }
+    }
+    w.groups.forEach((g, gi) => {
       const enemy = this.enemyById.get(g.enemyId);
-      if (!enemy) continue;
+      if (!enemy) return;
       const hpScale = (!w.stress && !w.overtime && this.waveCount === 5 && w.index === 5 && enemy.boss)
         ? baseHpScale * 0.80
         : baseHpScale;
-      this.spawners.push({ enemy, remaining: g.count, interval: g.interval, timer: 0, spawnIndex: g.spawnIndex, hpScale, speedScale });
-    }
+      const basePortal = g.spawnIndex % numSpawns;
+      const initialPortal = w.stress ? basePortal : perm[basePortal];
+      const initialDelay = (!w.stress && gi > 0 && w.index > 1)
+        ? Math.random() * Math.min(0.45, g.interval * 0.6)
+        : 0;
+      this.spawners.push({
+        enemy,
+        remaining: g.count,
+        interval: g.interval,
+        timer: initialDelay,
+        spawnIndex: initialPortal,
+        hpScale,
+        speedScale,
+        randomizePortals: !w.stress,
+        firstSpawn: true,
+        portalBag: w.stress ? undefined : this.shuffledPortals(numSpawns),
+      });
+    });
     this.launched = true;
     this.paused = false;
     this.runSpawners(0);
@@ -1048,13 +1100,16 @@ export class Game {
   }
 
   private runSpawners(dt: number): void {
+    const numSpawns = this.currentMap.spawns.length;
     for (const s of this.spawners) {
       s.timer -= dt;
       while (s.remaining > 0 && s.timer <= 1e-9) {
-        const sp = this.currentMap.spawns[s.spawnIndex % this.currentMap.spawns.length];
+        const portalIdx = this.nextRandomPortal(s, numSpawns);
+        const sp = this.currentMap.spawns[portalIdx];
         this.spawnEnemy(s.enemy, sp[0], sp[1], 0, 0, s.hpScale, s.speedScale);
         s.remaining--;
-        s.timer += s.interval;
+        const jitter = s.randomizePortals ? (0.84 + Math.random() * 0.32) : 1;
+        s.timer += s.interval * jitter;
       }
     }
     this.spawners = this.spawners.filter(s => s.remaining > 0);
