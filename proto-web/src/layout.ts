@@ -5,9 +5,11 @@ export const WORLD_H = 800;
 export const CELL = 32;
 export const GRID_W = 28;
 export const GRID_H = 16;
+export const BOARD_W = GRID_W * CELL;
+export const BOARD_H = GRID_H * CELL;
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface Vec { x: number; y: number }
-export const BOARD: Rect = { x: 192, y: 144, w: GRID_W * CELL, h: GRID_H * CELL };
+export const BOARD: Rect = { x: 192, y: 144, w: BOARD_W, h: BOARD_H };
 
 export const DOCK_W = 472;
 export const DOCK_H = 120;
@@ -143,22 +145,24 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 2,
     stageW: WORLD_W,
     stageH: WORLD_H,
-    board: BOARD,
-    docks: [makeDock(0, 640, 730, 0, 1), makeDock(1, 640, 70, Math.PI, 1)],
-    hudButtons: cornerHud(10, 16),
-    statsOrigin: { x: 1106, y: 16 },
+    // 37x37 exact 1:1 square cells (28*37 = 1036, 16*37 = 592) filling vertical space between compact docks
+    board: { x: 122, y: 104, w: 28 * 37, h: 16 * 37 },
+    docks: [makeDock(0, 640, 749, 0, 0.78), makeDock(1, 640, 51, Math.PI, 0.78)],
+    hudButtons: cornerHud(10, 14),
+    statsOrigin: { x: 1106, y: 14 },
   },
   {
     id: '2p-phone',
     name: '2P phone',
     playerCount: 2,
     stageW: 548,
-    stageH: 1244,
-    board: { x: 18, y: 204, w: GRID_H * CELL, h: GRID_W * CELL },
+    stageH: 1260,
+    // 33x33 exact 1:1 square cells rotated (16*33 = 528, 28*33 = 924)
+    board: { x: 10, y: 196, w: 16 * 33, h: 28 * 33 },
     boardRotated: true,
-    docks: [makeDock(0, 274, 1172, 0, 1.10), makeDock(1, 274, 74, Math.PI, 1.10)],
-    hudButtons: phoneHorizontalHud(274, 148),
-    statsOrigin: { x: 18, y: 212 },
+    docks: [makeDock(0, 274, 1190, 0, 1.10), makeDock(1, 274, 70, Math.PI, 1.10)],
+    hudButtons: phoneHorizontalHud(274, 141),
+    statsOrigin: { x: 10, y: 204 },
   },
   {
     id: '1p-base',
@@ -166,10 +170,11 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 1,
     stageW: WORLD_W,
     stageH: WORLD_H,
-    board: BOARD,
+    // 39x39 exact 1:1 square cells (28*39 = 1092, 16*39 = 624)
+    board: { x: 20, y: 104, w: 28 * 39, h: 16 * 39 },
     docks: [makeDock(0, 1184, 400, -H, 1.0)],
-    hudButtons: cornerHud(10, 16),
-    statsOrigin: { x: 10, y: 120 },
+    hudButtons: cornerHud(10, 14),
+    statsOrigin: { x: 200, y: 14 },
   },
   {
     id: '1p-phone',
@@ -177,11 +182,12 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 1,
     stageW: 548,
     stageH: 1140,
-    board: { x: 18, y: 80, w: GRID_H * CELL, h: GRID_W * CELL },
+    // 33x33 exact 1:1 square cells rotated (16*33 = 528, 28*33 = 924)
+    board: { x: 10, y: 70, w: 16 * 33, h: 28 * 33 },
     boardRotated: true,
-    docks: [makeDock(0, 274, 1058, 0, 1.12)],
-    hudButtons: phoneHorizontalHud(274, 16),
-    statsOrigin: { x: 18, y: 88 },
+    docks: [makeDock(0, 274, 1066, 0, 1.12)],
+    hudButtons: phoneHorizontalHud(274, 14),
+    statsOrigin: { x: 10, y: 78 },
   },
   {
     id: '4p-edges',
@@ -189,15 +195,16 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 4,
     stageW: WORLD_W,
     stageH: WORLD_H,
-    board: BOARD,
+    // 34x34 exact 1:1 square cells (28*34 = 952, 16*34 = 544)
+    board: { x: 164, y: 128, w: 28 * 34, h: 16 * 34 },
     docks: [
-      makeDock(0, 640, 730, 0, 1.0),
-      makeDock(1, 640, 70, Math.PI, 1.0),
-      makeDock(2, 96, 400, H, 1.0),
-      makeDock(3, 1184, 400, -H, 1.0),
+      makeDock(0, 640, 736, 0, 1.0),
+      makeDock(1, 640, 64, Math.PI, 1.0),
+      makeDock(2, 64, 400, H, 1.0),
+      makeDock(3, 1216, 400, -H, 1.0),
     ],
-    hudButtons: cornerHud(10, 16),
-    statsOrigin: { x: 1106, y: 16 },
+    hudButtons: cornerHud(10, 14),
+    statsOrigin: { x: 1106, y: 14 },
   },
   {
     id: '4p-2x2',
@@ -205,15 +212,16 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 4,
     stageW: WORLD_W,
     stageH: WORLD_H,
-    board: BOARD,
+    // 34x34 exact 1:1 square cells (28*34 = 952, 16*34 = 544)
+    board: { x: 164, y: 128, w: 28 * 34, h: 16 * 34 },
     docks: [
-      makeDock(0, 384, 730, 0, 0.96),
-      makeDock(1, 896, 70, Math.PI, 0.96),
-      makeDock(2, 896, 730, 0, 0.96),
-      makeDock(3, 384, 70, Math.PI, 0.96),
+      makeDock(0, 440, 738, 0, 0.96),
+      makeDock(1, 920, 62, Math.PI, 0.96),
+      makeDock(2, 920, 738, 0, 0.96),
+      makeDock(3, 440, 62, Math.PI, 0.96),
     ],
-    hudButtons: cornerHud(10, 358),
-    statsOrigin: { x: 1106, y: 160 },
+    hudButtons: cornerHud(10, 14),
+    statsOrigin: { x: 1154, y: 14 },
   },
   // Players: 0 = SW (45deg), 1 = NE (225deg), 2 = SE (315deg), 3 = NW (135deg); local "up" faces the board centre.
   {
@@ -222,12 +230,13 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 4,
     stageW: WORLD_W,
     stageH: WORLD_H,
-    board: BOARD,
+    // 32.5x32.5 exact 1:1 square cells (28*32.5 = 910, 16*32.5 = 520)
+    board: { x: 185, y: 140, w: 910, h: 520 },
     docks: [
-      makeDock(0, 134, 666, 45 * DEG, CORNER_SCALE),
-      makeDock(1, 1146, 134, 225 * DEG, CORNER_SCALE),
-      makeDock(2, 1146, 666, 315 * DEG, CORNER_SCALE),
-      makeDock(3, 134, 134, 135 * DEG, CORNER_SCALE),
+      makeDock(0, 130, 670, 45 * DEG, CORNER_SCALE),
+      makeDock(1, 1150, 130, 225 * DEG, CORNER_SCALE),
+      makeDock(2, 1150, 670, 315 * DEG, CORNER_SCALE),
+      makeDock(3, 130, 130, 135 * DEG, CORNER_SCALE),
     ],
     hudButtons: horizontalHud(640, 18),
     statsOrigin: { x: 1106, y: 310 },
@@ -386,13 +395,34 @@ export function hitRadialButton(cx: number, cy: number, rot: number, wx: number,
   }
   return null;
 }
+export function boardCellSize(board: Rect, rotated = false): { cw: number; ch: number } {
+  return rotated
+    ? { cw: board.w / GRID_H, ch: board.h / GRID_W }
+    : { cw: board.w / GRID_W, ch: board.h / GRID_H };
+}
 export function boardLocalToWorld(board: Rect, lx: number, ly: number, rotated = false): Vec {
-  if (!rotated) return { x: board.x + lx, y: board.y + ly };
-  return { x: board.x + board.w - ly, y: board.y + lx };
+  if (!rotated) {
+    return {
+      x: board.x + (lx / BOARD_W) * board.w,
+      y: board.y + (ly / BOARD_H) * board.h,
+    };
+  }
+  return {
+    x: board.x + board.w - (ly / BOARD_H) * board.w,
+    y: board.y + (lx / BOARD_W) * board.h,
+  };
 }
 export function worldToBoardLocal(board: Rect, wx: number, wy: number, rotated = false): Vec {
-  if (!rotated) return { x: wx - board.x, y: wy - board.y };
-  return { x: wy - board.y, y: board.x + board.w - wx };
+  if (!rotated) {
+    return {
+      x: ((wx - board.x) / board.w) * BOARD_W,
+      y: ((wy - board.y) / board.h) * BOARD_H,
+    };
+  }
+  return {
+    x: ((wy - board.y) / board.h) * BOARD_W,
+    y: ((board.x + board.w - wx) / board.w) * BOARD_H,
+  };
 }
 export function boardCellCenter(board: Rect, gx: number, gy: number, rotated = false): Vec {
   return boardLocalToWorld(board, (gx + 0.5) * CELL, (gy + 0.5) * CELL, rotated);

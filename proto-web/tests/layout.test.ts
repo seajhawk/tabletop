@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD, boardCellCenter, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
+  BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
   dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton,
   hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, LAYOUTS, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
   radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect,
@@ -63,20 +63,20 @@ describe('rotation-aware dock layout', () => {
     const L = LAYOUTS.find(l => l.id === '2p-phone')!;
     expect(L.stageH).toBeGreaterThan(L.stageW);
     expect(L.stageW).toBe(548);
-    expect(L.stageH).toBe(1244);
+    expect(L.stageH).toBe(1260);
     expect(L.boardRotated).toBe(true);
     expect(L.board.h).toBeGreaterThan(L.board.w);
-    expect(L.board).toEqual({ x: 18, y: 204, w: 512, h: 896 });
+    expect(L.board).toEqual({ x: 10, y: 196, w: 528, h: 924 });
     for (const d of L.docks) expect(d.scale).toBeGreaterThanOrEqual(1.1);
     expect(L.docks[0].cy).toBeGreaterThan(L.board.y + L.board.h);
     expect(L.docks[1].cy).toBeLessThan(L.board.y);
 
     const v = new Viewport();
     expect(v.fit(390, 844, L.stageW, L.stageH)).toBe(true);
-    const expectedScale = Math.min(390 / 548, 844 / 1244);
+    const expectedScale = Math.min(390 / 548, 844 / 1260);
     expect(v.scale).toBeCloseTo(expectedScale, 9);
     expect(v.ox).toBeCloseTo((390 - 548 * expectedScale) / 2, 9);
-    expect(v.oy).toBeCloseTo((844 - 1244 * expectedScale) / 2, 9);
+    expect(v.oy).toBeCloseTo((844 - 1260 * expectedScale) / 2, 9);
   });
 
   it('1P base side has 1 dock on the right/base side at cx=1184, cy=400, scale=1', () => {
@@ -94,10 +94,18 @@ describe('rotation-aware dock layout', () => {
     expect(L.stageH).toBe(1140);
     expect(L.boardRotated).toBe(true);
     expect(L.board.h).toBeGreaterThan(L.board.w);
-    expect(L.board).toEqual({ x: 18, y: 80, w: 512, h: 896 });
+    expect(L.board).toEqual({ x: 10, y: 70, w: 528, h: 924 });
     expect(L.docks).toHaveLength(1);
-    expect(L.docks[0]).toMatchObject({ player: 0, cx: 274, cy: 1058, rot: 0, scale: 1.12 });
+    expect(L.docks[0]).toMatchObject({ player: 0, cx: 274, cy: 1066, rot: 0, scale: 1.12 });
     expect(L.docks[0].bounds.y).toBeGreaterThan(L.board.y + L.board.h);
+  });
+
+  it('every layout preserves strictly 1:1 square grid cells while scaling uniformly larger than 896x512', () => {
+    for (const L of LAYOUTS) {
+      const { cw, ch } = boardCellSize(L.board, !!L.boardRotated);
+      expect(cw).toBeCloseTo(ch, 9);
+      expect(cw).toBeGreaterThan(32);
+    }
   });
 
   it('all 7 layouts are present in LAYOUTS', () => {

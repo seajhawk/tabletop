@@ -461,7 +461,8 @@ export class Game {
   }
 
   private emitSound(ev: SoundEvent): void {
-    if (this.soundQueue.length < 32) this.soundQueue.push(ev);
+    if (this.soundQueue.length >= 64) this.soundQueue.shift();
+    this.soundQueue.push(ev);
   }
 
   drainEvents(): SoundEvent[] {

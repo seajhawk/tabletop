@@ -10,7 +10,7 @@ import { formatWaveName, getTheater, type TheaterTheme, type ThemeId } from './t
 import { buildMilitaryTextures, type MilitaryTextureSet } from './militarySprites';
 import { buildTheaterTextures, type TheaterTextureSet } from './theaterSprites';
 import {
-  boardCellCenter, boardLocalToWorld, CELL, creditChipRect, dockToWorld, GRID_H, GRID_W, HUD_BUTTON_IDS, isPhoneLayout,
+  boardCellCenter, boardCellSize, boardLocalToWorld, CELL, creditChipRect, dockToWorld, GRID_H, GRID_W, HUD_BUTTON_IDS, isPhoneLayout,
   PHONE_SETTINGS, RADIAL_BTN_R, RADIAL_RADIUS, radialButtons, SETTINGS_BUTTON_IDS,
   settingsButtonRects, settingsPanelRect, slotRect, SUMMARY_BUTTON_IDS,
   summaryButtonRects, summaryCardRect, TURRET_ORDER,
@@ -302,6 +302,7 @@ export class Renderer {
   private settingsModalKey = '';
   private settingsStatus = mkText('', 11, C.ice, { bold: true, align: 'center' });
 
+  private healthC = new Container();
   private healthG = new Graphics();
   private healthText = mkText('', 11, 0xffffff, { bold: true });
   private lastLives = 0;
@@ -555,12 +556,15 @@ export class Renderer {
   }
 
   private syncBoardRoot(layout: LayoutDef): void {
+    const { x, y, w, h } = layout.board;
     if (layout.boardRotated) {
-      this.boardRoot.position.set(layout.board.x + layout.board.w, layout.board.y);
+      this.boardRoot.position.set(x + w, y);
       this.boardRoot.rotation = Math.PI / 2;
+      this.boardRoot.scale.set(h / BOARD_W, w / BOARD_H);
     } else {
-      this.boardRoot.position.set(layout.board.x, layout.board.y);
+      this.boardRoot.position.set(x, y);
       this.boardRoot.rotation = 0;
+      this.boardRoot.scale.set(w / BOARD_W, h / BOARD_H);
     }
   }
 
@@ -1234,7 +1238,8 @@ export class Renderer {
     this.hudLayer.addChild(this.statsText);
 
     this.healthText.anchor.set(1, 0.5);
-    this.onMapHudLayer.addChild(this.healthG, this.healthText, this.wavePillG, this.wavePillText, this.waveDiffText, this.waveSpeedText);
+    this.healthC.addChild(this.healthG, this.healthText);
+    this.onMapHudLayer.addChild(this.healthC, this.wavePillG, this.wavePillText, this.waveDiffText, this.waveSpeedText);
   }
 
   private buildSettingsModal(): void {
@@ -1408,38 +1413,74 @@ export class Renderer {
 
     const board = layout.board;
     const map = g.currentMap;
-    const pw = 104, ph = 26;
     const rotated = !!layout.boardRotated;
-    const avgExitX = map.exits.reduce((s, [x]) => s + x, 0) / Math.max(1, map.exits.length);
+    const minExitX = map.exits.reduce((m, [x]) => Math.min(m, x), map.width);
+    const maxExitX = map.exits.reduce((m, [x]) => Math.max(m, x), 0);
+    const minExitY = map.exits.reduce((m, [, y]) => Math.min(m, y), map.height);
     const maxExitY = map.exits.reduce((m, [, y]) => Math.max(m, y), 0);
-    const exitLocalX = hasSprites ? (avgExitX + 0.5) * CELL : BOARD_W - 62;
-    const exitLocalY = (maxExitY + 1) * CELL;
-    const wp = boardLocalToWorld(board, exitLocalX, exitLocalY, rotated);
-    const px = Math.min(Math.max(wp.x - pw / 2, board.x + 8), board.x + board.w - pw - 8);
-    const py = Math.min(Math.max(wp.y + 6, board.y + 8), board.y + board.h - ph - 8);
+    const exitSpanCols = maxExitX - minExitX + 1;
+    const exitSpanRows = maxExitY - minExitY + 1;
+    const hasRoomBehind = hasSprites && maxExitX <= map.width - 3;
+
+    // Standard horizontal pill design; rotate -90° vertically when the exit squares are stacked vertically on screen
+    const portraitOnScreen = hasRoomBehind && (!rotated ? exitSpanRows > exitSpanCols : exitSpanCols > exitSpanRows);
+    const pw = hasRoomBehind ? 84 : 104;
+    const ph = 26;
 
     const barCol = ratio > 0.6 ? 0x62d99a : ratio > 0.3 ? 0xf2be54 : 0xf05656;
     const borderCol = flash ? 0xf05656 : critical && pulseBucket === 1 ? 0xff8a8a : barCol;
     const hg = this.healthG.clear();
-    hg.roundRect(px, py, pw, ph, 7)
-      .fill({ color: flash ? 0x3b1116 : (hasSprites ? 0x101712 : 0x091628), alpha: 0.88 })
-      .stroke({ width: flash ? 2 : 1.3, color: borderCol, alpha: flash ? 0.98 : 0.78 });
+    hg.roundRect(-pw / 2, -ph / 2, pw, ph, 7)
+      .fill({ color: flash ? 0x3b1116 : (hasSprites ? 0x101712 : 0x091628), alpha: 0.90 })
+      .stroke({ width: flash ? 2 : 1.3, color: borderCol, alpha: flash ? 0.98 : 0.80 });
 
-    // Vector heart emblem on left
-    const hx = px + 14, hy = py + 10;
+    // Vector heart emblem on left of pill
+    const hx = -pw / 2 + 13, hy = -3;
     hg.circle(hx - 2.6, hy - 1.5, 2.8).circle(hx + 2.6, hy - 1.5, 2.8)
       .poly([hx - 5.2, hy - 0.5, hx + 5.2, hy - 0.5, hx, hy + 5.2])
       .fill({ color: barCol, alpha: 0.95 });
 
     this.healthText.text = `${lives}/${maxLives}`;
     this.healthText.style.fill = flash ? 0xffb3b8 : 0xf2f6fa;
-    this.healthText.position.set(px + pw - 7, py + 9.5);
+    this.healthText.position.set(pw / 2 - 7, -3.5);
 
     // Health bar across the bottom of the pill
-    const bx = px + 7, by = py + 19, bw = pw - 14, bh = 4;
+    const bx = -pw / 2 + 7, by = ph / 2 - 7, bw = pw - 14, bh = 4;
     hg.roundRect(bx, by, bw, bh, 2).fill({ color: 0x050a0f, alpha: 0.85 });
     if (ratio > 0) {
       hg.roundRect(bx, by, Math.max(3, bw * ratio), bh, 2).fill({ color: barCol, alpha: 0.95 });
+    }
+
+    if (hasRoomBehind) {
+      const backLocalX = (maxExitX + 1) * CELL;
+      const centerLocalY = ((minExitY + maxExitY + 1) / 2) * CELL;
+      const wp = boardLocalToWorld(board, backLocalX, centerLocalY, rotated);
+      if (portraitOnScreen) {
+        this.healthC.rotation = -Math.PI / 2;
+        const cx = Math.min(Math.max(wp.x + 6 + ph / 2, board.x + ph / 2 + 6), board.x + board.w - ph / 2 - 6);
+        const cy = Math.min(Math.max(wp.y, board.y + pw / 2 + 6), board.y + board.h - pw / 2 - 6);
+        this.healthC.position.set(cx, cy);
+      } else {
+        this.healthC.rotation = 0;
+        if (rotated) {
+          const cx = Math.min(Math.max(wp.x, board.x + pw / 2 + 6), board.x + board.w - pw / 2 - 6);
+          const cy = Math.min(Math.max(wp.y + 6 + ph / 2, board.y + ph / 2 + 6), board.y + board.h - ph / 2 - 6);
+          this.healthC.position.set(cx, cy);
+        } else {
+          const cx = Math.min(Math.max(wp.x + 6 + pw / 2, board.x + pw / 2 + 6), board.x + board.w - pw / 2 - 6);
+          const cy = Math.min(Math.max(wp.y, board.y + ph / 2 + 6), board.y + board.h - ph / 2 - 6);
+          this.healthC.position.set(cx, cy);
+        }
+      }
+    } else {
+      this.healthC.rotation = 0;
+      const avgExitX = map.exits.reduce((s, [x]) => s + x, 0) / Math.max(1, map.exits.length);
+      const exitLocalX = hasSprites ? (avgExitX + 0.5) * CELL : BOARD_W - 62;
+      const exitLocalY = (maxExitY + 1) * CELL;
+      const wp = boardLocalToWorld(board, exitLocalX, exitLocalY, rotated);
+      const cx = Math.min(Math.max(wp.x, board.x + pw / 2 + 8), board.x + board.w - pw / 2 - 8);
+      const cy = Math.min(Math.max(wp.y + 6 + ph / 2, board.y + ph / 2 + 8), board.y + board.h - ph / 2 - 8);
+      this.healthC.position.set(cx, cy);
     }
   }
 
@@ -2508,6 +2549,7 @@ export class Renderer {
     const hasSprites = theme.id !== 'space';
     const layout = this.getLayout();
     const board = layout.board;
+    const { cw, ch } = boardCellSize(board, !!layout.boardRotated);
     for (const d of this.input.drags.values()) {
       const col = this.turretColor(d.turretId);
       const def = this.game.turretById.get(d.turretId)!;
@@ -2515,15 +2557,15 @@ export class Renderer {
       if (d.cell) {
         const { x: cx, y: cy } = boardCellCenter(board, d.cell.x, d.cell.y, !!layout.boardRotated);
         if (hasSprites) {
-          g.circle(cx, cy, def.range * CELL).fill({ color: 0xf2e2ad, alpha: 0.06 }).stroke({ width: 1.2, color: 0xf2e2ad, alpha: 0.45 });
-          g.rect(cx - CELL / 2, cy - CELL / 2, CELL, CELL)
+          g.ellipse(cx, cy, def.range * cw, def.range * ch).fill({ color: 0xf2e2ad, alpha: 0.06 }).stroke({ width: 1.2, color: 0xf2e2ad, alpha: 0.45 });
+          g.rect(cx - cw / 2, cy - ch / 2, cw, ch)
             .fill({ color: ok ? 0x6db88a : 0xd46a6a, alpha: 0.24 }).stroke({ width: 2, color: ok ? 0x6db88a : 0xd46a6a });
         } else {
-          g.circle(cx, cy, def.range * CELL).fill({ color: col, alpha: 0.07 }).stroke({ width: 1.5, color: col, alpha: 0.5 });
-          g.rect(cx - CELL / 2, cy - CELL / 2, CELL, CELL)
+          g.ellipse(cx, cy, def.range * cw, def.range * ch).fill({ color: col, alpha: 0.07 }).stroke({ width: 1.5, color: col, alpha: 0.5 });
+          g.rect(cx - cw / 2, cy - ch / 2, cw, ch)
             .fill({ color: ok ? C.mint : C.coral, alpha: 0.22 }).stroke({ width: 2, color: ok ? C.mint : C.coral });
         }
-        drawIcon(g, d.turretId, cx, cy, CELL * 0.34, col, 0.85, -Math.PI / 2, theme.id);
+        drawIcon(g, d.turretId, cx, cy, Math.min(cw, ch) * 0.34, col, 0.85, -Math.PI / 2, theme.id);
         if (d.touch) g.moveTo(d.px, d.py).lineTo(cx, cy).stroke({ width: 1.5, color: PLAYER_COLORS[d.owner], alpha: 0.6 });
       }
       g.circle(d.px, d.py, 20).fill({ color: hasSprites ? theme.panelBg : theme.panelBg, alpha: hasSprites ? 0.82 : 0.7 }).stroke({ width: 2.5, color: PLAYER_COLORS[d.owner] });
@@ -2565,9 +2607,10 @@ export class Renderer {
       const g = rv.g.clear();
       const stats = this.game.towerStats(tower);
       const { x: tx, y: ty } = boardCellCenter(board, tower.x, tower.y, !!l.boardRotated);
+      const { cw, ch } = boardCellSize(board, !!l.boardRotated);
       const tcol = this.turretColor(tower.def.id);
 
-      g.circle(tx, ty, stats.range * CELL).fill({ color: tcol, alpha: 0.05 }).stroke({ width: 1.5, color: tcol, alpha: 0.45 });
+      g.ellipse(tx, ty, stats.range * cw, stats.range * ch).fill({ color: tcol, alpha: 0.05 }).stroke({ width: 1.5, color: tcol, alpha: 0.45 });
       g.circle(m.cx, m.cy, RADIAL_RADIUS).stroke({ width: 1.5, color: PLAYER_COLORS[m.owner] ?? C.cyan, alpha: 0.5 });
 
       const showRepair = tower.hp < tower.maxHp;
