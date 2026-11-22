@@ -1892,7 +1892,6 @@ export class Game {
             healRate: hs.healRate,
           });
           t.cooldown = cd;
-          this.emitSound('ui-repair');
         } else {
           t.cooldown = 0;
         }
@@ -1900,8 +1899,8 @@ export class Game {
       }
       if ((isMedieval || isKitchen) && t.def.id === 'swarm') {
         const baseCd = isKitchen
-          ? (t.tier === 0 ? 7.5 : t.tier === 1 ? 7.0 : 6.5)
-          : (t.tier === 0 ? 8.0 : t.tier === 1 ? 7.5 : 7.0);
+          ? (t.tier === 0 ? 7.5 : t.tier === 1 ? 7.0 : 6.5) * 1.25
+          : (t.tier === 0 ? 8.0 : t.tier === 1 ? 7.5 : 7.0) * 1.25;
         const cd = t.boosted ? baseCd / 1.25 : baseCd;
         t.stableMaxCd = cd;
         t.cooldown -= dt;
@@ -1927,8 +1926,8 @@ export class Game {
         }
         if (hasGroundEnemy && owned < unitCount * 2) {
           const maxHp = isKitchen ? 85 + t.tier * 30 : 75 + t.tier * 25;
-          const damage = isKitchen ? 24 + t.tier * 10 : 28 + t.tier * 12;
-          const speed = isKitchen ? 3.0 + t.tier * 0.35 : 3.2;
+          const damage = (isKitchen ? 24 + t.tier * 10 : 28 + t.tier * 12) * 0.70;
+          const speed = (isKitchen ? 3.0 + t.tier * 0.35 : 3.2) * 0.75;
           const life = isKitchen ? 18 : 16;
           const kind: Knight['kind'] = isKitchen ? 'roomba' : 'knight';
           for (let i = 0; i < unitCount; i++) {

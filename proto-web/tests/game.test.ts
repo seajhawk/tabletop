@@ -1558,11 +1558,14 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     g.enemies = [cruiser];
     g.drainEvents();
 
-    // T0: deploys 1 Knight on 8.0s recharge, no missiles
+    // T0: deploys 1 Knight on 10.0s recharge (20% slower regen = 8.0 * 1.25), 25% slower move (2.4), 30% less dmg (19.6), no missiles
     run(g, 0.3);
-    expect(stable.stableMaxCd).toBeGreaterThanOrEqual(7);
-    expect(stable.cooldown).toBeGreaterThan(7);
-    expect(g.knights.filter(k => k.active && k.towerId === stable.id).length).toBe(1);
+    expect(stable.stableMaxCd).toBeCloseTo(8.0 * 1.25, 5);
+    expect(stable.cooldown).toBeGreaterThan(9);
+    const t0Knights = g.knights.filter(k => k.active && k.towerId === stable.id);
+    expect(t0Knights.length).toBe(1);
+    expect(t0Knights[0].speed).toBeCloseTo(3.2 * 0.75, 5);
+    expect(t0Knights[0].damage).toBeCloseTo(28 * 0.70, 5);
     expect(g.projectiles.filter(p => p.active && p.kind === 'missile').length).toBe(0);
     expect(g.drainEvents()).toContain('knight-charge');
 
@@ -1571,20 +1574,20 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     expect(cruiser.hp).toBeLessThan(2000);
     expect(g.drainEvents()).toContain('knight-clash');
 
-    // T1: deploys 3 Knights
+    // T1: deploys 3 Knights on 9.375s recharge (7.5 * 1.25)
     expect(g.upgradeTower(stable.id).ok).toBe(true);
     for (const k of g.knights) k.active = false;
     stable.cooldown = 0.05;
     run(g, 0.1);
-    expect(stable.stableMaxCd).toBe(7.5);
+    expect(stable.stableMaxCd).toBeCloseTo(7.5 * 1.25, 5);
     expect(g.knights.filter(k => k.active && k.towerId === stable.id).length).toBe(3);
 
-    // T2: deploys 5 Knights
+    // T2: deploys 5 Knights on 8.75s recharge (7.0 * 1.25)
     expect(g.upgradeTower(stable.id).ok).toBe(true);
     for (const k of g.knights) k.active = false;
     stable.cooldown = 0.05;
     run(g, 0.1);
-    expect(stable.stableMaxCd).toBe(7.0);
+    expect(stable.stableMaxCd).toBeCloseTo(7.0 * 1.25, 5);
     expect(g.knights.filter(k => k.active && k.towerId === stable.id).length).toBe(5);
   });
 
@@ -1655,7 +1658,7 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     expect(g.towerStats(counterTower).range).toBeCloseTo(g.towerStats(floorTower).range * 1.15, 5);
   });
 
-  it('Midnight Kitchen Roomba Dock (swarm) deploys 1/2/3 Roombas on slow recharge and performs AoE ground sweeps', () => {
+  it('Midnight Kitchen Goomba Dock (swarm) deploys 1/2/3 Goombas on slow recharge and performs AoE ground sweeps', () => {
     const g = newGame(2);
     const kitchenIdx = g.data.maps.findIndex(m => m.id === 'kitchen-raid');
     g.setMap(kitchenIdx);
@@ -1675,36 +1678,38 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     g.enemies = [pestA, pestB];
     g.drainEvents();
 
-    // T0: deploys 1 Roomba on 7.5s recharge, no homing missiles
+    // T0: deploys 1 Goomba on 9.375s recharge (7.5 * 1.25), 25% slower move (2.25), 30% less dmg (16.8), no homing missiles
     run(g, 0.3);
-    expect(dock.stableMaxCd).toBe(7.5);
-    expect(dock.cooldown).toBeGreaterThan(6.5);
+    expect(dock.stableMaxCd).toBeCloseTo(7.5 * 1.25, 5);
+    expect(dock.cooldown).toBeGreaterThan(8.5);
     const t0Roombas = g.knights.filter(k => k.active && k.towerId === dock.id);
     expect(t0Roombas.length).toBe(1);
     expect(t0Roombas[0].kind).toBe('roomba');
+    expect(t0Roombas[0].speed).toBeCloseTo(3.0 * 0.75, 5);
+    expect(t0Roombas[0].damage).toBeCloseTo(24 * 0.70, 5);
     expect(g.projectiles.filter(p => p.active && p.kind === 'missile').length).toBe(0);
     expect(g.drainEvents()).toContain('roomba-deploy');
 
-    // Roomba rolls to invaders and performs 360° AoE sweep hitting both nearby ground pests
+    // Goomba rolls to invaders and performs 360° AoE sweep hitting both nearby ground pests
     run(g, 1.0);
     expect(pestA.hp).toBeLessThan(2000);
     expect(pestB.hp).toBeLessThan(2000);
     expect(g.drainEvents()).toContain('roomba-sweep');
 
-    // T1: deploys 2 Roombas on 7.0s recharge
+    // T1: deploys 2 Goombas on 8.75s recharge (7.0 * 1.25)
     expect(g.upgradeTower(dock.id).ok).toBe(true);
     for (const k of g.knights) k.active = false;
     dock.cooldown = 0.05;
     run(g, 0.1);
-    expect(dock.stableMaxCd).toBe(7.0);
+    expect(dock.stableMaxCd).toBeCloseTo(7.0 * 1.25, 5);
     expect(g.knights.filter(k => k.active && k.towerId === dock.id && k.kind === 'roomba').length).toBe(2);
 
-    // T2: deploys 3 Roombas on 6.5s recharge
+    // T2: deploys 3 Goombas on 8.125s recharge (6.5 * 1.25)
     expect(g.upgradeTower(dock.id).ok).toBe(true);
     for (const k of g.knights) k.active = false;
     dock.cooldown = 0.05;
     run(g, 0.1);
-    expect(dock.stableMaxCd).toBe(6.5);
+    expect(dock.stableMaxCd).toBeCloseTo(6.5 * 1.25, 5);
     expect(g.knights.filter(k => k.active && k.towerId === dock.id && k.kind === 'roomba').length).toBe(3);
   });
 
@@ -1896,7 +1901,10 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
 
     h0.cooldown = 0.01;
     h1.cooldown = 0.01;
+    g.drainEvents();
     g.step(1 / 60);
+    // Healer deployment does not play any annoying sound when a unit is damaged
+    expect(g.drainEvents()).not.toContain('ui-repair');
 
     const healers = g.knights.filter(k => k.active && k.kind === 'healer');
     expect(healers.length).toBe(2);

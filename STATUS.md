@@ -1,11 +1,11 @@
 # Coordination handoff
 
-Updated: 2026-11-21 ~4:46 PM Pacific. Pass 21 responsive aspect-matched 1:1 square
-board & larger player docks complete; full suite & live browser check PASS.
+Updated: 2026-11-21 ~11:32 PM Pacific. Pass 22 complete (Roomba -> Goomba, Goomba/Knight
+speed -25%, regen rate -20%, damage -30%, silent healer auto-deploy) & two PWA fixes complete.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative five-hour interval.
-Rearmed FIRST at this restart (~3:05 PM Pacific Nov 21; next ~8:05 PM).
+Rearmed FIRST at this restart (~8:08 PM Pacific Nov 21; next ~1:08 AM Nov 22).
 After a quota/usage stall, update SAME timer for five hours from restart before
 reading the handoff or implementing. Never fixed daily; ordinary messages do not reset it.
 Automation updates require `destination: "thread"`.
@@ -17,7 +17,11 @@ Automation updates require `destination: "thread"`.
   independent multi-touch; 5 canonical turret roles plus Healer defense (`125 cr`).
 - Mars meteors/damage/credit repair & Repair Bot; Medieval one-breath first-hit-dodge
   dragons, keep walls, half-rate trebuchets, knights/fire zones & Healer;
-  Kitchen counters/stove/Roombas; Lawn opposite-90-degree centipede splits.
+  Kitchen counters/stove/Goombas; Lawn opposite-90-degree centipede splits.
+- Pass 22 (`proto-web/src/theme.ts`, `proto-web/src/sim/game.ts`):
+  renamed Kitchen `Roomba` -> `Goomba` (`Goomba Dock`, `2 Turbo Goombas`, `3 Heavy Goombas`);
+  reduced Goomba & Knight move speed by 25%, regeneration rate by 20% (`baseCd * 1.25`),
+  and damage by 30%; removed `ui-repair` sound from automatic Healer deployment.
 - Wave end clears active troops (`clearTroops`); wave-set completion and `+ Add 5 More Waves?`
   clear both troops and lingering explosions/effects (`clearBattlefieldFxAndTroops`).
 - Pass 21 (`adaptLayout` in `proto-web/src/layout.ts` + `render.ts` + `main.ts`):
@@ -30,7 +34,7 @@ Automation updates require `destination: "thread"`.
   https://seajhawk.github.io/TTDefense/ and https://seajhawk.github.io/tabletop/
   Repo: https://github.com/seajhawk/tabletop (`main`).
 
-## Completed benchmark work
+## Historical benchmark work
 - Harness `scripts/benchmark-browser.js`; guide `docs/BENCHMARKING.md`.
   Default sustained profile stays fixed-Swarmer. Theater retains natural extras
   above floor 150, halts above cap 450; tracks cues/effects, tower HP and operational count.
@@ -40,23 +44,29 @@ Automation updates require `destination: "thread"`.
   Medieval: peak 7 active fire zones and 40 knights; HP 3300->1041.6, working towers 20->7.
 - Report: `docs/PERFORMANCE-TIER2.md`; raw: `docs/benchmarks/2026-11-21-tier2-*.json`.
 
-## Checks and workers
-- `node scripts/validate-data.mjs`: PASS (9 maps, 30 waves, 5 turrets).
-- `npm --prefix proto-web run typecheck`: PASS (0 errors).
-- `npx --prefix proto-web vitest run`: PASS (288/288 unit tests + benchmark suites).
-- `npm --prefix proto-web run build`: PASS.
-- Live browser visual verification at `1055x1015` on `http://localhost:5173/`: PASS
-  (`.tasks/pass21-responsive-1to1-board-and-larger-docks.png`, 0 console/page errors).
+## PWA fixes and verification
+- SW caches use `ga-scope-app:<encoded base>:`; siblings and legacy workers cannot
+  prune another app's cache. Legacy exact-path asset fallback retained; old caches preserved.
+- Installer drains each response body before the next fetch and stages native clones.
+  This fixed an observed install stall without exposing a partial cache on download failure.
+- `npm --prefix proto-web test -- --run tests/sw.test.mjs tests/pwa.test.ts`: 43/43 PASS.
+  Syntax checks passed for worker and both new smoke scripts.
+- Fresh synthetic A/B production fixtures built for /, /tabletop/, /TTDefense/:
+  22 files each, no replacement of existing dist. Chromium158, local loopback only.
+- Root and /TTDefense/ lifecycle: 25 checks each; sibling isolation/offline reopen:12.
+  Verified full activation, offline boots/assets, blocked waiting update while progress
+  exists, exactly one reload after reset, preserved storage. Zero warnings/errors.
+- Report/reproduction: `docs/PWA-VERIFICATION.md`; latest raw evidence:
+  `docs/verification/2026-11-21-2009-pwa-*.json`. Earlier 3:24 PM results retained.
+- Helpers: `scripts/pwa-smoke-server.mjs`, `scripts/pwa-smoke-browser.js`.
+  All Claude/review workers complete; isolated browser contexts and fixture server closed.
+- Prior Pass 21 feature chat reported data/typecheck/build/unit/visual checks PASS;
+  screenshot `.tasks/pass21-responsive-1to1-board-and-larger-docks.png`.
+- No deployment, paid Foundry call or commit in this PWA work. Native installation,
+  target hardware touch/DPI/thermal behavior and public CDN updates remain unverified.
 
 ## Next
 1. Target hardware: actual multi-touch, DPI comfort, sustained thermal playtest.
-2. Verify native PWA/PC installation and offline/update behavior on target OS.
-3. If Healer/boss performance needs measurement, document a distinct fixture;
-   neither is covered here. Profile a reproduced issue before optimizing.
-
-## In progress (Nov 21, 3:05 PM)
-- PWA scope fix complete; 40 focused tests pass. New isolated smoke helpers complete.
-- Real browser found initial-install stall: unconsumed response bodies exhaust
-  fetch connections before precache staging finishes. Claude exec46561 fixes installer/tests;
-  log `.tasks/claude-pwa-install-drain.log`. Initial fixture server stopped.
-- Parent owns verification/report/STATUS; no deployment authorized by this heartbeat.
+2. Verify native PWA/PC installation and real release migration on target OS/browser.
+3. Publish the local PWA fixes only when deployment is authorized; this heartbeat
+   does not authorize public publication. Healer/boss performance is still unmeasured.

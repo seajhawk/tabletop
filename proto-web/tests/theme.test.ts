@@ -233,9 +233,9 @@ describe('theater themes', () => {
     expect(kitchen.turrets.plasma.shortName).toBe('Pepper Mill');
     expect(kitchen.turrets.stasis.shortName).toBe('Honey Trap');
     expect(kitchen.turrets.railgun.shortName).toBe('Chef Knife');
-    expect(kitchen.turrets.swarm.shortName).toBe('Roomba');
-    expect(kitchen.turrets.swarm.fullName).toBe('Roomba Dock');
-    expect(kitchen.turrets.swarm.upgrades).toEqual(['2 Turbo Roombas', '3 Heavy Roombas']);
+    expect(kitchen.turrets.swarm.shortName).toBe('Goomba');
+    expect(kitchen.turrets.swarm.fullName).toBe('Goomba Dock');
+    expect(kitchen.turrets.swarm.upgrades).toEqual(['2 Turbo Goombas', '3 Heavy Goombas']);
     expect(kitchen.turrets.swarm.color).toBe(0x38bdf8);
 
     expect(kitchen.roleTags).toEqual({
@@ -258,7 +258,7 @@ describe('theater themes', () => {
     expect(kitchen.helpText).toContain('Midnight Kitchen');
     expect(kitchen.helpText).toContain('Countertops');
     expect(kitchen.helpText).toContain('+BURN');
-    expect(kitchen.helpText).toContain('Roomba');
+    expect(kitchen.helpText).toContain('Goomba');
     expect(kitchen.helpText).toContain('Fridge Open — Snack Rush');
   });
 

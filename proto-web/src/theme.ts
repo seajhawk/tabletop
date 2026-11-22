@@ -347,7 +347,7 @@ const KITCHEN_THEME: TheaterTheme = {
   helpText:
     'Defend the fridge from kitchen vermin in Midnight Kitchen! ' +
     'Mount defenses on Countertops (+15% range) & Stove Burners (+BURN). ' +
-    'Deploy Roomba floor vacuums (1/2/3 units) sweeping pests, and prepare Honey Traps to counter fast bursts during Fridge Open — Snack Rush!',
+    'Deploy Goomba floor vacuums (1/2/3 units) sweeping pests, and prepare Honey Traps to counter fast bursts during Fridge Open — Snack Rush!',
   obstacleLabel: 'Furniture',
   wallLabel: 'COUNTER',
   boostLabel: '+BURN',
@@ -363,7 +363,7 @@ const KITCHEN_THEME: TheaterTheme = {
     plasma: { shortName: 'Pepper Mill', fullName: 'Pepper Mill', upgrades: ['Cayenne Cannon', 'Ghost Pepper'], color: 0xf97316 },
     stasis: { shortName: 'Honey Trap', fullName: 'Honey Trap', upgrades: ['Syrup Spill', 'Super Glue Pad'], color: 0xfacc15 },
     railgun: { shortName: 'Chef Knife', fullName: "Chef's Knife", upgrades: ['Twin Cleavers', 'Laser Slicer'], color: 0xc084fc },
-    swarm: { shortName: 'Roomba', fullName: 'Roomba Dock', upgrades: ['2 Turbo Roombas', '3 Heavy Roombas'], color: 0x38bdf8 },
+    swarm: { shortName: 'Goomba', fullName: 'Goomba Dock', upgrades: ['2 Turbo Goombas', '3 Heavy Goombas'], color: 0x38bdf8 },
   },
   enemies: {
     scout: { name: 'Kitchen Ant', color: 0x8b4513 },
