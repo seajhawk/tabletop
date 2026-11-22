@@ -155,9 +155,9 @@ export const LAYOUTS: LayoutDef[] = [
     playerCount: 2,
     stageW: WORLD_W,
     stageH: WORLD_H,
-    // 37x37 exact 1:1 square cells (28*37 = 1036, 16*37 = 592) filling vertical space between compact docks
-    board: { x: 122, y: 104, w: 28 * 37, h: 16 * 37 },
-    docks: [makeDock(0, 640, 749, 0, 0.78), makeDock(1, 640, 51, Math.PI, 0.78)],
+    // 36x36 exact 1:1 square cells (28*36 = 1008, 16*36 = 576) with larger 0.88x readable docks on baseline 1280x800
+    board: { x: 136, y: 112, w: 28 * 36, h: 16 * 36 },
+    docks: [makeDock(0, 640, 744, 0, 0.88), makeDock(1, 640, 56, Math.PI, 0.88)],
     hudButtons: cornerHud(10, 14),
     statsOrigin: { x: 1106, y: 14 },
   },
@@ -252,6 +252,141 @@ export const LAYOUTS: LayoutDef[] = [
     statsOrigin: { x: 1106, y: 310 },
   },
 ];
+
+/**
+ * Dynamically adapts a layout to the active window aspect ratio while preserving strictly
+ * 1:1 square grid cells (`cw === ch`) so there is minimal blank space around the playfield
+ * and player cards scale up as large and readable as the screen shape allows.
+ */
+export function adaptLayout(base: LayoutDef, screenW: number, screenH: number): LayoutDef {
+  if (!(screenW > 0 && screenH > 0)) return base;
+  const phone = isPhoneLayout(base);
+  const aspect = screenW / screenH;
+
+  if (phone) {
+    const clampedAspect = Math.max(0.40, Math.min(0.68, aspect));
+    const stageH = 1260;
+    const stageW = Math.max(548, Math.round(stageH * clampedAspect));
+    if (base.id === '2p-phone') {
+      const maxCellW = (stageW - 20) / GRID_H;
+      const maxCellH = (stageH - 336) / GRID_W;
+      const cell = Math.max(32, Math.floor(Math.min(maxCellW, maxCellH) * 2) / 2);
+      const bw = GRID_H * cell;
+      const bh = GRID_W * cell;
+      const bx = Math.round((stageW - bw) / 2);
+      const topAvail = stageH - bh;
+      const topSpace = Math.max(196, Math.round(topAvail * 0.58));
+      const botSpace = stageH - bh - topSpace;
+      const dockScale = Math.max(1.10, Math.min(1.26, Math.min((stageW - 24) / DOCK_W, (botSpace - 10) / DOCK_H, (topSpace - 64) / DOCK_H)));
+      const topDockH = DOCK_H * dockScale;
+      const topDockCy = Math.round(6 + topDockH / 2);
+      const hudY = Math.round(topDockCy + topDockH / 2 + 6);
+      const by = Math.max(hudY + 54, topSpace);
+      const botDockCy = Math.round(by + bh + (stageH - (by + bh)) / 2);
+      return {
+        ...base,
+        stageW,
+        stageH,
+        board: { x: bx, y: by, w: bw, h: bh },
+        docks: [
+          makeDock(0, stageW / 2, botDockCy, 0, dockScale),
+          makeDock(1, stageW / 2, topDockCy, Math.PI, dockScale),
+        ],
+        hudButtons: phoneHorizontalHud(stageW / 2, hudY),
+        statsOrigin: { x: bx, y: by + 8 },
+      };
+    }
+    if (base.id === '1p-phone') {
+      const stage1H = 1140;
+      const stage1W = Math.max(548, Math.round(stage1H * clampedAspect));
+      const maxCellW = (stage1W - 20) / GRID_H;
+      const maxCellH = (stage1H - 216) / GRID_W;
+      const cell = Math.max(32, Math.floor(Math.min(maxCellW, maxCellH) * 2) / 2);
+      const bw = GRID_H * cell;
+      const bh = GRID_W * cell;
+      const bx = Math.round((stage1W - bw) / 2);
+      const by = 70;
+      const botSpace = stage1H - (by + bh);
+      const dockScale = Math.max(1.12, Math.min(1.28, Math.min((stage1W - 24) / DOCK_W, (botSpace - 12) / DOCK_H)));
+      const botDockCy = Math.round(by + bh + botSpace / 2);
+      return {
+        ...base,
+        stageW: stage1W,
+        stageH: stage1H,
+        board: { x: bx, y: by, w: bw, h: bh },
+        docks: [makeDock(0, stage1W / 2, botDockCy, 0, dockScale)],
+        hudButtons: phoneHorizontalHud(stage1W / 2, 14),
+        statsOrigin: { x: bx, y: by + 8 },
+      };
+    }
+    return base;
+  }
+
+  // Landscape / square desktop & tablet screens
+  const clampedAspect = Math.max(0.95, Math.min(2.05, aspect));
+  const stageW = clampedAspect >= 1.6 ? Math.round(800 * clampedAspect) : 1280;
+  const stageH = Math.round(stageW / clampedAspect);
+
+  if (base.id === '2p-opposing') {
+    // Reserve at least 112px top/bottom bands so docks stay >= 0.88x and HUD (84px tall) clears board
+    const minBand = 112;
+    const maxCellW = (stageW - 24) / GRID_W;
+    const maxCellH = (stageH - minBand * 2) / GRID_H;
+    const cell = Math.max(32, Math.floor(Math.min(maxCellW, maxCellH) * 2) / 2);
+    const bw = GRID_W * cell;
+    const bh = GRID_H * cell;
+    const bx = Math.round((stageW - bw) / 2);
+    const bandH = (stageH - bh) / 2;
+    const by = Math.round(bandH);
+    // Scale player cards as large as fits in the top/bottom band while leaving room on the left for cornerHud (x=12..186)
+    const maxDockWForHud = (stageW / 2 - 196) * 2;
+    const dockScale = Math.max(
+      0.88,
+      Math.min(1.42, (bandH - 12) / DOCK_H, maxDockWForHud / DOCK_W),
+    );
+    const topCy = Math.round(bandH / 2);
+    const botCy = Math.round(stageH - bandH / 2);
+    const hudY = Math.max(10, Math.min(by - 88, Math.round((bandH - 84) / 2)));
+    return {
+      ...base,
+      stageW,
+      stageH,
+      board: { x: bx, y: by, w: bw, h: bh },
+      docks: [
+        makeDock(0, stageW / 2, botCy, 0, dockScale),
+        makeDock(1, stageW / 2, topCy, Math.PI, dockScale),
+      ],
+      hudButtons: cornerHud(12, hudY),
+      statsOrigin: { x: stageW - 174, y: hudY },
+    };
+  }
+
+  if (base.id === '1p-base') {
+    const dockScale = Math.max(1.0, Math.min(1.24, (stageH - 40) / DOCK_W));
+    const dockWWorld = DOCK_H * dockScale;
+    const dockCx = Math.round(stageW - 12 - dockWWorld / 2);
+    const availW = Math.floor(dockCx - dockWWorld / 2 - 24);
+    const topReserve = 104;
+    const maxCellW = availW / GRID_W;
+    const maxCellH = (stageH - topReserve - 16) / GRID_H;
+    const cell = Math.max(32, Math.floor(Math.min(maxCellW, maxCellH) * 2) / 2);
+    const bw = GRID_W * cell;
+    const bh = GRID_H * cell;
+    const bx = Math.max(14, Math.round((availW + 14 - bw) / 2));
+    const by = Math.max(topReserve, Math.round((stageH + topReserve - bh) / 2));
+    return {
+      ...base,
+      stageW,
+      stageH,
+      board: { x: bx, y: by, w: bw, h: bh },
+      docks: [makeDock(0, dockCx, Math.round(stageH / 2), -H, dockScale)],
+      hudButtons: cornerHud(14, 14),
+      statsOrigin: { x: 204, y: 14 },
+    };
+  }
+
+  return base;
+}
 
 export function hitHudButton(layout: LayoutDef, x: number, y: number): HudButtonId | null {
   for (const id of HUD_BUTTON_IDS) {

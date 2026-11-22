@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
+  adaptLayout, BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
   dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton,
   hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, LAYOUTS, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
   radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect,
@@ -105,6 +105,49 @@ describe('rotation-aware dock layout', () => {
       const { cw, ch } = boardCellSize(L.board, !!L.boardRotated);
       expect(cw).toBeCloseTo(ch, 9);
       expect(cw).toBeGreaterThan(32);
+    }
+  });
+
+  it('adaptLayout keeps strictly 1:1 square cells and enlarges board + player cards to fill square, 4:3, 16:9, and phone screens', () => {
+    const base2p = LAYOUTS.find(l => l.id === '2p-opposing')!;
+    const sq = adaptLayout(base2p, 1055, 1015);
+    const sqCell = boardCellSize(sq.board, false);
+    expect(sqCell.cw).toBeCloseTo(sqCell.ch, 9);
+    expect(sq.board.w).toBeGreaterThanOrEqual(1232); // fills width with 44+ px square cells
+    expect(sq.docks[0].scale).toBeGreaterThanOrEqual(1.10); // player cards significantly larger
+
+    const viewports: [string, number, number][] = [
+      ['2p-opposing', 1055, 1015],
+      ['2p-opposing', 1024, 768],
+      ['2p-opposing', 1280, 800],
+      ['2p-opposing', 1920, 1080],
+      ['1p-base', 1055, 1015],
+      ['1p-base', 1920, 1080],
+      ['2p-phone', 390, 844],
+      ['2p-phone', 412, 915],
+      ['1p-phone', 390, 844],
+    ];
+    for (const [id, sw, sh] of viewports) {
+      const base = LAYOUTS.find(l => l.id === id)!;
+      const L = adaptLayout(base, sw, sh);
+      const { cw, ch } = boardCellSize(L.board, !!L.boardRotated);
+      expect(cw, `${id} ${sw}x${sh} square cell`).toBeCloseTo(ch, 9);
+      const hudRects = HUD_BUTTON_IDS.map(hid => L.hudButtons[hid]);
+      for (const hr of hudRects) {
+        expect(rectsOverlap(hr, L.board)).toBe(false);
+      }
+      for (const d of L.docks) {
+        for (const c of dockPolygon(d)) {
+          expect(c.x).toBeGreaterThanOrEqual(-1e-6);
+          expect(c.y).toBeGreaterThanOrEqual(-1e-6);
+          expect(c.x).toBeLessThanOrEqual(L.stageW + 1e-6);
+          expect(c.y).toBeLessThanOrEqual(L.stageH + 1e-6);
+        }
+        expect(polygonsOverlap(dockPolygon(d), rectPolygon(L.board))).toBe(false);
+        for (const hr of hudRects) {
+          expect(polygonsOverlap(dockPolygon(d), rectPolygon(hr))).toBe(false);
+        }
+      }
     }
   });
 

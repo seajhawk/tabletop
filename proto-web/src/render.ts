@@ -1071,17 +1071,17 @@ export class Renderer {
       }
       c.addChild(borderG);
 
-      const name = mkText(`P${d.player + 1}`, 14, col, { bold: true });
-      name.position.set(12, 6);
-      const wallet = mkText('', 15, textCol, { bold: true });
-      wallet.position.set(42, 6);
+      const name = mkText(`P${d.player + 1}`, 15, col, { bold: true });
+      name.position.set(12, 5);
+      const wallet = mkText('', 16, textCol, { bold: true });
+      wallet.position.set(44, 5);
 
       const chipG = new Graphics();
       chipG.position.set(chipR.x, chipR.y);
       chipG.roundRect(0, 0, chipR.w, chipR.h, 8).fill({ color: theme.slotBg, alpha: 0.95 }).stroke({ width: 1.5, color: col, alpha: 0.85 });
       const solo = this.game.playerCount <= 1;
       chipG.visible = !solo;
-      const chipText = mkText(solo ? 'SOLO COMMAND' : '', solo ? 11.5 : 12.5, solo ? (hasSprites ? 0x8ea394 : 0x7da4bd) : col, { bold: true });
+      const chipText = mkText(solo ? 'SOLO COMMAND' : '', solo ? 12 : 13, solo ? (hasSprites ? 0x8ea394 : 0x7da4bd) : col, { bold: true });
       chipText.anchor.set(0.5);
       chipText.position.set(chipR.x + chipR.w / 2, chipR.y + chipR.h / 2);
       if (solo) chipText.alpha = 0.72;
@@ -1105,8 +1105,8 @@ export class Renderer {
         if (hasSprites && slotTex) {
           const sp = new Sprite(slotTex);
           sp.anchor.set(0.5);
-          sp.position.set(r.w / 2, 26);
-          const iconSz = order.length === 6 ? 44 : 50;
+          sp.position.set(r.w / 2, 25);
+          const iconSz = order.length === 6 ? 46 : 52;
           sp.width = iconSz;
           sp.height = iconSz;
           sp.rotation = -Math.PI / 2;
@@ -1125,13 +1125,13 @@ export class Renderer {
           }
         } else {
           const icon = new Graphics();
-          drawIcon(icon, id, r.w / 2, 30, 15, tcol, 1, -Math.PI / 2, theme.id);
+          drawIcon(icon, id, r.w / 2, 28, 17, tcol, 1, -Math.PI / 2, theme.id);
           sc.addChild(icon);
         }
-        const nm = mkText(theme.turrets[id]?.shortName ?? SHORT_TURRET_NAME[id] ?? def.name, order.length === 6 ? 10.5 : 11.5, textCol, { bold: true });
-        nm.anchor.set(0.5, 0); nm.position.set(r.w / 2, 52);
-        const cost = mkText(`${def.cost} cr`, 11, tcol, { bold: true });
-        cost.anchor.set(0.5, 0); cost.position.set(r.w / 2, 68);
+        const nm = mkText(theme.turrets[id]?.shortName ?? SHORT_TURRET_NAME[id] ?? def.name, order.length === 6 ? 11 : 12.5, textCol, { bold: true });
+        nm.anchor.set(0.5, 0); nm.position.set(r.w / 2, 50);
+        const cost = mkText(`${def.cost} cr`, 12, tcol, { bold: true });
+        cost.anchor.set(0.5, 0); cost.position.set(r.w / 2, 66);
         sc.addChild(nm, cost);
 
         const canHitAir = def.targetsAir && !((theme.id === 'medieval' || theme.id === 'kitchen') && id === 'swarm');
