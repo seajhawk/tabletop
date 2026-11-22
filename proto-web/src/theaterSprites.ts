@@ -13,7 +13,7 @@ export interface TheaterTextureSet extends MilitaryTextureSet {
   healerTurrets?: [Texture, Texture, Texture];
 }
 
-export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
+export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab';
 export type TheaterSpriteTheme = TheaterTheme;
 
 const TURRET_KEYS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
@@ -4137,6 +4137,726 @@ function paintLawnMoleMound(): Texture {
 }
 
 // ============================================================================
+// CYBER (NEON CYBERGRID) PAINTERS
+// ============================================================================
+
+function paintCyberBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const accent = key === 'pulse' ? '#38e8ff' : key === 'plasma' ? '#f472b6' : key === 'stasis' ? '#818cf8' : key === 'railgun' ? '#facc15' : '#34d399';
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, 14, 14, 68, 68, 12);
+      ctx.fillStyle = '#0d1526';
+      ctx.fill();
+    });
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    // Copper PCB pins on all 4 edges
+    ctx.fillStyle = '#facc15';
+    for (let i = -2; i <= 2; i++) {
+      ctx.fillRect(c + i * 10 - 2, 10, 4, 5);
+      ctx.fillRect(c + i * 10 - 2, 81, 4, 5);
+      ctx.fillRect(10, c + i * 10 - 2, 5, 4);
+      ctx.fillRect(81, c + i * 10 - 2, 5, 4);
+    }
+    ctx.strokeStyle = 'rgba(56, 232, 255, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(23, 23, 50, 50);
+  });
+}
+
+function paintCyberTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'pulse') {
+      // Firewall Arc Node: glowing cyan Tesla pylon + twin arc prongs
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#111c33';
+        ctx.beginPath();
+        ctx.arc(c - 4, c, 21, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#38e8ff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      for (const oy of tier >= 1 ? [-12, 0, 12] : [-9, 9]) {
+        ctx.strokeStyle = '#38e8ff';
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.moveTo(c + 4, c + oy * 0.6);
+        ctx.lineTo(c + 30 + tier * 3, c + oy);
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(c + 30 + tier * 3, c + oy, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = tier === 2 ? '#e0faff' : '#38e8ff';
+      ctx.beginPath();
+      ctx.arc(c - 4, c, 9 + tier * 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'plasma') {
+      // Logic Bomb Mortar: neon magenta hex launcher
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#241230';
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3;
+          const x = c - 4 + Math.cos(a) * 23;
+          const y = c + Math.sin(a) * 23;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      roundedRectPath(ctx, c + 4, c - 10 - tier * 2, 26 + tier * 3, 20 + tier * 4, 6);
+      ctx.fillStyle = '#3b154d';
+      ctx.fill();
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#fbcfe8';
+      ctx.beginPath();
+      ctx.arc(c - 4, c, 9 + tier, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'stasis') {
+      // Packet Throttler: concentric indigo/violet signal rings
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#141736';
+        ctx.beginPath();
+        ctx.arc(c, c, 24, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#818cf8';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      for (const r of [16, 10]) {
+        ctx.strokeStyle = r === 10 ? '#c7d2fe' : '#6366f1';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(c, c, r + tier * 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#a5b4fc';
+      ctx.beginPath();
+      ctx.arc(c, c, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'railgun') {
+      // Zero-Day Tracer: golden-yellow long rail emitter
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 18, c - 17, 36, 34, 6);
+        ctx.fillStyle = '#1f1b10';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      for (const oy of [-8, 8]) {
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(c - 2, c + oy - 2.5, 36 + tier * 3, 5);
+      }
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(c - 4, c - 2, 34 + tier * 3, 4);
+    } else {
+      // Antivirus Swarm Pod: emerald drone bay
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 20, 22, 48, 52, 10);
+        ctx.fillStyle = '#0d2620';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      const pods = tier === 0 ? [-10, 10] : tier === 1 ? [-14, 0, 14] : [-16, -6, 6, 16];
+      for (const oy of pods) {
+        ctx.fillStyle = '#6ee7b7';
+        ctx.beginPath();
+        ctx.arc(c + 12, c + oy, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
+}
+
+function paintCyberEnemy(key: EnemyKey): Texture {
+  return paintCanvas(80, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'scout') {
+      // Data Worm: sleek neon-magenta chevron packet
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath();
+        ctx.moveTo(c + 20, c);
+        ctx.lineTo(c - 14, c - 13);
+        ctx.lineTo(c - 6, c);
+        ctx.lineTo(c - 14, c + 13);
+        ctx.closePath();
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.8);
+      ctx.fillStyle = '#fdf2f8';
+      ctx.beginPath();
+      ctx.arc(c + 4, c, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'swarmer') {
+      // Spam Bot: tiny neon-purple diamond
+      ctx.fillStyle = '#e879f9';
+      ctx.beginPath();
+      ctx.moveTo(c + 14, c);
+      ctx.lineTo(c, c - 11);
+      ctx.lineTo(c - 13, c);
+      ctx.lineTo(c, c + 11);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+    } else if (key === 'cruiser') {
+      // Trojan Block: armored violet cube with glowing core
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 17, c - 17, 34, 34, 6);
+        ctx.fillStyle = '#6b21a8';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#d8b4fe';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      ctx.fillStyle = '#f472b6';
+      ctx.fillRect(c - 7, c - 7, 14, 14);
+    } else if (key === 'frigate') {
+      // Proxy Shield: cyan hex-node
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3;
+          const x = c + Math.cos(a) * 18;
+          const y = c + Math.sin(a) * 18;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#7dd3fc';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    } else if (key === 'phase') {
+      // Zero-Day Glitch: jagged flying coral/cyan glitch-wing
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#fb7185';
+        ctx.beginPath();
+        ctx.moveTo(c + 22, c);
+        ctx.lineTo(c - 6, c - 19);
+        ctx.lineTo(c - 16, c - 8);
+        ctx.lineTo(c - 10, c);
+        ctx.lineTo(c - 16, c + 8);
+        ctx.lineTo(c - 6, c + 19);
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#38e8ff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      // Rootkit Titan: massive crimson-gold cyber skull-core
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 26, c - 24, 52, 48, 10);
+        ctx.fillStyle = '#7f1d1d';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(c + 4, c, 12, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.8);
+    }
+  });
+}
+
+function paintCyberObstacle(variant: number): Texture {
+  return paintCanvas(72, (ctx) => {
+    roundedRectPath(ctx, 8, 8, 56, 56, 8);
+    ctx.fillStyle = variant % 2 === 0 ? 'rgba(12, 22, 40, 0.45)' : 'rgba(15, 28, 48, 0.45)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  });
+}
+
+function paintCyberCrater(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    ctx.strokeStyle = 'rgba(56, 232, 255, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(c - 12, c - 12, 24, 24);
+  });
+}
+
+// ============================================================================
+// VOLCANO (VOLCANIC CALDERA) PAINTERS
+// ============================================================================
+
+function paintVolcanoBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const glow = key === 'stasis' ? '#38bdf8' : '#f97316';
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#291f1d';
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4 + Math.PI / 8;
+        const x = c + Math.cos(a) * 35;
+        const y = c + Math.sin(a) * 35;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+    });
+    strokeInk(ctx, 2.0);
+    ctx.strokeStyle = glow;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(c, c, 24, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function paintVolcanoTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'pulse') {
+      // Obsidian Shard Gun
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        ctx.arc(c - 4, c, 21, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+      for (const oy of tier >= 1 ? [-8, 8] : [0]) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(c + 34 + tier * 3, c + oy);
+        ctx.lineTo(c + 2, c + oy - 6);
+        ctx.lineTo(c + 2, c + oy + 6);
+        ctx.closePath();
+        ctx.fill();
+        strokeInk(ctx, 1.4);
+      }
+    } else if (key === 'plasma') {
+      // Molten Slag Mortar
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#431407';
+        ctx.beginPath();
+        ctx.arc(c - 4, c, 23, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(c + 10, c, 12 + tier * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(c + 10, c, 6 + tier, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'stasis') {
+      // Cryo Coolant Vent
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#0c2738';
+        ctx.beginPath();
+        ctx.arc(c, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.fillStyle = '#bae6fd';
+      ctx.beginPath();
+      ctx.arc(c, c, 9 + tier * 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'railgun') {
+      // Geothermal Lance
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 16, c - 15, 38, 30, 6);
+        ctx.fillStyle = '#292524';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(c, c - 5, 36 + tier * 3, 10);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(c + 2, c - 2, 34 + tier * 3, 4);
+    } else {
+      // Cinder Seeker Pod
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 20, 22, 48, 52, 8);
+        ctx.fillStyle = '#3b1219';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fb7185';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+      for (const oy of [-12, 0, 12]) {
+        ctx.fillStyle = '#fda4af';
+        ctx.beginPath();
+        ctx.arc(c + 12, c + oy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
+}
+
+function paintVolcanoEnemy(key: EnemyKey): Texture {
+  return paintCanvas(80, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'scout' || key === 'swarmer') {
+      const r = key === 'scout' ? 14 : 10;
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(c, c, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.7);
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(c + 4, c, r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'cruiser') {
+      // Magma Golem
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 18, c - 17, 36, 34, 8);
+        ctx.fillStyle = '#451a03';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2.8;
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(c + 3, c, 9, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'frigate') {
+      // Basalt Shell
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#57534e';
+        ctx.beginPath();
+        ctx.arc(c, c, 17, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fdba74';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    } else if (key === 'phase') {
+      // Pyro Wyvern
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(c + 22, c);
+        ctx.lineTo(c - 8, c - 20);
+        ctx.lineTo(c - 2, c);
+        ctx.lineTo(c - 8, c + 20);
+        ctx.closePath();
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.8);
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(c + 8, c, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Caldera Colossus
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath();
+        ctx.arc(c, c, 26, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 3.2;
+      ctx.stroke();
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(c + 6, c, 11, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+function paintVolcanoObstacle(variant: number): Texture {
+  return paintCanvas(72, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = variant % 2 === 0 ? 'rgba(41, 31, 29, 0.55)' : 'rgba(180, 50, 15, 0.35)';
+    ctx.beginPath();
+    ctx.arc(c, c, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(251, 146, 60, 0.45)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  });
+}
+
+function paintVolcanoCrater(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.28)';
+    ctx.beginPath();
+    ctx.arc(c, c, 16, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================================
+// BIOLAB (BIO-LAB OUTBREAK) PAINTERS
+// ============================================================================
+
+function paintBiolabBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const accent = key === 'pulse' ? '#4ade80' : key === 'plasma' ? '#fbbf24' : key === 'stasis' ? '#2dd4bf' : key === 'railgun' ? '#e879f9' : '#38bdf8';
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#241122';
+      ctx.beginPath();
+      ctx.arc(c, c, 34, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.6;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.arc(c - 7, c - 7, 14, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function paintBiolabTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'pulse') {
+      // Killer T-Cell Pod: organic mint-green cell with receptor tips
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(c - 3, c, 20 + tier * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      for (const oy of tier >= 1 ? [-11, 0, 11] : [-8, 8]) {
+        ctx.strokeStyle = '#4ade80';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(c + 10, c + oy * 0.5);
+        ctx.lineTo(c + 28 + tier * 2, c + oy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#dcfce7';
+      ctx.beginPath();
+      ctx.arc(c - 4, c, 8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'plasma') {
+      // Lysosome Enzyme Mortar: amber vesicle sac
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#92400e';
+        ctx.beginPath();
+        ctx.arc(c - 2, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      for (const [ox, oy] of [[8, -7], [11, 6], [-5, 4]]) {
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath();
+        ctx.arc(c + ox, c + oy, 5 + tier, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (key === 'stasis') {
+      // Antibody Suppressor: teal Y-shaped antibody emitter
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#115e59';
+        ctx.beginPath();
+        ctx.arc(c, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#2dd4bf';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.strokeStyle = '#ccfbf1';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(c - 12, c);
+      ctx.lineTo(c + 2, c);
+      ctx.lineTo(c + 14, c - 11);
+      ctx.moveTo(c + 2, c);
+      ctx.lineTo(c + 14, c + 11);
+      ctx.stroke();
+    } else if (key === 'railgun') {
+      // Micro-UV Laser: violet-magenta optical scalpel
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 18, c - 15, 36, 30, 10);
+        ctx.fillStyle = '#4a044e';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#e879f9';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      ctx.fillStyle = '#f0abfc';
+      ctx.fillRect(c, c - 3.5, 34 + tier * 3, 7);
+    } else {
+      // Bacteriophage Hive: cyan-blue viral hunter pod
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#0c4a6e';
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3;
+          const x = c + Math.cos(a) * 22;
+          const y = c + Math.sin(a) * 22;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      for (const oy of [-9, 0, 9]) {
+        ctx.fillStyle = '#bae6fd';
+        ctx.beginPath();
+        ctx.arc(c + 9, c + oy, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
+}
+
+function paintBiolabEnemy(key: EnemyKey): Texture {
+  return paintCanvas(80, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'scout' || key === 'swarmer') {
+      // Spiky green virus / cocci
+      const r = key === 'scout' ? 13 : 9;
+      ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 2.2;
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4;
+        ctx.beginPath();
+        ctx.moveTo(c, c);
+        ctx.lineTo(c + Math.cos(a) * (r + 5), c + Math.sin(a) * (r + 5));
+        ctx.stroke();
+      }
+      ctx.fillStyle = key === 'scout' ? '#22c55e' : '#a3e635';
+      ctx.beginPath();
+      ctx.arc(c, c, r, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+    } else if (key === 'cruiser') {
+      // Macro-Amoeba: multi-lobed crimson-pink cell
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#e11d48';
+        ctx.beginPath();
+        ctx.arc(c - 4, c - 4, 15, 0, Math.PI * 2);
+        ctx.arc(c + 7, c + 4, 13, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#fda4af';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#fecdd3';
+      ctx.beginPath();
+      ctx.arc(c - 3, c - 3, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'frigate') {
+      // Capsid Shield: armored purple icosahedron virus
+      ctx.fillStyle = '#9333ea';
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        const x = c + Math.cos(a) * 18;
+        const y = c + Math.sin(a) * 18;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#e9d5ff';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+    } else if (key === 'phase') {
+      // Airborne Prion: golden helical ribbon
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.ellipse(c, c, 19, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      ctx.arc(c + 7, c, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Omega Pathogen: giant spiky crimson super-virus
+      ctx.strokeStyle = '#fb7185';
+      ctx.lineWidth = 3.2;
+      for (let i = 0; i < 12; i++) {
+        const a = (i * Math.PI) / 6;
+        ctx.beginPath();
+        ctx.moveTo(c, c);
+        ctx.lineTo(c + Math.cos(a) * 32, c + Math.sin(a) * 32);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#9f1239';
+      ctx.beginPath();
+      ctx.arc(c, c, 23, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fda4af';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.fillStyle = '#4ade80';
+      ctx.beginPath();
+      ctx.arc(c + 4, c, 9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+function paintBiolabObstacle(variant: number): Texture {
+  return paintCanvas(72, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = variant % 2 === 0 ? 'rgba(92, 36, 59, 0.28)' : 'rgba(131, 44, 82, 0.25)';
+    ctx.beginPath();
+    ctx.arc(c, c, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(249, 168, 212, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+function paintBiolabCrater(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.22)';
+    ctx.beginPath();
+    ctx.arc(c, c, 15, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================================
 // PUBLIC BUILDER
 // ============================================================================
 
@@ -4183,6 +4903,27 @@ const THEME_PAINTERS: Record<TheaterTheme, ThemePainters> = {
     enemy: paintLawnEnemy,
     obstacle: paintLawnObstacle,
     crater: paintLawnCrater,
+  },
+  cyber: {
+    base: paintCyberBase,
+    turret: paintCyberTurret,
+    enemy: paintCyberEnemy,
+    obstacle: paintCyberObstacle,
+    crater: paintCyberCrater,
+  },
+  volcano: {
+    base: paintVolcanoBase,
+    turret: paintVolcanoTurret,
+    enemy: paintVolcanoEnemy,
+    obstacle: paintVolcanoObstacle,
+    crater: paintVolcanoCrater,
+  },
+  biolab: {
+    base: paintBiolabBase,
+    turret: paintBiolabTurret,
+    enemy: paintBiolabEnemy,
+    obstacle: paintBiolabObstacle,
+    crater: paintBiolabCrater,
   },
 };
 
@@ -4350,7 +5091,7 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
       result.healerBase = Texture.EMPTY;
       result.healerTurrets = [Texture.EMPTY, Texture.EMPTY, Texture.EMPTY];
     }
-    if (theme === 'mars') {
+    if (theme === 'mars' || theme === 'volcano') {
       result.healer = Texture.EMPTY;
       result.healerBase = Texture.EMPTY;
       result.healerTurrets = [Texture.EMPTY, Texture.EMPTY, Texture.EMPTY];
@@ -4431,10 +5172,23 @@ export function buildTheaterTextures(theme: TheaterTheme): TheaterTextureSet {
     result.boost = track(paintKitchenBoost());
     result.base = track(paintKitchenCoreBase());
     result.roomba = track(paintKitchenRoomba());
-  } else {
+  } else if (theme === 'lawn') {
     result.boost = track(paintLawnBoost());
     result.base = track(paintLawnCoreBase());
     result.moleMound = track(paintLawnMoleMound());
+  } else if (theme === 'volcano') {
+    result.boost = track(paintMarsBoost());
+    result.healer = track(paintMarsHealerUnit());
+    result.healerBase = bases.stasis;
+    result.healerTurrets = [
+      track(paintMarsHealerTurret(0)),
+      track(paintMarsHealerTurret(1)),
+      track(paintMarsHealerTurret(2)),
+    ];
+  } else if (theme === 'cyber') {
+    result.boost = track(paintMedievalBoost());
+  } else {
+    result.boost = track(paintLawnBoost());
   }
 
   return result;

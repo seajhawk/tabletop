@@ -794,4 +794,37 @@ describe('DOM pointer wiring', () => {
     expect(w.game.credits[0]).toBe(start - CREDIT_TRANSFER_AMOUNT);
     expect(w.game.credits[1]).toBe(start + CREDIT_TRANSFER_AMOUNT);
   });
+
+  it('tapping Share chip without dragging cycles per-player share amount 25 -> 50 -> 100 -> 25 and transfers that amount on drag', () => {
+    const { game, input, layout } = setup(0);
+    const chip = creditChipRect();
+    const p0Chip = dockToWorld(layout.docks[0], chip.x + chip.w / 2, chip.y + chip.h / 2);
+    const p1Dock = layout.docks[1];
+
+    expect(input.shareAmount(0)).toBe(25);
+    expect(input.shareAmount(1)).toBe(25);
+
+    // Tap P1 share chip -> 50
+    input.pointerDown(10, p0Chip.x, p0Chip.y, 'touch', 0, 100);
+    input.pointerUp(10, p0Chip.x + 2, p0Chip.y + 1, 140);
+    expect(input.shareAmount(0)).toBe(50);
+    expect(input.shareAmount(1)).toBe(25); // independent per player
+
+    // Drag P1 share chip to P2 -> transfers 50 cr
+    const start0 = game.credits[0];
+    const start1 = game.credits[1];
+    input.pointerDown(11, p0Chip.x, p0Chip.y, 'touch', 0, 200);
+    input.pointerMove(11, p1Dock.cx, p1Dock.cy, 260);
+    input.pointerUp(11, p1Dock.cx, p1Dock.cy, 300);
+    expect(game.credits[0]).toBe(start0 - 50);
+    expect(game.credits[1]).toBe(start1 + 50);
+
+    // Tap again -> 100, tap again -> 25
+    input.pointerDown(12, p0Chip.x, p0Chip.y, 'touch', 0, 400);
+    input.pointerUp(12, p0Chip.x, p0Chip.y, 440);
+    expect(input.shareAmount(0)).toBe(100);
+    input.pointerDown(13, p0Chip.x, p0Chip.y, 'touch', 0, 500);
+    input.pointerUp(13, p0Chip.x, p0Chip.y, 540);
+    expect(input.shareAmount(0)).toBe(25);
+  });
 });

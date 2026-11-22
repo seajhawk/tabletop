@@ -1,8 +1,10 @@
 # Coordination handoff
 
-Updated: 2026-11-22 ~12:32 PM Pacific. Pass 24 complete: refactored Settings Layout
-button into separate `Players` (1P–4P, adding 3P Edges & 3P 2+1) and `Screen` buttons;
-all 220 unit/layout tests PASS. Manifest/PWA & benchmark work preserved.
+Updated: 2026-11-22 ~3:22 PM Pacific. Pass 25 complete: added bespoke Canvas2D defense &
+attacker sprites for Neon Cybergrid, Volcanic Caldera, and Bio-Lab Outbreak (fixing
+invisible placed towers on cyber/biolab), added tap-to-cycle Share amount (25/50/100 cr),
+and extracted reusable `.agents/skills/new-map/SKILL.md`. All 229 unit tests & live
+browser check PASS. Manifest/PWA & benchmark work preserved.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative five-hour interval.

@@ -21,6 +21,7 @@ export interface RadialMenuState {
 }
 export interface CreditDragState {
   pointerId: number; fromPlayer: number; amount: number;
+  startX: number; startY: number; startT: number; moved: boolean;
   px: number; py: number; vx: number; vy: number;
   targetPlayer: number | null;
 }
@@ -45,6 +46,8 @@ export interface InputHooks {
 export const TOUCH_LIFT = 60; // world px: ghost sits above the finger so it stays visible
 export const TAP_SLOP = 14;
 export const TAP_MS = 700;
+export const CREDIT_TRANSFER_AMOUNTS = [25, 50, 100] as const;
+export type CreditTransferAmount = typeof CREDIT_TRANSFER_AMOUNTS[number];
 export const CREDIT_TRANSFER_AMOUNT = 25;
 export const CREDIT_MIN_TRANSFER = 5;
 export const FLICK_MIN_SPEED = 240; // world px/sec
@@ -106,9 +109,21 @@ export class InputController {
   readonly creditDrags = new Map<number, CreditDragState>();
   readonly openRadials = new Map<number, RadialMenuState>();
   private readonly creditLastT = new Map<number, number>();
+  private readonly shareAmounts = new Map<number, CreditTransferAmount>();
   settingsOpen = false;
 
   constructor(private game: Game, private getLayout: () => LayoutDef, private hooks: InputHooks) {}
+
+  shareAmount(player: number): CreditTransferAmount {
+    return this.shareAmounts.get(player) ?? CREDIT_TRANSFER_AMOUNT;
+  }
+
+  cycleShareAmount(player: number): CreditTransferAmount {
+    const cur = this.shareAmount(player);
+    const next = CREDIT_TRANSFER_AMOUNTS[(CREDIT_TRANSFER_AMOUNTS.indexOf(cur) + 1) % CREDIT_TRANSFER_AMOUNTS.length];
+    this.shareAmounts.set(player, next);
+    return next;
+  }
 
   toggleSettings(): boolean {
     this.settingsOpen = !this.settingsOpen;
@@ -178,14 +193,12 @@ export class InputController {
       if (dock.player >= this.game.playerCount) continue;
       if (this.game.playerCount > 1 && hitCreditChip(dock, x, y)) {
         const credits = this.game.credits[dock.player] ?? 0;
-        if (credits < CREDIT_MIN_TRANSFER) {
-          this.hooks.toast('Not enough credits', x, y, false);
-          this.hooks.sound?.('ui-error');
-          return;
-        }
-        const amount = Math.min(CREDIT_TRANSFER_AMOUNT, Math.floor(credits));
+        const chosen = this.shareAmount(dock.player);
+        const amount = credits >= CREDIT_MIN_TRANSFER ? Math.min(chosen, Math.floor(credits)) : 0;
         const cd: CreditDragState = {
-          pointerId: id, fromPlayer: dock.player, amount, px: x, py: y, vx: 0, vy: 0, targetPlayer: null,
+          pointerId: id, fromPlayer: dock.player, amount,
+          startX: x, startY: y, startT: now, moved: false,
+          px: x, py: y, vx: 0, vy: 0, targetPlayer: null,
         };
         this.creditDrags.set(id, cd);
         this.creditLastT.set(id, now);
@@ -228,6 +241,7 @@ export class InputController {
       this.refreshDrag(d);
     } else if (p.kind === 'credit') {
       const cd = this.creditDrags.get(id)!;
+      if (Math.hypot(x - cd.startX, y - cd.startY) > TAP_SLOP) cd.moved = true;
       const lastT = this.creditLastT.get(id) ?? now;
       const dt = (now - lastT) / 1000;
       if (dt > 0 && dt < 0.25) {
@@ -238,7 +252,7 @@ export class InputController {
       }
       if (now > lastT) this.creditLastT.set(id, now);
       cd.px = x; cd.py = y;
-      const target = this.resolveCreditTarget(cd, x, y);
+      const target = cd.amount >= CREDIT_MIN_TRANSFER ? this.resolveCreditTarget(cd, x, y) : null;
       cd.targetPlayer = target ? target.player : null;
     } else if ((p.kind === 'tap' || p.kind === 'empty-tap') && Math.hypot(x - p.x, y - p.y) > TAP_SLOP) {
       this.pointers.set(id, { kind: 'idle' });
@@ -312,6 +326,18 @@ export class InputController {
       const cd = this.creditDrags.get(id)!;
       this.creditDrags.delete(id);
       this.creditLastT.delete(id);
+      const dist = Math.hypot(x - cd.startX, y - cd.startY);
+      const speed = Math.hypot(cd.vx, cd.vy);
+      if (!cd.moved && dist <= TAP_SLOP && speed < FLICK_MIN_SPEED && now - cd.startT < TAP_MS) {
+        const nextAmt = this.cycleShareAmount(cd.fromPlayer);
+        this.hooks.toast(`Share: ${nextAmt} cr`, x, y, true);
+        return;
+      }
+      if (cd.amount < CREDIT_MIN_TRANSFER) {
+        this.hooks.toast('Not enough credits', x, y, false);
+        this.hooks.sound?.('ui-error');
+        return;
+      }
       const recipient = this.resolveCreditTarget(cd, x, y);
       if (!recipient) return;
       const res = this.game.transferCredits(cd.fromPlayer, recipient.player, cd.amount);

@@ -288,7 +288,7 @@ export class Renderer {
   private toastLayer = new Container();
 
   private milTex: MilitaryTextureSet;
-  private theaterTex: Record<'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn', TheaterTextureSet>;
+  private theaterTex: Record<'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab', TheaterTextureSet>;
   private craters: { sprite: Sprite; ttl: number; max: number }[] = [];
   private mineSprites: Sprite[] = [];
   private milTowers: { container: Container; base: Sprite; head: Sprite; badge: Graphics }[] = [];
@@ -374,6 +374,9 @@ export class Renderer {
       medieval: buildTheaterTextures('medieval'),
       kitchen: buildTheaterTextures('kitchen'),
       lawn: buildTheaterTextures('lawn'),
+      cyber: buildTheaterTextures('cyber'),
+      volcano: buildTheaterTextures('volcano'),
+      biolab: buildTheaterTextures('biolab'),
     };
     this.lastLives = game.lives;
     this.routePulseG.blendMode = 'add';
@@ -552,10 +555,18 @@ export class Renderer {
 
   private activeSprites(themeId: ThemeId = this.theme().id): TheaterTextureSet | null {
     if (themeId === 'military') return this.milTex;
-    if (themeId === 'naval' || themeId === 'mars' || themeId === 'medieval' || themeId === 'kitchen' || themeId === 'lawn') {
+    if (
+      themeId === 'naval' ||
+      themeId === 'mars' ||
+      themeId === 'medieval' ||
+      themeId === 'kitchen' ||
+      themeId === 'lawn' ||
+      themeId === 'cyber' ||
+      themeId === 'volcano' ||
+      themeId === 'biolab'
+    ) {
       return this.theaterTex[themeId];
     }
-    if (themeId === 'volcano') return this.theaterTex.mars;
     return null;
   }
 
@@ -1671,8 +1682,8 @@ export class Renderer {
 
   private syncTowers(): void {
     const theme = this.theme();
-    const hasSprites = theme.id !== 'space';
     const sprites = this.activeSprites(theme.id);
+    const hasSprites = theme.id !== 'space' && !!sprites;
     this.towerBaseG.visible = !hasSprites;
     this.towerHeadG.visible = !hasSprites;
     this.milTowerLayer.visible = hasSprites;
@@ -2762,12 +2773,14 @@ export class Renderer {
     const solo = this.game.playerCount <= 1;
     for (const v of this.dockViews) {
       const credits = this.game.credits[v.player] ?? 0;
+      const shareAmt = this.input.shareAmount(v.player);
       const s = credits.toFixed(1);
-      if (s !== v.last) {
-        v.last = s;
+      const key = `${s}|${shareAmt}`;
+      if (key !== v.last) {
+        v.last = key;
         v.wallet.text = `${s} cr`;
         if (!solo) {
-          v.chipText.text = credits >= 5 ? `◆ Share ${Math.min(25, Math.floor(credits))} ⇄` : '◆ Share ⇄';
+          v.chipText.text = credits >= 5 ? `◆ Share ${Math.min(shareAmt, Math.floor(credits))} ⇄` : `◆ Share ${shareAmt} ⇄`;
         }
       }
       if (solo) {

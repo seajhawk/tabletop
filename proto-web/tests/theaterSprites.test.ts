@@ -10,7 +10,7 @@ const TURRET_KEYS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_KEYS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
 
 describe('buildTheaterTextures', () => {
-  it.each<TheaterSpriteTheme>(['naval', 'mars', 'medieval', 'kitchen', 'lawn'])(
+  it.each<TheaterSpriteTheme>(['naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab'])(
     'returns a valid TheaterTextureSet with Texture.EMPTY in headless Node for %s',
     (theme: TheaterTheme) => {
       expect(typeof document).toBe('undefined');
@@ -67,7 +67,7 @@ describe('buildTheaterTextures', () => {
         expect(set.healer).toBe(Texture.EMPTY);
         expect(set.healerBase).toBe(Texture.EMPTY);
         expect(set.healerTurrets).toEqual([Texture.EMPTY, Texture.EMPTY, Texture.EMPTY]);
-      } else if (theme === 'mars') {
+      } else if (theme === 'mars' || theme === 'volcano') {
         expect(set.knight).toBeUndefined();
         expect(set.healer).toBe(Texture.EMPTY);
         expect(set.healerBase).toBe(Texture.EMPTY);
