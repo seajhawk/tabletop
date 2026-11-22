@@ -367,6 +367,11 @@ export class Game {
   stormActive = false;
   stormTimer = 22;
   meteorTimer = 3.2;
+  empActive = false;
+  empTimer = 18;
+  geyserTimer = 5.5;
+  mutationActive = false;
+  mutationTimer = 17;
   private nextMeteorId = 1;
   private nextKnightId = 1;
   private recentMeteors: { x: number; y: number }[] = [];
@@ -591,6 +596,11 @@ export class Game {
     this.stormActive = false;
     this.stormTimer = 22;
     this.meteorTimer = 3.2;
+    this.empActive = false;
+    this.empTimer = 18;
+    this.geyserTimer = 5.5;
+    this.mutationActive = false;
+    this.mutationTimer = 17;
     this.rushActive = false;
     this.rushTimer = 0;
 
@@ -674,7 +684,7 @@ export class Game {
 
   hasDefeatableDefenses(): boolean {
     const m = this.currentMap.mechanic;
-    return m === 'mars-storms' || m === 'medieval-frenzy';
+    return m === 'mars-storms' || m === 'medieval-frenzy' || m === 'volcano-lava-geyser';
   }
 
   playerHasHealer(owner: number): boolean {
@@ -795,9 +805,12 @@ export class Game {
     if (t.boosted) {
       stats.fireRate *= 1.25;
       stats.range *= 1.20;
-      if (this.currentMap.mechanic === 'kitchen-rush') {
+      if (this.currentMap.mechanic === 'kitchen-rush' || this.currentMap.mechanic === 'volcano-lava-geyser') {
         stats.burnDps = Math.max(stats.burnDps, 10);
         stats.burnDuration = Math.max(stats.burnDuration, 2.5);
+      }
+      if (this.currentMap.mechanic === 'biolab-mutate-regen') {
+        stats.damage *= 1.20;
       }
     }
     if (t.onWall) {
@@ -1190,6 +1203,44 @@ export class Game {
         this.rushTimer -= 25.5;
       }
     }
+    if (this.currentMap.mechanic === 'cyber-emp-chain' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.empTimer -= dt;
+      if (this.empTimer <= 0) {
+        if (!this.empActive) {
+          this.empActive = true;
+          this.empTimer += 2.5;
+          this.emitSound('dust-storm');
+          for (const t of this.towers) {
+            if (!t.boosted && t.hp > 0) {
+              this.spawnPopup(t.x + 0.5, t.y + 0.2, 'EMP JAM', 0x38e8ff, 0.9, -0.6);
+            }
+          }
+        } else {
+          this.empActive = false;
+          this.empTimer += 18;
+        }
+      }
+    }
+    if (this.currentMap.mechanic === 'volcano-lava-geyser' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.geyserTimer -= dt;
+      if (this.geyserTimer <= 0) {
+        this.geyserTimer = 5.2 + Math.random() * 1.6;
+        this.spawnMeteor();
+      }
+    }
+    if (this.currentMap.mechanic === 'biolab-mutate-regen' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.mutationTimer -= dt;
+      if (this.mutationTimer <= 0) {
+        if (!this.mutationActive) {
+          this.mutationActive = true;
+          this.mutationTimer += 5.5;
+          this.emitSound('enrage');
+        } else {
+          this.mutationActive = false;
+          this.mutationTimer += 17;
+        }
+      }
+    }
     this.runSpawners(dt);
     this.updateEnemies(dt);
     this.fireTowers(dt);
@@ -1371,6 +1422,12 @@ export class Game {
         else e.shield = Math.min(e.maxShield, e.shield + e.def.shieldRegen * dt);
       }
 
+      // Bio-Lab Outbreak: pathogens regenerate HP unless suppressed by Antibody slow or burn
+      if (this.currentMap.mechanic === 'biolab-mutate-regen' && e.hp > 0 && e.hp < e.maxHp && e.slowT <= 0 && e.burnT <= 0) {
+        const regenRate = (this.mutationActive ? 0.048 : 0.024) * e.maxHp;
+        e.hp = Math.min(e.maxHp, e.hp + regenRate * dt);
+      }
+
       // Burn DoT
       if (e.burnT > 0) {
         const tick = e.burnDps * Math.min(dt, e.burnT);
@@ -1444,7 +1501,9 @@ export class Game {
       const rushMult =
         this.currentMap.mechanic === 'kitchen-rush' && this.rushActive
           ? (e.slowT > 0 ? 0.80 : 1.30)
-          : 1;
+          : this.currentMap.mechanic === 'biolab-mutate-regen' && this.mutationActive
+            ? (e.slowT > 0 ? 0.90 : 1.25)
+            : 1;
       const dragonBreathMult = (e.breathT ?? 0) > 0 ? 0.38 : ((e.dodgeT ?? 0) > 0 ? 1.35 : 1);
       const spd = e.def.speed * speedMult * enragedMult * rushMult * dragonBreathMult * (e.slowT > 0 ? e.slowF : 1);
       if (e.slowT > 0) {
@@ -1793,7 +1852,7 @@ export class Game {
       this.spawnParticles(e.x, e.y, 6, hex(e.def.color));
       this.emitSound('kill');
       if (
-        this.currentMap.mechanic === 'lawn-split-burrow' &&
+        (this.currentMap.mechanic === 'lawn-split-burrow' || this.currentMap.mechanic === 'biolab-mutate-regen') &&
         e.def.id === 'cruiser' &&
         !e.isSplitChild
       ) {
@@ -1822,9 +1881,12 @@ export class Game {
     const isMedieval = this.currentMap.mechanic === 'medieval-frenzy';
     const isMars = this.currentMap.mechanic === 'mars-storms';
     const isKitchen = this.currentMap.mechanic === 'kitchen-rush';
+    const isCyber = this.currentMap.mechanic === 'cyber-emp-chain';
+    const isVolcano = this.currentMap.mechanic === 'volcano-lava-geyser';
     for (const t of this.towers) {
       if (t.hp <= 0) continue;
-      if ((isMedieval || isMars) && t.def.id === 'healer') {
+      if (isCyber && this.empActive && !t.boosted) continue;
+      if ((isMedieval || isMars || isVolcano) && t.def.id === 'healer') {
         const hs = this.healerStats(t);
         const baseCd = t.tier === 0 ? 2.4 : t.tier === 1 ? 1.8 : 1.3;
         const cd = t.boosted ? baseCd / 1.25 : baseCd;
@@ -2135,13 +2197,44 @@ export class Game {
           });
         }
         this.emitSound(t.tier >= 2 ? 'shot-overcharge' : 'shot-pulse');
-        this.damageEnemy(best, s.damage, t.owner, {
+        const hitOpts: HitOpts = {
           armorPierce: s.armorPierce,
           shieldMultiplier: s.shieldMultiplier,
           shieldStrip: s.shieldStrip,
           burnDps: s.burnDps,
           burnDuration: s.burnDuration,
-        }, t);
+        };
+        this.damageEnemy(best, s.damage, t.owner, hitOpts, t);
+        if (isCyber) {
+          const maxJumps = t.tier >= 2 ? 2 : 1;
+          const visited = new Set<number>([best.id]);
+          let prev = best;
+          let arcDmg = s.damage * 0.55;
+          for (let j = 0; j < maxJumps; j++) {
+            let next: Enemy | null = null;
+            let bestDist = 2.6;
+            for (const cand of this.enemies) {
+              if (cand.dead || visited.has(cand.id)) continue;
+              const cd = Math.hypot(cand.x - prev.x, cand.y - prev.y);
+              if (cd <= bestDist) {
+                bestDist = cd;
+                next = cand;
+              }
+            }
+            if (!next) break;
+            visited.add(next.id);
+            const arc = acquire<Beam>(this.beams, () => ({
+              active: false, kind: 'pulse', x1: 0, y1: 0, x2: 0, y2: 0, width: 2, ttl: 0, max: 0, color: 0,
+            }));
+            Object.assign(arc, {
+              active: true, kind: 'overcharge' as const, x1: prev.x, y1: prev.y,
+              x2: next.x, y2: next.y, width: 2.2, ttl: 0.10, max: 0.10, color: 0x38e8ff,
+            });
+            this.damageEnemy(next, arcDmg, t.owner, hitOpts, t);
+            prev = next;
+            arcDmg *= 0.7;
+          }
+        }
         continue;
       }
 
@@ -2176,7 +2269,7 @@ export class Game {
         burnDuration: s.burnDuration,
         shieldMultiplier: s.shieldMultiplier,
         towerId: t.id,
-        flaming: isMedieval && t.tier >= 2,
+        flaming: (isMedieval && t.tier >= 2) || (isVolcano && t.tier >= 1),
       });
     }
   }
@@ -2537,6 +2630,22 @@ export class Game {
       Object.assign(ring, { active: true, x: m.tx, y: m.ty, r: m.radius, ttl: 0.45, max: 0.45, color: 0xff6b2b });
       this.spawnParticles(m.tx, m.ty, 7, 0xff8c42, 3.2, 3.0);
       this.spawnParticles(m.tx, m.ty, 7, 0xffd166, 2.6, 2.5);
+      if (this.currentMap.mechanic === 'volcano-lava-geyser') {
+        const fz = acquire<FireZone>(this.fireZones, () => ({
+          active: false, x: 0, y: 0, radius: 0, dps: 0, ttl: 0, max: 0, owner: -1, towerId: 0,
+        }));
+        Object.assign(fz, {
+          active: true,
+          x: m.tx,
+          y: m.ty,
+          radius: 1.45,
+          dps: 18,
+          ttl: 4.0,
+          max: 4.0,
+          owner: -1,
+          towerId: 0,
+        });
+      }
 
       for (const t of this.towers) {
         const d = Math.hypot((t.x + 0.5) - m.tx, (t.y + 0.5) - m.ty);

@@ -16,7 +16,7 @@ export const DOCK_H = 120;
 export const TURRET_ORDER = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 export const TURRET_ORDER_WITH_HEALER = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm', 'healer'] as const;
 export function mapHasHealer(mechanic?: string): boolean {
-  return mechanic === 'mars-storms' || mechanic === 'medieval-frenzy';
+  return mechanic === 'mars-storms' || mechanic === 'medieval-frenzy' || mechanic === 'volcano-lava-geyser';
 }
 export function activeTurretOrder(mechanic?: string): readonly string[] {
   return mapHasHealer(mechanic) ? TURRET_ORDER_WITH_HEALER : TURRET_ORDER;

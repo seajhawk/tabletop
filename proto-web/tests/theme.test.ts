@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { getTheater, THEMES, type ThemeId } from '../src/theme';
 
-const THEME_IDS: ThemeId[] = ['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn'];
+const THEME_IDS: ThemeId[] = ['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab'];
 const TURRET_IDS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_IDS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
 
 describe('theater themes', () => {
-  it('returns space theme by default and resolves all 7 themes by id', () => {
+  it('returns space theme by default and resolves all 10 themes by id', () => {
     expect(getTheater(undefined).id).toBe('space');
     expect(getTheater('space').id).toBe('space');
     expect(getTheater('military').id).toBe('military');
@@ -15,7 +15,10 @@ describe('theater themes', () => {
     expect(getTheater('medieval').id).toBe('medieval');
     expect(getTheater('kitchen').id).toBe('kitchen');
     expect(getTheater('lawn').id).toBe('lawn');
-    expect(Object.keys(THEMES)).toEqual(['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn']);
+    expect(getTheater('cyber').id).toBe('cyber');
+    expect(getTheater('volcano').id).toBe('volcano');
+    expect(getTheater('biolab').id).toBe('biolab');
+    expect(Object.keys(THEMES)).toEqual(THEME_IDS);
   });
 
   it.each(THEME_IDS)('defines complete labels, colors, equipment, enemies, and waves for %s', (id) => {
@@ -302,5 +305,25 @@ describe('theater themes', () => {
     expect(lawn.waveNames[1]).toBe('Ant Hill');
     expect(lawn.waveNames[10]).toBe('Millipede Queen');
     expect(lawn.helpText).toContain('Lawn Thumper');
+  });
+
+  it('defines Neon Cybergrid, Volcanic Caldera, and Bio-Lab Outbreak themes cleanly', () => {
+    const cyber = getTheater('cyber');
+    expect(cyber.spawnLabel).toBe('INGRESS');
+    expect(cyber.objectiveLabel).toBe('CPU CORE');
+    expect(cyber.turrets.pulse.shortName).toBe('Arc Node');
+    expect(cyber.boostLabel).toBe('+CLK');
+
+    const volcano = getTheater('volcano');
+    expect(volcano.spawnLabel).toBe('MAGMA RIFT');
+    expect(volcano.objectiveLabel).toBe('OBSIDIAN VAULT');
+    expect(volcano.turrets.healer?.shortName).toBe('Forge Drone');
+    expect(volcano.wallLabel).toBe('BASALT');
+
+    const biolab = getTheater('biolab');
+    expect(biolab.spawnLabel).toBe('INFECTION');
+    expect(biolab.objectiveLabel).toBe('VITAL CORE');
+    expect(biolab.turrets.pulse.shortName).toBe('T-Cell');
+    expect(biolab.boostLabel).toBe('+BIO');
   });
 });

@@ -1,11 +1,12 @@
 # Coordination handoff
 
-Updated: 2026-11-21 ~11:32 PM Pacific. Pass 22 complete (Roomba -> Goomba, Goomba/Knight
-speed -25%, regen rate -20%, damage -30%, silent healer auto-deploy) & two PWA fixes complete.
+Updated: 2026-11-22 ~12:22 PM Pacific. Pass 23 complete: added 3 new distinct maps
+(Neon Cybergrid, Volcanic Caldera, Bio-Lab Outbreak) with custom art & unique twists;
+12 maps / 10 themes total. Manifest/PWA & benchmark work preserved.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative five-hour interval.
-Rearmed FIRST at this restart (~8:08 PM Pacific Nov 21; next ~1:08 AM Nov 22).
+Rearmed FIRST at this restart (~11:12 AM Pacific Nov 22; next ~4:12 PM Nov 22).
 After a quota/usage stall, update SAME timer for five hours from restart before
 reading the handoff or implementing. Never fixed daily; ordinary messages do not reset it.
 Automation updates require `destination: "thread"`.
@@ -13,8 +14,13 @@ Automation updates require `destination: "thread"`.
 ## Objective and current game
 - Selected PixiJS/TypeScript in `proto-web/`; canonical `shared-data/`.
   Godot is historical. Read `docs/GAME-DESIGN.md` only as needed.
-- 9 maps / 7 themes, 7 layouts including rotated phone court; fixed 60 Hz sim,
+- 12 maps / 10 themes, 7 layouts including rotated phone court; fixed 60 Hz sim,
   independent multi-touch; 5 canonical turret roles plus Healer defense (`125 cr`).
+- Pass 23 (`shared-data/maps.json`, `theme.ts`, `sim/game.ts`, `layout.ts`, `render.ts`,
+  `main.ts`, `audio.ts`, `public/assets/{cyber,volcano,biolab}-map.jpg`):
+  added **Neon Cybergrid** (`cyber-emp-chain`: Arc Node chain lightning + EMP Glitch),
+  **Volcanic Caldera** (`volcano-lava-geyser`: Lava Geyser FireZones + Basalt Plateaus + Forge Drone healer),
+  and **Bio-Lab Outbreak** (`biolab-mutate-regen`: pathogen HP regen halted by Antibody slow + Mutation Surge + Macro-Amoeba mitosis split).
 - Mars meteors/damage/credit repair & Repair Bot; Medieval one-breath first-hit-dodge
   dragons, keep walls, half-rate trebuchets, knights/fire zones & Healer;
   Kitchen counters/stove/Goombas; Lawn opposite-90-degree centipede splits.
@@ -36,37 +42,41 @@ Automation updates require `destination: "thread"`.
 
 ## Historical benchmark work
 - Harness `scripts/benchmark-browser.js`; guide `docs/BENCHMARKING.md`.
-  Default sustained profile stays fixed-Swarmer. Theater retains natural extras
-  above floor 150, halts above cap 450; tracks cues/effects, tower HP and operational count.
-- Opt-in `profile:'theater', towerTier:2`: validates 20 canonical base towers,
-  uses 40 real upgrades, grants/spends 4280, preserves owner wallets.
-- Lawn: 75 split cues, peak 29 split children, population 150–160; 20 working towers.
-  Medieval: peak 7 active fire zones and 40 knights; HP 3300->1041.6, working towers 20->7.
-- Report: `docs/PERFORMANCE-TIER2.md`; raw: `docs/benchmarks/2026-11-21-tier2-*.json`.
+  Theater tier2:20 towers,40 real upgrades,4280 spent; natural extras,150 floor/450 cap.
+- Lawn:75 split cues/29 children; Medieval:7 fire zones/40 knights,20->7 working towers.
+  Historical report/raw: `docs/PERFORMANCE-TIER2.md`, `docs/benchmarks/2026-11-21-tier2-*.json`.
 
 ## PWA fixes and verification
 - SW caches use `ga-scope-app:<encoded base>:`; siblings and legacy workers cannot
   prune another app's cache. Legacy exact-path asset fallback retained; old caches preserved.
 - Installer drains each response body before the next fetch and stages native clones.
   This fixed an observed install stall without exposing a partial cache on download failure.
-- `npm --prefix proto-web test -- --run tests/sw.test.mjs tests/pwa.test.ts`: 43/43 PASS.
-  Syntax checks passed for worker and both new smoke scripts.
-- Fresh synthetic A/B production fixtures built for /, /tabletop/, /TTDefense/:
-  22 files each, no replacement of existing dist. Chromium158, local loopback only.
-- Root and /TTDefense/ lifecycle: 25 checks each; sibling isolation/offline reopen:12.
-  Verified full activation, offline boots/assets, blocked waiting update while progress
-  exists, exactly one reload after reset, preserved storage. Zero warnings/errors.
+- Focused manifest/worker/controller unit checks:47/47 PASS (4+21+22), Nov22.
+  Syntax checks passed; fresh production fixture builds succeeded for all three bases.
+- Fresh synthetic A/B production fixtures for /, /tabletop/, /TTDefense/: 23 files
+  including distinct revision probes. Existing dist untouched; Chromium158, loopback only.
+- Multi-tab root and /TTDefense/:34 checks each. Updating a fresh tab preserves the
+  other tab's A document/tower/ledger/wallet under B's controller; old assets work offline.
+  Explicit reset/update then reloads to B offline exactly once; the other tab stays put.
+- Lifecycle:25 checks per root/subpath; sibling reopen:12. Total130 PASS, no warnings/errors.
 - Report/reproduction: `docs/PWA-VERIFICATION.md`; latest raw evidence:
-  `docs/verification/2026-11-21-2009-pwa-*.json`. Earlier 3:24 PM results retained.
+  `docs/verification/2026-11-22-0116-pwa-*.json`. Earlier results retained.
 - Helpers: `scripts/pwa-smoke-server.mjs`, `scripts/pwa-smoke-browser.js`.
-  All Claude/review workers complete; isolated browser contexts and fixture server closed.
-- Prior Pass 21 feature chat reported data/typecheck/build/unit/visual checks PASS;
-  screenshot `.tasks/pass21-responsive-1to1-board-and-larger-docks.png`.
-- No deployment, paid Foundry call or commit in this PWA work. Native installation,
-  target hardware touch/DPI/thermal behavior and public CDN updates remain unverified.
+  PWA workers/contexts/server closed; desktop CLI logs `.tasks/claude-pwa-desktop*.log`.
+  Claude initial exec89987 complete; active review fixes exec71179:
+  `.tasks/claude-boss-healer-review-fixes.log`. Fixture server exec80288 on4187 (10min cap).
+- Desktop:36/36 PASS, Chrome158 Windows, standalone installed app cold-launched with
+  server off; exact app navigation from worker Cache Storage, storage preserved, uninstall
+  verified and no test shortcuts remain. Helper `scripts/pwa-desktop-smoke.mjs` uses local
+  CDP pipe; report/raw: `docs/PWA-DESKTOP-VERIFICATION.md`, `docs/verification/2026-11-22-desktop-*.json`.
+- Removed manifest `id:"./"` (origin-root collision); Chrome now reports distinct root,
+  tabletop and TTDefense identities. Existing-install identity migration remains unverified.
+- No deployment, paid Foundry call or commit. Physical touch/DPI/thermal, normal-user
+  install dialogs, other browsers, public CDN updates and release migration remain unverified.
 
 ## Next
 1. Target hardware: actual multi-touch, DPI comfort, sustained thermal playtest.
-2. Verify native PWA/PC installation and real release migration on target OS/browser.
+2. Verify normal-user install prompts and real release migration; preserve existing apps.
 3. Publish the local PWA fixes only when deployment is authorized; this heartbeat
-   does not authorize public publication. Healer/boss performance is still unmeasured.
+   does not authorize public publication.
+4. Healer/boss effects remain unmeasured; use the existing theater harness for a bounded check.

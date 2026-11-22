@@ -167,13 +167,13 @@ export class SoundEngine {
       this.synthesizeMilitary(ev);
     } else if (this.theme === 'naval') {
       this.synthesizeNaval(ev);
-    } else if (this.theme === 'mars') {
+    } else if (this.theme === 'mars' || this.theme === 'volcano') {
       this.synthesizeMars(ev);
     } else if (this.theme === 'medieval') {
       this.synthesizeMedieval(ev);
     } else if (this.theme === 'kitchen') {
       this.synthesizeKitchen(ev);
-    } else if (this.theme === 'lawn') {
+    } else if (this.theme === 'lawn' || this.theme === 'biolab') {
       this.synthesizeLawn(ev);
     } else {
       this.synthesize(ev);

@@ -447,7 +447,7 @@ describe('weapons, shields, armor, flying, and boss mechanics', () => {
     expect(g2.currentMap.id).toBe('pacific-fleet');
     g2.setMap(7);
     expect(g2.currentMap.id).toBe('asteroid-belt');
-    g2.setMap(9); // wraps modulo 9 -> 0
+    g2.setMap(12); // wraps modulo 12 -> 0
     expect(g2.mapIndex).toBe(0);
     expect(g2.currentMap.id).toBe('orbital-crossing');
   });
@@ -647,9 +647,9 @@ describe('1-Player Solo Mode balance', () => {
 });
 
 describe('new theater maps & mechanics', () => {
-  it('loads all 9 maps and runs stress setup cleanly on the new theaters', () => {
+  it('loads all 12 maps and runs stress setup cleanly on the new theaters', () => {
     const d = loadData();
-    expect(d.maps.length).toBe(9);
+    expect(d.maps.length).toBe(12);
     expect(d.maps.map((m) => m.id)).toEqual([
       'orbital-crossing',
       'dc-defense',
@@ -660,6 +660,9 @@ describe('new theater maps & mechanics', () => {
       'backyard-lawn',
       'asteroid-belt',
       'nebula-rift',
+      'neon-cybergrid',
+      'volcanic-caldera',
+      'biolab-outbreak',
     ]);
 
     const g = newGame(2);
@@ -669,6 +672,9 @@ describe('new theater maps & mechanics', () => {
       [4, 'ironhold-keep'],
       [5, 'kitchen-raid'],
       [6, 'backyard-lawn'],
+      [9, 'neon-cybergrid'],
+      [10, 'volcanic-caldera'],
+      [11, 'biolab-outbreak'],
     ] as const) {
       g.setMap(idx);
       expect(g.currentMap.id).toBe(expectedId);
@@ -1925,5 +1931,94 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     expect(dmgA.hp).toBeGreaterThan(20);
     expect(dmgB.hp).toBeGreaterThan(30);
     expect(g.totalCredits()).toBeCloseTo(g.expectedCredits(), 5);
+  });
+
+  it('Neon Cybergrid: Arc Node chains lightning to nearby enemies and EMP Glitch jams non-boosted defenses', () => {
+    const g = newGame(2);
+    const idx = g.data.maps.findIndex(m => m.id === 'neon-cybergrid');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    g.setMap(idx);
+    g.grant(0, 500);
+
+    // Place a boosted pulse on [9,3] and a non-boosted pulse on [11,3]
+    expect(g.tryPlace(0, 'pulse', 9, 3).ok).toBe(true);
+    expect(g.tryPlace(0, 'pulse', 11, 3).ok).toBe(true);
+    const [boostedArc, plainArc] = g.towers;
+    expect(boostedArc.boosted).toBe(true);
+    expect(plainArc.boosted).toBe(false);
+
+    g.launchWave();
+    g.spawners = [];
+    const e1 = makeEnemy(g, 9941, 'cruiser', 10.5, 4.0, { hp: 500, maxHp: 500 });
+    const e2 = makeEnemy(g, 9942, 'cruiser', 11.8, 4.0, { hp: 500, maxHp: 500 });
+    g.enemies = [e1, e2];
+
+    // Chain lightning from boostedArc hits both e1 and nearby e2
+    boostedArc.cooldown = 0.01;
+    plainArc.cooldown = 10;
+    g.step(1 / 60);
+    expect(e1.hp).toBeLessThan(500);
+    expect(e2.hp).toBeLessThan(500);
+
+    // During EMP Glitch, plainArc is jammed while boostedArc keeps firing
+    g.empActive = true;
+    const hpBefore = e1.hp;
+    plainArc.cooldown = 0.01;
+    boostedArc.cooldown = 10;
+    g.step(1 / 60);
+    expect(e1.hp).toBe(hpBefore);
+
+    boostedArc.cooldown = 0.01;
+    g.step(1 / 60);
+    expect(e1.hp).toBeLessThan(hpBefore);
+  });
+
+  it('Volcanic Caldera: supports Basalt wallCells, Healer Forge Drone, and Lava Geysers leaving burning FireZones', () => {
+    const g = newGame(2);
+    const idx = g.data.maps.findIndex(m => m.id === 'volcanic-caldera');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    g.setMap(idx);
+    g.grant(0, 500);
+
+    expect(g.hasDefeatableDefenses()).toBe(true);
+    expect(g.tryPlace(0, 'pulse', 7, 2).ok).toBe(true);
+    expect(g.towers[0].onWall).toBe(true);
+    expect(g.tryPlace(0, 'healer', 10, 6).ok).toBe(true);
+
+    g.launchWave();
+    g.spawners = [];
+    g.enemies = [makeEnemy(g, 9951, 'cruiser', 4.5, 7.5, { hp: 2000, maxHp: 2000 })];
+    g.geyserTimer = 0.01;
+    run(g, 1.6);
+    expect(g.fireZones.some(fz => fz.active)).toBe(true);
+  });
+
+  it('Bio-Lab Outbreak: pathogens regenerate HP unless slowed by Antibody and Macro-Amoeba splits on death', () => {
+    const g = newGame(2);
+    const idx = g.data.maps.findIndex(m => m.id === 'biolab-outbreak');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    g.setMap(idx);
+
+    g.launchWave();
+    g.spawners = [];
+    const e1 = makeEnemy(g, 9961, 'cruiser', 10.5, 7.5, { hp: 200, maxHp: 500 });
+    g.enemies = [e1];
+
+    // Unslowed pathogen regenerates HP
+    run(g, 1.0);
+    expect(e1.hp).toBeGreaterThan(200);
+
+    // Slowed by Antibody (slowT > 0) halts regeneration
+    const hpSlowStart = e1.hp;
+    e1.slowT = 2.0;
+    run(g, 0.5);
+    expect(e1.hp).toBeCloseTo(hpSlowStart, 5);
+
+    // Killing Macro-Amoeba splits into 2 smaller children
+    e1.hp = 1;
+    expect(g.tryPlace(0, 'pulse', 11, 8).ok).toBe(true);
+    g.towers[0].cooldown = 0.01;
+    g.step(1 / 60);
+    expect(g.enemies.filter(e => !e.dead && e.isSplitChild).length).toBe(2);
   });
 });

@@ -3,8 +3,16 @@ export type GameSpeed = 1 | 2;
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export const WAVE_COUNTS = [5, 10, 15, 20, 30] as const;
 export type WaveCount = typeof WAVE_COUNTS[number];
-export type MapTheme = 'space' | 'military' | 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn';
-export type MapMechanic = 'naval-subs-mines' | 'mars-storms' | 'medieval-frenzy' | 'kitchen-rush' | 'lawn-split-burrow';
+export type MapTheme = 'space' | 'military' | 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab';
+export type MapMechanic =
+  | 'naval-subs-mines'
+  | 'mars-storms'
+  | 'medieval-frenzy'
+  | 'kitchen-rush'
+  | 'lawn-split-burrow'
+  | 'cyber-emp-chain'
+  | 'volcano-lava-geyser'
+  | 'biolab-mutate-regen';
 
 export interface DifficultyPreset {
   id: Difficulty;

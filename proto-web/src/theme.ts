@@ -443,6 +443,180 @@ const LAWN_THEME: TheaterTheme = {
   },
 };
 
+const CYBER_THEME: TheaterTheme = {
+  id: 'cyber',
+  spaceBg: 0x070a14,
+  boardBg: 0x0b0f1d,
+  gridColor: 0x38e8ff,
+  borderColor: 0x22d3ee,
+  panelBg: 0x0d1324,
+  slotBg: 0x131d36,
+  routeDotColor: 0x22d3ee,
+  routePulseColor: 0xf472b6,
+  spawnLabel: 'INGRESS',
+  objectiveLabel: 'CPU CORE',
+  bossTitle: 'ROOTKIT TITAN',
+  victoryTitle: 'CORE SECURED',
+  defeatTitle: 'SYSTEM BREACHED',
+  helpText:
+    'Defend the CPU Mainframe Core from rogue malware in Neon Cybergrid! ' +
+    'Firewall Beams chain lightning to nearby packets, Overclock Pads supercharge defenses, ' +
+    'and watch for periodic EMP Glitches that jam non-boosted defenses for 2.5s!',
+  obstacleLabel: 'Heatsink',
+  boostLabel: '+CLK',
+  roleTags: {
+    pulse: 'ARC',
+    plasma: 'BOMB',
+    stasis: 'LAG',
+    railgun: 'TRACE',
+    swarm: 'BOT',
+  },
+  turrets: {
+    pulse: { shortName: 'Arc Node', fullName: 'Firewall Arc Node', upgrades: ['Dual Arcs', 'Chain Lightning'], color: 0x38e8ff },
+    plasma: { shortName: 'Logic Bomb', fullName: 'Logic Bomb Mortar', upgrades: ['Fork Bomb', 'Kernel Wipe'], color: 0xf472b6 },
+    stasis: { shortName: 'Ping Lag', fullName: 'Packet Throttler', upgrades: ['Deep Lag', 'DDoS Freeze'], color: 0x818cf8 },
+    railgun: { shortName: 'Trace Beam', fullName: 'Zero-Day Tracer', upgrades: ['Deep Scan', 'Root Purge'], color: 0xfacc15 },
+    swarm: { shortName: 'Hunter Bot', fullName: 'Antivirus Swarm', upgrades: ['Quad Bots', 'Heuristic Pack'], color: 0x34d399 },
+  },
+  enemies: {
+    scout: { name: 'Data Worm', color: 0xf472b6 },
+    swarmer: { name: 'Spam Bot', color: 0xe879f9 },
+    cruiser: { name: 'Trojan Block', color: 0xa855f7 },
+    frigate: { name: 'Proxy Shield', color: 0x38bdf8 },
+    phase: { name: 'Zero-Day Glitch', color: 0xfb7185 },
+    dreadnought: { name: 'Rootkit Titan', color: 0xef4444 },
+  },
+  waveNames: {
+    1: 'Port Scan',
+    2: 'Botnet Flood',
+    3: 'Trojan Payload',
+    4: 'Encrypted Proxy',
+    5: 'Zero-Day Exploit',
+    6: 'Buffer Overflow',
+    7: 'DDoS Surge',
+    8: 'Kernel Panic',
+    9: 'Ransomware Siege',
+    10: 'Rootkit Titan',
+  },
+};
+
+const VOLCANO_THEME: TheaterTheme = {
+  id: 'volcano',
+  spaceBg: 0x160c09,
+  boardBg: 0x261611,
+  gridColor: 0xffb38a,
+  borderColor: 0xea580c,
+  panelBg: 0x21110c,
+  slotBg: 0x301912,
+  routeDotColor: 0xfb923c,
+  routePulseColor: 0xfef08a,
+  spawnLabel: 'MAGMA RIFT',
+  objectiveLabel: 'OBSIDIAN VAULT',
+  bossTitle: 'CALDERA COLOSSUS',
+  victoryTitle: 'VAULT PRESERVED',
+  defeatTitle: 'VAULT MELTED',
+  helpText:
+    'Defend the Obsidian Vault inside an active Volcanic Caldera! ' +
+    'Build on Basalt Plateaus (+15% range) & Thermal Forge Vents (+PWR), ' +
+    'deploy Repair Bots to mend magma-scorched defenses, and use Cryo/Slag weapons against erupting Lava Geysers & armored elementals!',
+  obstacleLabel: 'Lava Pool',
+  wallLabel: 'BASALT',
+  boostLabel: '+FORGE',
+  roleTags: {
+    pulse: 'SHARD',
+    plasma: 'MAGMA',
+    stasis: 'CRYO',
+    railgun: 'LANCE',
+    swarm: 'EMBER',
+    healer: 'MEND',
+  },
+  turrets: {
+    pulse: { shortName: 'Obsidian', fullName: 'Obsidian Shard Gun', upgrades: ['Twin Shards', 'Volcanic Glass'], color: 0xf59e0b },
+    plasma: { shortName: 'Slag Mortar', fullName: 'Molten Slag Mortar', upgrades: ['Magma Bomb', 'Eruption Pit'], color: 0xf97316 },
+    stasis: { shortName: 'Cryo Vent', fullName: 'Cryo Coolant Vent', upgrades: ['Flash Quench', 'Thermal Shatter'], color: 0x38bdf8 },
+    railgun: { shortName: 'Core Lance', fullName: 'Geothermal Lance', upgrades: ['Superheated', 'Mantle Piercer'], color: 0xfef08a },
+    swarm: { shortName: 'Cinder Pod', fullName: 'Cinder Seeker Pod', upgrades: ['Ash Volley', 'Pyro Barrage'], color: 0xfb7185 },
+    healer: { shortName: 'Forge Drone', fullName: 'Forge Repair Bay', upgrades: ['Heat Shield', 'Titanium Welder'], color: 0x34d399 },
+  },
+  enemies: {
+    scout: { name: 'Cinder Imp', color: 0xfb923c },
+    swarmer: { name: 'Ash Skitter', color: 0xf97316 },
+    cruiser: { name: 'Magma Golem', color: 0xdc2626 },
+    frigate: { name: 'Basalt Shell', color: 0x9ca3af },
+    phase: { name: 'Pyro Wyvern', color: 0xfacc15 },
+    dreadnought: { name: 'Caldera Colossus', color: 0x991b1b },
+  },
+  waveNames: {
+    1: 'First Tremor',
+    2: 'Ash Swarm',
+    3: 'Golem March',
+    4: 'Basalt Phalanx',
+    5: 'Wyvern Thermal',
+    6: 'Fissure Breach',
+    7: 'Pyroclastic Flow',
+    8: 'Obsidian Siege',
+    9: 'Caldera Fury',
+    10: 'Caldera Colossus',
+  },
+};
+
+const BIOLAB_THEME: TheaterTheme = {
+  id: 'biolab',
+  spaceBg: 0x160912,
+  boardBg: 0x260f1e,
+  gridColor: 0xf9a8d4,
+  borderColor: 0xec4899,
+  panelBg: 0x210d1b,
+  slotBg: 0x301427,
+  routeDotColor: 0xf472b6,
+  routePulseColor: 0x4ade80,
+  spawnLabel: 'INFECTION',
+  objectiveLabel: 'VITAL CORE',
+  bossTitle: 'OMEGA PATHOGEN',
+  victoryTitle: 'IMMUNITY WON',
+  defeatTitle: 'HOST INFECTED',
+  helpText:
+    'Protect the Vital Stem-Cell Core inside the microscopic bloodstream! ' +
+    'Pathogens regenerate HP over time — place Enzyme Nodes (+BIO) and Antibody Cryo-Gel to halt regeneration, ' +
+    'and watch for Mutation Surges that make surviving microbes split or accelerate!',
+  obstacleLabel: 'Cell Wall',
+  boostLabel: '+BIO',
+  roleTags: {
+    pulse: 'CELL',
+    plasma: 'ACID',
+    stasis: 'ANTIB',
+    railgun: 'LASER',
+    swarm: 'PHAGE',
+  },
+  turrets: {
+    pulse: { shortName: 'T-Cell', fullName: 'Killer T-Cell Pod', upgrades: ['Cytokine Burst', 'Hyper-Lymph'], color: 0x4ade80 },
+    plasma: { shortName: 'Enzyme Bomb', fullName: 'Lysosome Mortar', upgrades: ['Digestive Acid', 'Bio-Dissolve'], color: 0xfbbf24 },
+    stasis: { shortName: 'Antibody', fullName: 'Antibody Suppressor', upgrades: ['Clotting Gel', 'Regen Blocker'], color: 0x2dd4bf },
+    railgun: { shortName: 'UV Scalpel', fullName: 'Micro-UV Laser', upgrades: ['DNA Cleaver', 'Sterilizer Beam'], color: 0xe879f9 },
+    swarm: { shortName: 'Phage Pod', fullName: 'Bacteriophage Hive', upgrades: ['Quad Phages', 'Lytic Swarm'], color: 0x38bdf8 },
+  },
+  enemies: {
+    scout: { name: 'Rhinovirus', color: 0x4ade80 },
+    swarmer: { name: 'Spore Cocci', color: 0xa3e635 },
+    cruiser: { name: 'Macro-Amoeba', color: 0xf43f5e },
+    frigate: { name: 'Capsid Shield', color: 0xc084fc },
+    phase: { name: 'Airborne Prion', color: 0xfbbf24 },
+    dreadnought: { name: 'Omega Pathogen', color: 0xbe123c },
+  },
+  waveNames: {
+    1: 'Initial Exposure',
+    2: 'Bacterial Bloom',
+    3: 'Amoeba Mitosis',
+    4: 'Capsid Strain',
+    5: 'Prion Drift',
+    6: 'Viral Load',
+    7: 'Cytokine Storm',
+    8: 'Resistant Strain',
+    9: 'Systemic Sepsis',
+    10: 'Omega Pathogen',
+  },
+};
+
 export const THEMES: Record<ThemeId, TheaterTheme> = {
   space: SPACE_THEME,
   military: MILITARY_THEME,
@@ -451,6 +625,9 @@ export const THEMES: Record<ThemeId, TheaterTheme> = {
   medieval: MEDIEVAL_THEME,
   kitchen: KITCHEN_THEME,
   lawn: LAWN_THEME,
+  cyber: CYBER_THEME,
+  volcano: VOLCANO_THEME,
+  biolab: BIOLAB_THEME,
 };
 
 export function getTheater(theme?: string): TheaterTheme {
@@ -467,6 +644,12 @@ export function getTheater(theme?: string): TheaterTheme {
       return KITCHEN_THEME;
     case 'lawn':
       return LAWN_THEME;
+    case 'cyber':
+      return CYBER_THEME;
+    case 'volcano':
+      return VOLCANO_THEME;
+    case 'biolab':
+      return BIOLAB_THEME;
     case 'space':
     default:
       return SPACE_THEME;

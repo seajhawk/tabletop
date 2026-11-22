@@ -555,6 +555,7 @@ export class Renderer {
     if (themeId === 'naval' || themeId === 'mars' || themeId === 'medieval' || themeId === 'kitchen' || themeId === 'lawn') {
       return this.theaterTex[themeId];
     }
+    if (themeId === 'volcano') return this.theaterTex.mars;
     return null;
   }
 
@@ -760,6 +761,24 @@ export class Renderer {
         obs.scale.x *= (ax + ay) % 2 ? -1 : 1;
         this.bg.addChild(obs);
       }
+    } else if (theme.id === 'cyber') {
+      const ast = new Graphics();
+      for (const [ax, ay] of map.asteroids) {
+        const x0 = ax * CELL + 2, y0 = ay * CELL + 2, sz = CELL - 4;
+        ast.roundRect(x0, y0, sz, sz, 4)
+          .fill({ color: 0x0e172a, alpha: 0.28 })
+          .stroke({ width: 1, color: 0x22d3ee, alpha: 0.30 });
+      }
+      this.bg.addChild(ast);
+    } else if (theme.id === 'biolab') {
+      const ast = new Graphics();
+      for (const [ax, ay] of map.asteroids) {
+        const cx = (ax + 0.5) * CELL, cy = (ay + 0.5) * CELL;
+        ast.circle(cx, cy, CELL * 0.40)
+          .fill({ color: 0x5c243b, alpha: 0.22 })
+          .stroke({ width: 1, color: 0xf9a8d4, alpha: 0.28 });
+      }
+      this.bg.addChild(ast);
     } else {
       const ast = new Graphics();
       for (const [ax, ay] of map.asteroids) {
@@ -780,8 +799,10 @@ export class Renderer {
 
     // boost cells (Mars Geothermal Vents, Medieval Arcane Runes, Kitchen Stove Burners, Lawn Patio Pads)
     if (map.boostCells?.length) {
-      const boostCol = theme.id === 'kitchen' ? 0xff8c2b
+      const boostCol = theme.id === 'kitchen' || theme.id === 'volcano' ? 0xff8c2b
         : theme.id === 'lawn' ? 0xc8f052
+        : theme.id === 'cyber' ? 0xfacc15
+        : theme.id === 'biolab' ? 0x2dd4bf
         : theme.id === 'mars' ? 0xffa64d
         : 0x62f2ff;
       const boostLabel = theme.boostLabel ?? '+PWR';
@@ -1696,8 +1717,10 @@ export class Renderer {
 
         const bg = mt.badge.clear();
         if (t.boosted) {
-          const boostCol = theme.id === 'kitchen' ? 0xff8c2b
+          const boostCol = theme.id === 'kitchen' || theme.id === 'volcano' ? 0xff8c2b
             : theme.id === 'lawn' ? 0xc8f052
+            : theme.id === 'cyber' ? 0xfacc15
+            : theme.id === 'biolab' ? 0x2dd4bf
             : theme.id === 'mars' ? 0xffa64d
             : 0x62f2ff;
           bg.circle(0, 0, CELL * 0.45).stroke({ width: 1.8, color: boostCol, alpha: 0.82 });
@@ -2500,7 +2523,9 @@ export class Renderer {
     const g = this.stormG.clear();
     const isMarsStorm = gm.currentMap.mechanic === 'mars-storms' && gm.stormActive;
     const isKitchenRush = gm.currentMap.mechanic === 'kitchen-rush' && gm.rushActive;
-    if (!isMarsStorm && !isKitchenRush) {
+    const isCyberEmp = gm.currentMap.mechanic === 'cyber-emp-chain' && gm.empActive;
+    const isBioMutation = gm.currentMap.mechanic === 'biolab-mutate-regen' && gm.mutationActive;
+    if (!isMarsStorm && !isKitchenRush && !isCyberEmp && !isBioMutation) {
       if (this.stormAlertG.visible) this.stormAlertG.visible = false;
       if (this.stormAlertText.visible) this.stormAlertText.visible = false;
       return;
@@ -2525,6 +2550,21 @@ export class Renderer {
       }
       this.stormAlertText.text = 'DUST STORM · RANGE -20% (VENTS/T2 IMMUNE)';
       this.stormAlertText.style.fill = 0xffd394;
+    } else if (isCyberEmp) {
+      // Electric cyan/magenta scanline glitch overlay
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0x06b6d4, alpha: 0.09 });
+      for (let i = 0; i < 16; i++) {
+        const y = ((hash(i, 71) * BOARD_H + gm.time * 190 * (i % 2 === 0 ? 1 : -1)) % BOARD_H + BOARD_H) % BOARD_H;
+        g.moveTo(0, y).lineTo(BOARD_W, y).stroke({ width: 1.5, color: i % 2 === 0 ? 0x38e8ff : 0xf472b6, alpha: 0.22 });
+      }
+      this.stormAlertText.text = 'EMP GLITCH · NON-OVERCLOCKED DEFENSES JAMMED';
+      this.stormAlertText.style.fill = 0x38e8ff;
+    } else if (isBioMutation) {
+      // Pulsing bio-crimson surge overlay
+      const pulse = 0.06 + 0.04 * Math.sin(gm.time * 8);
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0xec4899, alpha: pulse });
+      this.stormAlertText.text = 'MUTATION SURGE · +25% SPEED & 2x REGEN';
+      this.stormAlertText.style.fill = 0x86efac;
     } else {
       // Soft icy cyan-white translucent fridge-light trapezoid/mist radiating leftward from open fridge (exits)
       const exits = gm.currentMap.exits;
@@ -2568,11 +2608,13 @@ export class Renderer {
     const py = hasBoss ? board.y + topOffset + 40 : board.y + topOffset;
     const pw = Math.min(350, board.w - 20), ph = 24;
     const px = board.x + board.w / 2 - pw / 2;
+    const alertBg = isKitchenRush || isCyberEmp ? 0x0c2433 : isBioMutation ? 0x2b0a1f : 0x2b1208;
+    const alertStroke = isKitchenRush ? 0x6ee7ff : isCyberEmp ? 0x38e8ff : isBioMutation ? 0x4ade80 : 0xff8c42;
     this.stormAlertG.visible = true;
     this.stormAlertG.clear()
       .roundRect(px, py, pw, ph, 7)
-      .fill({ color: isKitchenRush ? 0x0c2433 : 0x2b1208, alpha: 0.90 })
-      .stroke({ width: 1.5, color: isKitchenRush ? 0x6ee7ff : 0xff8c42, alpha: 0.92 });
+      .fill({ color: alertBg, alpha: 0.90 })
+      .stroke({ width: 1.5, color: alertStroke, alpha: 0.92 });
     this.stormAlertText.visible = true;
     this.stormAlertText.style.fontSize = board.w < 560 ? 10 : 11;
     this.stormAlertText.position.set(board.x + board.w / 2, py + ph / 2);
