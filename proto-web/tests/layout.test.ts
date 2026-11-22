@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  adaptLayout, BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, DOCK_H, DOCK_W,
+  adaptLayout, BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, cyclePlayersLayout, cycleScreenLayout, DOCK_H, DOCK_W,
   dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton,
-  hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, LAYOUTS, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
+  hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, isPhoneLayout, LAYOUTS, layoutsForPlayers, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
   radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect,
   SUMMARY_BUTTON_IDS, summaryButtonRects, summaryCardRect, TURRET_ORDER, Viewport, WORLD_H, WORLD_W, worldToBoardLocal,
   worldToDock,
@@ -151,8 +151,11 @@ describe('rotation-aware dock layout', () => {
     }
   });
 
-  it('all 7 layouts are present in LAYOUTS', () => {
-    expect(LAYOUTS.map(l => l.id)).toEqual(['2p-opposing', '2p-phone', '1p-base', '1p-phone', '4p-edges', '4p-2x2', '4p-corners']);
+  it('all 9 layouts (1P..4P) are present in LAYOUTS', () => {
+    expect(LAYOUTS.map(l => l.id)).toEqual([
+      '2p-opposing', '2p-phone', '1p-base', '1p-phone',
+      '3p-edges', '3p-2v1', '4p-edges', '4p-2x2', '4p-corners',
+    ]);
   });
 
   for (const L of LAYOUTS) {
@@ -327,10 +330,32 @@ describe('rotation-aware dock layout', () => {
 describe('hud + viewport', () => {
   it('always-on HUD buttons and settings/summary button IDs match contract', () => {
     expect(HUD_BUTTON_IDS).toEqual(['wave', 'pause', 'fullscreen', 'settings']);
-    expect(SETTINGS_BUTTON_IDS).toEqual(['map', 'layout', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close']);
+    expect(SETTINGS_BUTTON_IDS).toEqual(['map', 'players', 'screen', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close']);
     expect(SUMMARY_BUTTON_IDS).toEqual(['add-waves', 'play-again', 'next-map']);
     expect(BUTTON_IDS).toEqual([...HUD_BUTTON_IDS, ...SETTINGS_BUTTON_IDS, ...SUMMARY_BUTTON_IDS]);
     expect(TURRET_ORDER).toEqual(['pulse', 'plasma', 'stasis', 'railgun', 'swarm']);
+
+    // Supports 1, 2, 3, and 4 players with separate Players & Screen cycling
+    expect([1, 2, 3, 4].every(n => layoutsForPlayers(n).length >= 2)).toBe(true);
+    let idx = LAYOUTS.findIndex(l => l.id === '1p-base');
+    idx = cyclePlayersLayout(idx);
+    expect(LAYOUTS[idx].playerCount).toBe(2);
+    expect(isPhoneLayout(LAYOUTS[idx])).toBe(false);
+    idx = cyclePlayersLayout(idx);
+    expect(LAYOUTS[idx].playerCount).toBe(3);
+    const screenNext = cycleScreenLayout(idx);
+    expect(LAYOUTS[screenNext].playerCount).toBe(3);
+    expect(LAYOUTS[screenNext].id).not.toBe(LAYOUTS[idx].id);
+    idx = cyclePlayersLayout(idx);
+    expect(LAYOUTS[idx].playerCount).toBe(4);
+    idx = cyclePlayersLayout(idx);
+    expect(LAYOUTS[idx].playerCount).toBe(1);
+
+    // Phone preference is preserved between 1P and 2P
+    const p2Phone = LAYOUTS.findIndex(l => l.id === '2p-phone');
+    expect(LAYOUTS[cycleScreenLayout(p2Phone)].id).toBe('2p-opposing');
+    const p1Phone = LAYOUTS.findIndex(l => l.id === '1p-phone');
+    expect(LAYOUTS[cyclePlayersLayout(p1Phone)].id).toBe('2p-phone');
 
     for (const L of LAYOUTS) {
       for (const id of HUD_BUTTON_IDS) {
@@ -466,7 +491,7 @@ describe('settings modal geometry', () => {
       const rects = settingsButtonRects(L);
 
       it('has seven disjoint rows in the panel, ordered above the status and tip areas', () => {
-        const rows = [['map'], ['layout'], ['difficulty', 'waves'], ['speed', 'auto'], ['sfx', 'stats'], ['reset', 'stress'], ['install', 'update']] as const;
+        const rows = [['map'], ['players', 'screen'], ['difficulty', 'waves'], ['speed', 'auto'], ['sfx', 'stats'], ['reset', 'stress'], ['install', 'update']] as const;
         let prevBottom = -Infinity;
         for (const row of rows) {
           const top = rects[row[0]].y;
@@ -504,7 +529,7 @@ describe('settings modal geometry', () => {
           const r = rects[id];
           expect(hitSettingsButton(L, r.x + r.w / 2, r.y + r.h / 2)).toBe(id);
         }
-        const between = (rects.map.y + rects.map.h + rects.layout.y) / 2;
+        const between = (rects.map.y + rects.map.h + rects.players.y) / 2;
         expect(hitSettingsButton(L, rects.map.x + 10, between)).toBeNull();
         expect(hitSettingsButton(L, panel.x + panel.w / 2, panel.y + PHONE_SETTINGS.statusTop + 10)).toBeNull();
         expect(hitSettingsButton(L, 2, 2)).toBeNull();

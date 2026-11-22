@@ -1307,7 +1307,8 @@ export class Renderer {
       case 'settings': return '⚙';
       case 'close': return '✕';
       case 'map': return `Map: ${g.currentMap.name}`;
-      case 'layout': return `Layout: ${this.getLayout().name}`;
+      case 'players': return `Players: ${this.getLayout().playerCount}P`;
+      case 'screen': return `Screen: ${this.getLayout().screenLabel}`;
       case 'difficulty': return `Diff: ${DIFFICULTIES[g.difficulty].label}`;
       case 'waves': return `Waves: ${g.waveCount}`;
       case 'speed': return `Speed: ${g.speed}x`;

@@ -32,17 +32,21 @@ export interface Dock { player: number; cx: number; cy: number; rot: number; sca
 
 export const HUD_BUTTON_IDS = ['wave', 'pause', 'fullscreen', 'settings'] as const;
 export type HudButtonId = typeof HUD_BUTTON_IDS[number];
-export const SETTINGS_BUTTON_IDS = ['map', 'layout', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close'] as const;
+export const SETTINGS_BUTTON_IDS = ['map', 'players', 'screen', 'difficulty', 'waves', 'speed', 'auto', 'sfx', 'stats', 'reset', 'stress', 'install', 'update', 'close'] as const;
 export type SettingsButtonId = typeof SETTINGS_BUTTON_IDS[number];
 export const SUMMARY_BUTTON_IDS = ['add-waves', 'play-again', 'next-map'] as const;
 export type SummaryButtonId = typeof SUMMARY_BUTTON_IDS[number];
 export const BUTTON_IDS = [...HUD_BUTTON_IDS, ...SETTINGS_BUTTON_IDS, ...SUMMARY_BUTTON_IDS] as const;
 export type ButtonId = HudButtonId | SettingsButtonId | SummaryButtonId;
 
+export type PlayerCount = 1 | 2 | 3 | 4;
+export const PLAYER_COUNTS: readonly PlayerCount[] = [1, 2, 3, 4];
+
 export interface LayoutDef {
   id: string;
   name: string;
-  playerCount: number;
+  screenLabel: string;
+  playerCount: PlayerCount;
   stageW: number;
   stageH: number;
   board: Rect;
@@ -152,6 +156,7 @@ export const LAYOUTS: LayoutDef[] = [
   {
     id: '2p-opposing',
     name: '2P opposing',
+    screenLabel: 'Tabletop',
     playerCount: 2,
     stageW: WORLD_W,
     stageH: WORLD_H,
@@ -164,6 +169,7 @@ export const LAYOUTS: LayoutDef[] = [
   {
     id: '2p-phone',
     name: '2P phone',
+    screenLabel: 'Phone',
     playerCount: 2,
     stageW: 548,
     stageH: 1260,
@@ -177,6 +183,7 @@ export const LAYOUTS: LayoutDef[] = [
   {
     id: '1p-base',
     name: '1P base side',
+    screenLabel: 'Tabletop',
     playerCount: 1,
     stageW: WORLD_W,
     stageH: WORLD_H,
@@ -189,6 +196,7 @@ export const LAYOUTS: LayoutDef[] = [
   {
     id: '1p-phone',
     name: '1P phone',
+    screenLabel: 'Phone',
     playerCount: 1,
     stageW: 548,
     stageH: 1140,
@@ -200,8 +208,43 @@ export const LAYOUTS: LayoutDef[] = [
     statsOrigin: { x: 10, y: 78 },
   },
   {
+    id: '3p-edges',
+    name: '3P edges',
+    screenLabel: 'Tabletop (Edges)',
+    playerCount: 3,
+    stageW: WORLD_W,
+    stageH: WORLD_H,
+    // 34x34 exact 1:1 square cells (28*34 = 952, 16*34 = 544); P1 bottom, P2 top, P3 right
+    board: { x: 148, y: 128, w: 28 * 34, h: 16 * 34 },
+    docks: [
+      makeDock(0, 624, 736, 0, 1.0),
+      makeDock(1, 624, 64, Math.PI, 1.0),
+      makeDock(2, 1196, 400, -H, 1.0),
+    ],
+    hudButtons: cornerHud(10, 14),
+    statsOrigin: { x: 1106, y: 14 },
+  },
+  {
+    id: '3p-2v1',
+    name: '3P 2+1',
+    screenLabel: 'Tabletop (2+1)',
+    playerCount: 3,
+    stageW: WORLD_W,
+    stageH: WORLD_H,
+    // 34x34 exact 1:1 square cells (28*34 = 952, 16*34 = 544); P1 & P3 bottom, P2 top
+    board: { x: 164, y: 128, w: 28 * 34, h: 16 * 34 },
+    docks: [
+      makeDock(0, 400, 738, 0, 0.96),
+      makeDock(1, 640, 62, Math.PI, 0.96),
+      makeDock(2, 880, 738, 0, 0.96),
+    ],
+    hudButtons: cornerHud(10, 14),
+    statsOrigin: { x: 1106, y: 14 },
+  },
+  {
     id: '4p-edges',
     name: '4P edges',
+    screenLabel: 'Tabletop (Edges)',
     playerCount: 4,
     stageW: WORLD_W,
     stageH: WORLD_H,
@@ -219,6 +262,7 @@ export const LAYOUTS: LayoutDef[] = [
   {
     id: '4p-2x2',
     name: '4P 2x2',
+    screenLabel: 'Tabletop (2x2)',
     playerCount: 4,
     stageW: WORLD_W,
     stageH: WORLD_H,
@@ -237,6 +281,7 @@ export const LAYOUTS: LayoutDef[] = [
   {
     id: '4p-corners',
     name: '4P corners',
+    screenLabel: 'Tabletop (Corners)',
     playerCount: 4,
     stageW: WORLD_W,
     stageH: WORLD_H,
@@ -252,6 +297,31 @@ export const LAYOUTS: LayoutDef[] = [
     statsOrigin: { x: 1106, y: 310 },
   },
 ];
+
+/** Layouts matching a given player count (1..4). */
+export function layoutsForPlayers(playerCount: number): LayoutDef[] {
+  return LAYOUTS.filter(l => l.playerCount === playerCount);
+}
+
+/** Pick the next player count (1->2->3->4->1) while preserving Phone vs Tabletop preference when available. */
+export function cyclePlayersLayout(currentIdx: number): number {
+  const cur = LAYOUTS[currentIdx] ?? LAYOUTS[0];
+  const wantPhone = isPhoneLayout(cur);
+  const nextCount = ((cur.playerCount % 4) + 1) as PlayerCount;
+  const candidates = layoutsForPlayers(nextCount);
+  const preferred = candidates.find(l => isPhoneLayout(l) === wantPhone) ?? candidates[0];
+  return preferred ? LAYOUTS.indexOf(preferred) : 0;
+}
+
+/** Cycle through screen/arrangement options within the current player count. */
+export function cycleScreenLayout(currentIdx: number): number {
+  const cur = LAYOUTS[currentIdx] ?? LAYOUTS[0];
+  const candidates = layoutsForPlayers(cur.playerCount);
+  if (candidates.length <= 1) return currentIdx;
+  const pos = candidates.indexOf(cur);
+  const next = candidates[(pos + 1) % candidates.length];
+  return LAYOUTS.indexOf(next);
+}
 
 /**
  * Dynamically adapts a layout to the active window aspect ratio while preserving strictly
@@ -424,7 +494,8 @@ export function settingsButtonRects(layout: LayoutDef): Record<SettingsButtonId,
     return {
       close: { x: px + pw - m - closeW, y: py + 5, w: closeW, h: bh },
       map: { x: x0, y: ry(0), w: fw, h: bh },
-      layout: { x: x0, y: ry(1), w: fw, h: bh },
+      players: { x: x0, y: ry(1), w: hw, h: bh },
+      screen: { x: x1, y: ry(1), w: hw, h: bh },
       difficulty: { x: x0, y: ry(2), w: hw, h: bh },
       waves: { x: x1, y: ry(2), w: hw, h: bh },
       speed: { x: x0, y: ry(3), w: hw, h: bh },
@@ -441,7 +512,8 @@ export function settingsButtonRects(layout: LayoutDef): Record<SettingsButtonId,
   return {
     close: { x: px + 440 - 46, y: py + 12, w: 34, h: 32 },
     map: { x: x0, y: py + 58, w: 400, h: 36 },
-    layout: { x: x0, y: py + 102, w: 400, h: 36 },
+    players: { x: x0, y: py + 102, w: hw, h: 36 },
+    screen: { x: x0 + hw + gap, y: py + 102, w: hw, h: 36 },
     difficulty: { x: x0, y: py + 146, w: hw, h: 36 },
     waves: { x: x0 + hw + gap, y: py + 146, w: hw, h: 36 },
     speed: { x: x0, y: py + 190, w: hw, h: 36 },

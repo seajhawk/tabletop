@@ -1,8 +1,8 @@
 # Coordination handoff
 
-Updated: 2026-11-22 ~12:22 PM Pacific. Pass 23 complete: added 3 new distinct maps
-(Neon Cybergrid, Volcanic Caldera, Bio-Lab Outbreak) with custom art & unique twists;
-12 maps / 10 themes total. Manifest/PWA & benchmark work preserved.
+Updated: 2026-11-22 ~12:32 PM Pacific. Pass 24 complete: refactored Settings Layout
+button into separate `Players` (1P–4P, adding 3P Edges & 3P 2+1) and `Screen` buttons;
+all 220 unit/layout tests PASS. Manifest/PWA & benchmark work preserved.
 
 ## Restart rule
 Heartbeat `continue-galactic-alliance` ACTIVE, relative five-hour interval.

@@ -5,7 +5,7 @@ import { Game } from './sim/game';
 import { FixedStepper } from './sim/stepper';
 import { InputController } from './input';
 import { attachPointerInput } from './inputDom';
-import { adaptLayout, LAYOUTS, Viewport, type ButtonId, type LayoutDef } from './layout';
+import { adaptLayout, cyclePlayersLayout, cycleScreenLayout, LAYOUTS, Viewport, type ButtonId, type LayoutDef } from './layout';
 import { Renderer } from './render';
 import { ScoreBook, browserStorage } from './scores';
 import { createBrowserPwa, canApplyGameUpdate } from './pwa';
@@ -140,14 +140,29 @@ async function main(): Promise<void> {
         input.cancelAll();
         game.reset();
         break;
-      case 'layout': {
+      case 'players': {
         const keepOpen = input.settingsOpen;
-        layoutIdx = (layoutIdx + 1) % LAYOUTS.length;
+        layoutIdx = cyclePlayersLayout(layoutIdx);
         refreshLayout();
         input.cancelAll(); // ownership / active players change: reset match and pointers together
         input.settingsOpen = keepOpen;
         game.reset(layout().playerCount);
         renderer.setLayout(layout());
+        renderer.toast(`Players: ${layout().playerCount}P (${layout().screenLabel})`, cx, cy, true);
+        break;
+      }
+      case 'screen': {
+        const keepOpen = input.settingsOpen;
+        const nextIdx = cycleScreenLayout(layoutIdx);
+        if (nextIdx !== layoutIdx) {
+          layoutIdx = nextIdx;
+          refreshLayout();
+          input.cancelAll();
+          input.settingsOpen = keepOpen;
+          game.reset(layout().playerCount);
+          renderer.setLayout(layout());
+        }
+        renderer.toast(`Screen: ${layout().screenLabel}`, cx, cy, true);
         break;
       }
       case 'map': {
