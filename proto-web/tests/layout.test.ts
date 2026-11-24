@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   adaptLayout, BOARD, boardCellCenter, boardCellSize, boardLocalToWorld, BUTTON_IDS, CELL, cellAt, CORNER_SCALE, creditChipRect, cyclePlayersLayout, cycleScreenLayout, DOCK_H, DOCK_W,
   dockPolygon, dockToWorld, dockUp, hitCreditChip, hitDockBody, hitDockSlot, hitHudButton, hitRadialButton,
-  hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, isPhoneLayout, LAYOUTS, layoutsForPlayers, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
-  radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect,
+  hitSettingsButton, hitSummaryButton, HUD_BUTTON_IDS, inRect, isPhoneLayout, LAYOUTS, layoutsForPlayers, nextSoloDockSide, PHONE_SETTINGS, polygonsOverlap, RADIAL_BTN_R,
+  radialButtons, rectPolygon, rectsOverlap, SETTINGS_BUTTON_IDS, settingsButtonRects, settingsPanelRect, slotRect, SOLO_DOCK_SIDES,
   SUMMARY_BUTTON_IDS, summaryButtonRects, summaryCardRect, TURRET_ORDER, Viewport, WORLD_H, WORLD_W, worldToBoardLocal,
   worldToDock,
 } from '../src/layout';
@@ -156,6 +156,35 @@ describe('rotation-aware dock layout', () => {
       '2p-opposing', '2p-phone', '1p-base', '1p-phone',
       '3p-edges', '3p-2v1', '4p-edges', '4p-2x2', '4p-corners',
     ]);
+  });
+
+  it('1p-base adapts cleanly to all 4 screen sides (right, bottom, left, top) with 1:1 square cells and zero SAT overlap', () => {
+    const base1p = LAYOUTS.find(l => l.id === '1p-base')!;
+    expect(nextSoloDockSide('right')).toBe('bottom');
+    expect(nextSoloDockSide('bottom')).toBe('left');
+    expect(nextSoloDockSide('left')).toBe('top');
+    expect(nextSoloDockSide('top')).toBe('right');
+
+    for (const side of SOLO_DOCK_SIDES) {
+      for (const [sw, sh] of [[1280, 800], [1920, 1080], [1055, 1015]] as const) {
+        const L = adaptLayout(base1p, sw, sh, side);
+        const { cw, ch } = boardCellSize(L.board, false);
+        expect(cw).toBeCloseTo(ch, 5);
+        const dock = L.docks[0];
+        expect(polygonsOverlap(dockPolygon(dock), rectPolygon(L.board))).toBe(false);
+        for (const id of HUD_BUTTON_IDS) {
+          expect(polygonsOverlap(dockPolygon(dock), rectPolygon(L.hudButtons[id]))).toBe(false);
+          expect(polygonsOverlap(rectPolygon(L.board), rectPolygon(L.hudButtons[id]))).toBe(false);
+        }
+        // Dock stays inside stage bounds
+        for (const pt of dockPolygon(dock)) {
+          expect(pt.x).toBeGreaterThanOrEqual(-1);
+          expect(pt.y).toBeGreaterThanOrEqual(-1);
+          expect(pt.x).toBeLessThanOrEqual(L.stageW + 1);
+          expect(pt.y).toBeLessThanOrEqual(L.stageH + 1);
+        }
+      }
+    }
   });
 
   for (const L of LAYOUTS) {

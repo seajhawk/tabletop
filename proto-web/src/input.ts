@@ -32,6 +32,7 @@ type Press =
   | { kind: 'dismiss-settings' }
   | { kind: 'drag' }
   | { kind: 'credit' }
+  | { kind: 'move-dock'; player: number }
   | { kind: 'radial-btn'; owner: number; towerId: number; action: RadialAction }
   | { kind: 'tap'; cx: number; cy: number; towerId: number; x: number; y: number; t: number }
   | { kind: 'empty-tap'; x: number; y: number; t: number };
@@ -39,6 +40,7 @@ type Press =
 export interface InputHooks {
   toast(msg: string, wx: number, wy: number, good: boolean): void;
   button(id: ButtonId): void;
+  moveSoloDock?(): void;
   creditFly?(fromPlayer: number, toPlayer: number, amount: number, fromX: number, fromY: number, toX: number, toY: number): void;
   sound?(ev: SoundEvent): void;
 }
@@ -188,9 +190,13 @@ export class InputController {
       if (sb) { this.pointers.set(id, { kind: 'button', id: sb }); return; }
     }
 
-    // 4. Player docks: credit chip first (multiplayer only), then turret slots.
+    // 4. Player docks: credit chip (multiplayer) or Move Card button (1P desktop), then turret slots.
     for (const dock of layout.docks) {
       if (dock.player >= this.game.playerCount) continue;
+      if (this.game.playerCount === 1 && layout.id === '1p-base' && hitCreditChip(dock, x, y)) {
+        this.pointers.set(id, { kind: 'move-dock', player: dock.player });
+        return;
+      }
       if (this.game.playerCount > 1 && hitCreditChip(dock, x, y)) {
         const credits = this.game.credits[dock.player] ?? 0;
         const chosen = this.shareAmount(dock.player);
@@ -321,6 +327,11 @@ export class InputController {
           this.hooks.sound?.('ui-error');
         }
         this.openRadials.delete(m.owner);
+      }
+    } else if (p.kind === 'move-dock') {
+      const dock = this.getLayout().docks.find(d => d.player === p.player);
+      if (dock && hitCreditChip(dock, x, y)) {
+        this.hooks.moveSoloDock?.();
       }
     } else if (p.kind === 'credit') {
       const cd = this.creditDrags.get(id)!;

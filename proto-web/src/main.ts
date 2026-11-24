@@ -5,7 +5,7 @@ import { Game } from './sim/game';
 import { FixedStepper } from './sim/stepper';
 import { InputController } from './input';
 import { attachPointerInput } from './inputDom';
-import { adaptLayout, cyclePlayersLayout, cycleScreenLayout, LAYOUTS, Viewport, type ButtonId, type LayoutDef } from './layout';
+import { adaptLayout, cyclePlayersLayout, cycleScreenLayout, LAYOUTS, nextSoloDockSide, Viewport, type ButtonId, type LayoutDef, type SoloDockSide } from './layout';
 import { Renderer } from './render';
 import { ScoreBook, browserStorage } from './scores';
 import { createBrowserPwa, canApplyGameUpdate } from './pwa';
@@ -27,14 +27,15 @@ async function main(): Promise<void> {
 
   const phoneIdx = LAYOUTS.findIndex(l => l.id === '2p-phone');
   let layoutIdx = (phoneIdx >= 0 && window.innerHeight > window.innerWidth * 1.15) ? phoneIdx : 0;
+  let soloDockSide: SoloDockSide = 'right';
   let showStats = false;
   let adaptedScreenW = app.screen.width;
   let adaptedScreenH = app.screen.height;
-  let adaptedLayout: LayoutDef = adaptLayout(LAYOUTS[layoutIdx], adaptedScreenW, adaptedScreenH);
+  let adaptedLayout: LayoutDef = adaptLayout(LAYOUTS[layoutIdx], adaptedScreenW, adaptedScreenH, soloDockSide);
   const refreshLayout = (): LayoutDef => {
     adaptedScreenW = app.screen.width;
     adaptedScreenH = app.screen.height;
-    adaptedLayout = adaptLayout(LAYOUTS[layoutIdx], adaptedScreenW, adaptedScreenH);
+    adaptedLayout = adaptLayout(LAYOUTS[layoutIdx], adaptedScreenW, adaptedScreenH, soloDockSide);
     return adaptedLayout;
   };
   const layout = () => adaptedLayout;
@@ -212,6 +213,13 @@ async function main(): Promise<void> {
   const input = new InputController(game, layout, {
     toast: (m, x, y, ok) => renderer.toast(m, x, y, ok),
     button: onButton,
+    moveSoloDock: () => {
+      soloDockSide = nextSoloDockSide(soloDockSide);
+      const next = refreshLayout();
+      renderer.setLayout(next);
+      const sideLabel = soloDockSide[0].toUpperCase() + soloDockSide.slice(1);
+      renderer.toast(`Card side: ${sideLabel}`, next.board.x + next.board.w / 2, next.board.y + next.board.h / 2, true);
+    },
     creditFly: (fromPlayer, toPlayer, amount, fromX, fromY, toX, toY) =>
       renderer.spawnCreditChip(fromPlayer, toPlayer, amount, fromX, fromY, toX, toY),
     sound: ev => audio.play(ev),

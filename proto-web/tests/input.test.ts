@@ -827,4 +827,20 @@ describe('DOM pointer wiring', () => {
     input.pointerUp(13, p0Chip.x, p0Chip.y, 540);
     expect(input.shareAmount(0)).toBe(25);
   });
+
+  it('tapping Move Side button on 1P desktop player card triggers moveSoloDock hook', () => {
+    const idx1p = LAYOUTS.findIndex(l => l.id === '1p-base');
+    const { game, layout } = setup(idx1p);
+    let moved = 0;
+    const input = new InputController(game, () => layout, {
+      toast: () => {},
+      button: () => {},
+      moveSoloDock: () => { moved++; },
+    });
+    const chip = creditChipRect();
+    const pos = dockToWorld(layout.docks[0], chip.x + chip.w / 2, chip.y + chip.h / 2);
+    input.pointerDown(21, pos.x, pos.y, 'mouse', 0, 100);
+    input.pointerUp(21, pos.x, pos.y, 130);
+    expect(moved).toBe(1);
+  });
 });

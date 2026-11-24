@@ -41,6 +41,11 @@ export type ButtonId = HudButtonId | SettingsButtonId | SummaryButtonId;
 
 export type PlayerCount = 1 | 2 | 3 | 4;
 export const PLAYER_COUNTS: readonly PlayerCount[] = [1, 2, 3, 4];
+export type SoloDockSide = 'right' | 'bottom' | 'left' | 'top';
+export const SOLO_DOCK_SIDES: readonly SoloDockSide[] = ['right', 'bottom', 'left', 'top'];
+export function nextSoloDockSide(side: SoloDockSide): SoloDockSide {
+  return SOLO_DOCK_SIDES[(SOLO_DOCK_SIDES.indexOf(side) + 1) % SOLO_DOCK_SIDES.length];
+}
 
 export interface LayoutDef {
   id: string;
@@ -328,7 +333,7 @@ export function cycleScreenLayout(currentIdx: number): number {
  * 1:1 square grid cells (`cw === ch`) so there is minimal blank space around the playfield
  * and player cards scale up as large and readable as the screen shape allows.
  */
-export function adaptLayout(base: LayoutDef, screenW: number, screenH: number): LayoutDef {
+export function adaptLayout(base: LayoutDef, screenW: number, screenH: number, soloSide: SoloDockSide = 'right'): LayoutDef {
   if (!(screenW > 0 && screenH > 0)) return base;
   const phone = isPhoneLayout(base);
   const aspect = screenW / screenH;
@@ -432,26 +437,93 @@ export function adaptLayout(base: LayoutDef, screenW: number, screenH: number): 
   }
 
   if (base.id === '1p-base') {
-    const dockScale = Math.max(1.0, Math.min(1.24, (stageH - 40) / DOCK_W));
-    const dockWWorld = DOCK_H * dockScale;
-    const dockCx = Math.round(stageW - 12 - dockWWorld / 2);
-    const availW = Math.floor(dockCx - dockWWorld / 2 - 24);
-    const topReserve = 104;
-    const maxCellW = availW / GRID_W;
-    const maxCellH = (stageH - topReserve - 16) / GRID_H;
+    if (soloSide === 'right' || soloSide === 'left') {
+      const dockScale = Math.max(1.0, Math.min(1.24, (stageH - 40) / DOCK_W));
+      const dockWWorld = DOCK_H * dockScale;
+      const topReserve = 104;
+      const availW = Math.floor(stageW - dockWWorld - 36);
+      const maxCellW = availW / GRID_W;
+      const maxCellH = (stageH - topReserve - 16) / GRID_H;
+      const cell = Math.max(32, Math.floor(Math.min(maxCellW, maxCellH) * 2) / 2);
+      const bw = GRID_W * cell;
+      const bh = GRID_H * cell;
+      const by = Math.max(topReserve, Math.round((stageH + topReserve - bh) / 2));
+      if (soloSide === 'right') {
+        const dockCx = Math.round(stageW - 12 - dockWWorld / 2);
+        const bx = Math.max(14, Math.round((dockCx - dockWWorld / 2 - 12 - bw) / 2) + 6);
+        return {
+          ...base,
+          stageW,
+          stageH,
+          board: { x: bx, y: by, w: bw, h: bh },
+          docks: [makeDock(0, dockCx, Math.round(stageH / 2), -H, dockScale)],
+          hudButtons: cornerHud(14, 14),
+          statsOrigin: { x: 204, y: 14 },
+        };
+      }
+      // Left side: dock sits on the left edge below cornerHud (or centered vertically if it fits right of HUD)
+      const hudBottom = 104;
+      const leftDockScale = Math.max(0.88, Math.min(1.22, (stageH - hudBottom - 16) / DOCK_W));
+      const leftDockW = DOCK_H * leftDockScale;
+      const leftDockCx = Math.round(12 + leftDockW / 2);
+      const leftDockCy = Math.round(hudBottom + (stageH - hudBottom) / 2);
+      const leftAvailW = Math.floor(stageW - (leftDockCx + leftDockW / 2) - 24);
+      const leftCell = Math.max(32, Math.floor(Math.min(leftAvailW / GRID_W, (stageH - topReserve - 16) / GRID_H) * 2) / 2);
+      const lbw = GRID_W * leftCell;
+      const lbh = GRID_H * leftCell;
+      const lbx = Math.round(leftDockCx + leftDockW / 2 + 12 + (leftAvailW - lbw) / 2);
+      const lby = Math.max(topReserve, Math.round((stageH + topReserve - lbh) / 2));
+      return {
+        ...base,
+        stageW,
+        stageH,
+        board: { x: lbx, y: lby, w: lbw, h: lbh },
+        docks: [makeDock(0, leftDockCx, leftDockCy, H, leftDockScale)],
+        hudButtons: cornerHud(14, 14),
+        statsOrigin: { x: 204, y: 14 },
+      };
+    }
+
+    // Bottom or Top side
+    const minBand = 114;
+    const maxCellW = (stageW - 24) / GRID_W;
+    const maxCellH = (stageH - minBand - 104) / GRID_H;
     const cell = Math.max(32, Math.floor(Math.min(maxCellW, maxCellH) * 2) / 2);
     const bw = GRID_W * cell;
     const bh = GRID_H * cell;
-    const bx = Math.max(14, Math.round((availW + 14 - bw) / 2));
-    const by = Math.max(topReserve, Math.round((stageH + topReserve - bh) / 2));
+    const bx = Math.round((stageW - bw) / 2);
+    if (soloSide === 'bottom') {
+      const topBand = 102;
+      const botSpace = stageH - topBand - bh;
+      const dockScale = Math.max(0.88, Math.min(1.38, (botSpace - 12) / DOCK_H, (stageW - 40) / DOCK_W));
+      const by = Math.round(topBand + Math.max(0, (botSpace - DOCK_H * dockScale - 14) / 2));
+      const botCy = Math.round(by + bh + (stageH - (by + bh)) / 2);
+      return {
+        ...base,
+        stageW,
+        stageH,
+        board: { x: bx, y: by, w: bw, h: bh },
+        docks: [makeDock(0, stageW / 2, botCy, 0, dockScale)],
+        hudButtons: cornerHud(12, 10),
+        statsOrigin: { x: stageW - 174, y: 10 },
+      };
+    }
+    // Top side
+    const maxDockWForHud = (stageW / 2 - 196) * 2;
+    const topSpace = stageH - bh - 16;
+    const dockScale = Math.max(0.88, Math.min(1.38, (topSpace - 14) / DOCK_H, maxDockWForHud / DOCK_W));
+    const topBand = Math.max(104, Math.round(DOCK_H * dockScale + 14));
+    const by = Math.round(topBand + Math.max(0, (stageH - topBand - bh - 12) / 2));
+    const topCy = Math.round(topBand / 2);
+    const hudY = Math.max(10, Math.min(by - 88, Math.round((topBand - 84) / 2)));
     return {
       ...base,
       stageW,
       stageH,
       board: { x: bx, y: by, w: bw, h: bh },
-      docks: [makeDock(0, dockCx, Math.round(stageH / 2), -H, dockScale)],
-      hudButtons: cornerHud(14, 14),
-      statsOrigin: { x: 204, y: 14 },
+      docks: [makeDock(0, stageW / 2, topCy, Math.PI, dockScale)],
+      hudButtons: cornerHud(12, hudY),
+      statsOrigin: { x: stageW - 174, y: hudY },
     };
   }
 

@@ -1118,11 +1118,17 @@ export class Renderer {
       chipG.position.set(chipR.x, chipR.y);
       chipG.roundRect(0, 0, chipR.w, chipR.h, 8).fill({ color: theme.slotBg, alpha: 0.95 }).stroke({ width: 1.5, color: col, alpha: 0.85 });
       const solo = this.game.playerCount <= 1;
-      chipG.visible = !solo;
-      const chipText = mkText(solo ? 'SOLO COMMAND' : '', solo ? 12 : 13, solo ? (hasSprites ? 0x8ea394 : 0x7da4bd) : col, { bold: true });
+      const canMoveSolo = solo && layout.id === '1p-base';
+      chipG.visible = !solo || canMoveSolo;
+      const chipText = mkText(
+        canMoveSolo ? '⇄ Move Side' : solo ? 'SOLO COMMAND' : '',
+        canMoveSolo ? 12.5 : solo ? 12 : 13,
+        canMoveSolo ? col : solo ? (hasSprites ? 0x8ea394 : 0x7da4bd) : col,
+        { bold: true },
+      );
       chipText.anchor.set(0.5);
       chipText.position.set(chipR.x + chipR.w / 2, chipR.y + chipR.h / 2);
-      if (solo) chipText.alpha = 0.72;
+      if (solo && !canMoveSolo) chipText.alpha = 0.72;
 
       c.addChild(name, wallet, chipG, chipText);
 
@@ -2795,11 +2801,12 @@ export class Renderer {
 
   private updateDocks(): void {
     const solo = this.game.playerCount <= 1;
+    const canMoveSolo = solo && this.getLayout().id === '1p-base';
     for (const v of this.dockViews) {
       const credits = this.game.credits[v.player] ?? 0;
       const shareAmt = this.input.shareAmount(v.player);
       const s = credits.toFixed(1);
-      const key = `${s}|${shareAmt}`;
+      const key = `${s}|${shareAmt}|${canMoveSolo ? 1 : 0}`;
       if (key !== v.last) {
         v.last = key;
         v.wallet.text = `${s} cr`;
@@ -2808,9 +2815,16 @@ export class Renderer {
         }
       }
       if (solo) {
-        if (v.chipG.visible) v.chipG.visible = false;
-        if (v.chipText.text !== 'SOLO COMMAND') v.chipText.text = 'SOLO COMMAND';
-        v.chipText.alpha = 0.72;
+        if (canMoveSolo) {
+          if (!v.chipG.visible) v.chipG.visible = true;
+          v.chipG.alpha = 1;
+          if (v.chipText.text !== '⇄ Move Side') v.chipText.text = '⇄ Move Side';
+          v.chipText.alpha = 1;
+        } else {
+          if (v.chipG.visible) v.chipG.visible = false;
+          if (v.chipText.text !== 'SOLO COMMAND') v.chipText.text = 'SOLO COMMAND';
+          v.chipText.alpha = 0.72;
+        }
       } else {
         if (!v.chipG.visible) v.chipG.visible = true;
         const chipAff = credits >= 5;
