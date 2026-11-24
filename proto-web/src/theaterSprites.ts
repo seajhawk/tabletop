@@ -5184,90 +5184,417 @@ function paintZooTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
 }
 
 function paintZooEnemy(key: EnemyKey): Texture {
-  return paintCanvas(80, (ctx, size) => {
+  return paintCanvas(96, (ctx, size) => {
     const c = size / 2;
     if (key === 'scout') {
-      // Cheetah: golden-amber spotted runner
+      // Cheetah: top-down sprinting big cat facing +X (long curled tail, muscular stride paws, spotted golden coat, rounded ears, snout)
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 4.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(c - 18, c);
+      ctx.quadraticCurveTo(c - 31, c - 9, c - 38, c - 2);
+      ctx.stroke();
+      ctx.strokeStyle = '#1f2937';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(c - 34, c - 5);
+      ctx.lineTo(c - 38, c - 2);
+      ctx.stroke();
+
+      // 4 extended sprinting paws (front reaching +X, hind pushing -X)
+      const paws: [number, number, number, number, number][] = [
+        [c + 16, c - 13, 9, 4.2, -0.35],
+        [c + 16, c + 13, 9, 4.2, 0.35],
+        [c - 14, c - 12, 8.5, 4.2, 0.4],
+        [c - 14, c + 12, 8.5, 4.2, -0.4],
+      ];
+      for (const [px, py, rx, ry, rot] of paws) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.ellipse(px, py, rx, ry, rot, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.4);
+      }
+
+      // Sleek torso + shoulders + hips
       withGroundShadow(ctx, () => {
         ctx.fillStyle = '#fbbf24';
         ctx.beginPath();
-        ctx.ellipse(c, c, 18, 10, 0, 0, Math.PI * 2);
+        ctx.ellipse(c - 2, c, 21, 10.5, 0, 0, Math.PI * 2);
         ctx.fill();
       });
-      strokeInk(ctx, 1.6);
-      ctx.fillStyle = '#1f2937';
-      for (const [ox, oy] of [[-6, -3], [2, 3], [8, -2]]) {
+      strokeInk(ctx, 1.8);
+
+      // Head + snout + ears facing +X
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.ellipse(c + 22, c, 9.5, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.7);
+      // Rounded ears
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#d97706';
         ctx.beginPath();
-        ctx.arc(c + ox, c + oy, 2.3, 0, Math.PI * 2);
+        ctx.arc(c + 18, c + side * 7.5, 3.3, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.2);
+      }
+      // Snout & dark nose
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.ellipse(c + 30, c, 4.5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(c + 33.5, c, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+      // Cheetah tear marks + amber eyes
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.arc(c + 25, c + side * 3.2, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Characteristic cheetah rosette spots
+      ctx.fillStyle = '#1f2937';
+      for (const [ox, oy, r] of [
+        [-14, -4, 2.2], [-11, 4, 2.0], [-5, -5, 2.3], [-4, 1, 2.2],
+        [2, -4, 2.1], [3, 5, 2.2], [9, -3, 2.1], [10, 3, 2.0], [14, 0, 1.8],
+      ]) {
+        ctx.beginPath();
+        ctx.arc(c + ox, c + oy, r, 0, Math.PI * 2);
         ctx.fill();
       }
     } else if (key === 'swarmer') {
-      // Meerkat Pack
-      ctx.fillStyle = '#d97706';
+      // Meerkat: slender scurrying desert mammal facing +X (long dark-tipped tail, striped back, pointy muzzle, dark eye mask)
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(c, c, 10, 0, Math.PI * 2);
-      ctx.fill();
-      strokeInk(ctx, 1.5);
-    } else if (key === 'cruiser') {
-      // Charging Rhino: heavy slate-gray body + ivory horn
-      withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#6b7280';
-        ctx.beginPath();
-        ctx.ellipse(c - 2, c, 20, 14, 0, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      strokeInk(ctx, 2);
-      ctx.fillStyle = '#fef3c7';
-      ctx.beginPath();
-      ctx.moveTo(c + 26, c);
-      ctx.lineTo(c + 14, c - 5);
-      ctx.lineTo(c + 14, c + 5);
-      ctx.closePath();
-      ctx.fill();
-      strokeInk(ctx, 1.3);
-    } else if (key === 'frigate') {
-      // Giant Tortoise: emerald patterned shell
-      withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#4d7c0f';
-        ctx.beginPath();
-        ctx.arc(c, c, 17, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.strokeStyle = '#bef264';
-      ctx.lineWidth = 2.4;
+      ctx.moveTo(c - 12, c);
+      ctx.quadraticCurveTo(c - 22, c + 6, c - 29, c + 2);
       ctx.stroke();
-    } else if (key === 'phase') {
-      // Scarlet Macaw: bright red/blue flying wings
-      withGroundShadow(ctx, () => {
-        ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = '#1f2937';
+      ctx.beginPath();
+      ctx.arc(c - 29, c + 2, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tiny scurrying paws
+      for (const [px, py] of [[c + 8, c - 9], [c + 8, c + 9], [c - 7, c - 8], [c - 7, c + 8]]) {
+        ctx.fillStyle = '#78350f';
         ctx.beginPath();
-        ctx.moveTo(c + 20, c);
-        ctx.lineTo(c - 6, c - 19);
-        ctx.lineTo(c - 2, c);
-        ctx.lineTo(c - 6, c + 19);
-        ctx.closePath();
+        ctx.ellipse(px, py, 5, 2.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Torso
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#d97706';
+        ctx.beginPath();
+        ctx.ellipse(c - 1, c, 14, 8, 0, 0, Math.PI * 2);
         ctx.fill();
       });
       strokeInk(ctx, 1.6);
-      ctx.fillStyle = '#facc15';
+      // Dark transverse stripes on back
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2.2;
+      for (const bx of [-7, -2, 3]) {
+        ctx.beginPath();
+        ctx.moveTo(c + bx, c - 6.5);
+        ctx.lineTo(c + bx, c + 6.5);
+        ctx.stroke();
+      }
+      // Pointy head + dark eye patches + ears
+      ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
-      ctx.arc(c + 12, c, 4, 0, Math.PI * 2);
+      ctx.ellipse(c + 15, c, 8, 6.2, 0, 0, Math.PI * 2);
       ctx.fill();
+      strokeInk(ctx, 1.5);
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.arc(c + 12, c + side * 5.8, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(c + 17.5, c + side * 2.8, 2.5, 1.9, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(c + 22.5, c, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'cruiser') {
+      // Charging Rhino: heavy armored slate-gray mammal facing +X (4 thick legs, armored skin folds, wide head, ears, twin ivory horns!)
+      // Tail
+      ctx.strokeStyle = '#4b5563';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(c - 24, c);
+      ctx.lineTo(c - 33, c + 2);
+      ctx.stroke();
+
+      // 4 sturdy legs
+      for (const [lx, ly] of [[c + 11, c - 17], [c + 11, c + 17], [c - 13, c - 16], [c - 13, c + 16]]) {
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.ellipse(lx, ly, 7.5, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.6);
+      }
+
+      // Massive barrel torso with armored skin-plate folds
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#6b7280';
+        ctx.beginPath();
+        ctx.ellipse(c - 3, c, 24, 16.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      strokeInk(ctx, 2.0);
+      // Skin-armor crease lines
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 2.0;
+      for (const fx of [-11, 5]) {
+        ctx.beginPath();
+        ctx.arc(c + fx, c, 15, -Math.PI * 0.42, Math.PI * 0.42);
+        ctx.stroke();
+      }
+
+      // Heavy squared-off rhino head
+      ctx.fillStyle = '#7b838f';
+      ctx.beginPath();
+      ctx.ellipse(c + 22, c, 12, 10.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.8);
+
+      // Alert ears
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.ellipse(c + 15, c + side * 10, 4.5, 2.8, side * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.3);
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.arc(c + 23, c + side * 5.2, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Rear small horn + large curved front ivory horn
+      ctx.fillStyle = '#e5e7eb';
+      ctx.beginPath();
+      ctx.arc(c + 26, c, 3.6, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.2);
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      ctx.moveTo(c + 43, c);
+      ctx.lineTo(c + 29, c - 4.8);
+      ctx.lineTo(c + 29, c + 4.8);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+    } else if (key === 'frigate') {
+      // Giant Tortoise: top-down crawling tortoise facing +X (4 scaly clawed legs, protruding head with eyes, hexagonal scute shell!)
+      // Tail
+      ctx.fillStyle = '#65a30d';
+      ctx.beginPath();
+      ctx.moveTo(c - 26, c);
+      ctx.lineTo(c - 17, c - 3.5);
+      ctx.lineTo(c - 17, c + 3.5);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.4);
+
+      // 4 sturdy reptile legs poking out of the shell
+      const legs: [number, number, number][] = [
+        [c + 12, c - 17, -0.55],
+        [c + 12, c + 17, 0.55],
+        [c - 13, c - 16, -2.5],
+        [c - 13, c + 16, 2.5],
+      ];
+      for (const [lx, ly, rot] of legs) {
+        ctx.fillStyle = '#65a30d';
+        ctx.beginPath();
+        ctx.ellipse(lx, ly, 8.5, 4.8, rot, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.5);
+      }
+
+      // Extended tortoise neck & head facing +X
+      ctx.fillStyle = '#84cc16';
+      ctx.beginPath();
+      ctx.ellipse(c + 24, c, 10, 6.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.6);
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.arc(c + 28, c + side * 3, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Domed olive-emerald shell with golden rim & scute plates
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#3f6212';
+        ctx.beginPath();
+        ctx.ellipse(c - 1, c, 21, 17.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#bef264';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      strokeInk(ctx, 1.4);
+
+      // Hexagonal shell scutes
+      ctx.strokeStyle = '#a3e635';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        const x = c - 1 + Math.cos(a) * 10;
+        const y = c + Math.sin(a) * 8.5;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.moveTo(c - 1 + Math.cos(a) * 10, c + Math.sin(a) * 8.5);
+        ctx.lineTo(c - 1 + Math.cos(a) * 20, c + Math.sin(a) * 17);
+        ctx.stroke();
+      }
+    } else if (key === 'phase') {
+      // Scarlet Macaw: top-down flying parrot facing +X (long red/blue tail feathers, wide swept crimson/gold/blue wings, hooked beak!)
+      // Long forked tail feathers extending -X
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(c - 8, c - 4);
+      ctx.lineTo(c - 38, c - 2);
+      ctx.lineTo(c - 38, c + 2);
+      ctx.lineTo(c - 8, c + 4);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.4);
+      ctx.fillStyle = '#2563eb';
+      ctx.fillRect(c - 34, c - 1.5, 16, 3);
+
+      // Wide swept wings: scarlet shoulders, golden mid-bar, royal blue flight tips
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(c + 12, c);
+        ctx.quadraticCurveTo(c + 6, c - 22, c - 14, c - 35);
+        ctx.quadraticCurveTo(c - 18, c - 18, c - 12, c);
+        ctx.quadraticCurveTo(c - 18, c + 18, c - 14, c + 35);
+        ctx.quadraticCurveTo(c + 6, c + 22, c + 12, c);
+        ctx.closePath();
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.7);
+
+      // Golden yellow wing stripe & royal blue primary wingtips
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.ellipse(c - 2, c + side * 16, 4.5, 9, side * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath();
+        ctx.ellipse(c - 9, c + side * 26, 4.2, 8.5, side * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Red body + white face patch + curved ivory/black hooked beak
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.ellipse(c + 8, c, 12, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      ctx.ellipse(c + 15, c, 5, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.moveTo(c + 27, c);
+      ctx.lineTo(c + 18, c - 3.8);
+      ctx.lineTo(c + 18, c + 3.8);
+      ctx.closePath();
+      ctx.fill();
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.arc(c + 15.5, c + side * 2.8, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else {
-      // Silverback King: broad charcoal shoulders + silver back
+      // Silverback Gorilla King (Boss): top-down knuckle-walking gorilla facing +X (huge muscular arms & fists, broad silver saddle back, dark head & brow ridge)
+      // Powerful hind legs
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.ellipse(c - 20, c + side * 15, 11, 7.5, side * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.8);
+      }
+      // Massive muscular front arms + knuckle fists reaching forward (+X)
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.ellipse(c + 10, c + side * 24, 15, 9, side * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 2.0);
+        // Knuckle fists
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.arc(c + 24, c + side * 21, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        strokeInk(ctx, 1.6);
+      }
+
+      // Broad gorilla shoulders & torso
       withGroundShadow(ctx, () => {
         ctx.fillStyle = '#1f2937';
         ctx.beginPath();
-        ctx.arc(c, c, 25, 0, Math.PI * 2);
+        ctx.ellipse(c - 3, c, 25, 22, 0, 0, Math.PI * 2);
         ctx.fill();
       });
-      ctx.strokeStyle = '#9ca3af';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      strokeInk(ctx, 2.4);
+
+      // Iconic gleaming silverback fur saddle
       ctx.fillStyle = '#d1d5db';
       ctx.beginPath();
-      ctx.ellipse(c - 4, c, 13, 16, 0, 0, Math.PI * 2);
+      ctx.ellipse(c - 9, c, 15, 15.5, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Gorilla head + ears + prominent brow ridge facing +X
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.ellipse(c + 20, c, 12.5, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 2.0);
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#374151';
+        ctx.beginPath();
+        ctx.arc(c + 17, c + side * 11, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Muzzle & fierce glowing amber eyes
+      ctx.fillStyle = '#374151';
+      ctx.beginPath();
+      ctx.ellipse(c + 28, c, 5.5, 6.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(c + 25, c + side * 3.8, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   });
 }
