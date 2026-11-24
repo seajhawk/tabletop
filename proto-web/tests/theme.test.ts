@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { getTheater, THEMES, type ThemeId } from '../src/theme';
 
-const THEME_IDS: ThemeId[] = ['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab'];
+const THEME_IDS: ThemeId[] = ['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab', 'office', 'zoo', 'arcade'];
 const TURRET_IDS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_IDS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
 
 describe('theater themes', () => {
-  it('returns space theme by default and resolves all 10 themes by id', () => {
+  it('returns space theme by default and resolves all 13 themes by id', () => {
     expect(getTheater(undefined).id).toBe('space');
     expect(getTheater('space').id).toBe('space');
     expect(getTheater('military').id).toBe('military');
@@ -18,6 +18,9 @@ describe('theater themes', () => {
     expect(getTheater('cyber').id).toBe('cyber');
     expect(getTheater('volcano').id).toBe('volcano');
     expect(getTheater('biolab').id).toBe('biolab');
+    expect(getTheater('office').id).toBe('office');
+    expect(getTheater('zoo').id).toBe('zoo');
+    expect(getTheater('arcade').id).toBe('arcade');
     expect(Object.keys(THEMES)).toEqual(THEME_IDS);
   });
 

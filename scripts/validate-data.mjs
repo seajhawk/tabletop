@@ -131,7 +131,7 @@ const checkReachable = (w, h, spawns, exits, blocked, label) => {
 };
 
 // Validate maps (7+ maps)
-const validThemes = new Set(['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab']);
+const validThemes = new Set(['space', 'military', 'naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab', 'office', 'zoo', 'arcade']);
 const validMechanics = new Set([
   'naval-subs-mines',
   'mars-storms',
@@ -141,6 +141,9 @@ const validMechanics = new Set([
   'cyber-emp-chain',
   'volcano-lava-geyser',
   'biolab-mutate-regen',
+  'office-deadline-rush',
+  'zoo-stampede-enrage',
+  'arcade-multiball-combo',
 ]);
 assert.ok(maps.length >= 7, `Expected at least 7 maps, got ${maps.length}`);
 assert.equal(maps[0].id, 'orbital-crossing', 'First map must be orbital-crossing');

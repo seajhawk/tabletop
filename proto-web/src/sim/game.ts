@@ -372,6 +372,12 @@ export class Game {
   geyserTimer = 5.5;
   mutationActive = false;
   mutationTimer = 17;
+  deadlineActive = false;
+  deadlineTimer = 16;
+  stampedeActive = false;
+  stampedeTimer = 19;
+  multiballActive = false;
+  multiballTimer = 18;
   private nextMeteorId = 1;
   private nextKnightId = 1;
   private recentMeteors: { x: number; y: number }[] = [];
@@ -601,6 +607,12 @@ export class Game {
     this.geyserTimer = 5.5;
     this.mutationActive = false;
     this.mutationTimer = 17;
+    this.deadlineActive = false;
+    this.deadlineTimer = 16;
+    this.stampedeActive = false;
+    this.stampedeTimer = 19;
+    this.multiballActive = false;
+    this.multiballTimer = 18;
     this.rushActive = false;
     this.rushTimer = 0;
 
@@ -803,7 +815,7 @@ export class Game {
           armorPierce: d.armorPierce,
         };
     if (t.boosted) {
-      stats.fireRate *= 1.25;
+      stats.fireRate *= this.currentMap.mechanic === 'arcade-multiball-combo' ? 1.35 : 1.25;
       stats.range *= 1.20;
       if (this.currentMap.mechanic === 'kitchen-rush' || this.currentMap.mechanic === 'volcano-lava-geyser') {
         stats.burnDps = Math.max(stats.burnDps, 10);
@@ -1241,6 +1253,45 @@ export class Game {
         }
       }
     }
+    if (this.currentMap.mechanic === 'office-deadline-rush' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.deadlineTimer -= dt;
+      if (this.deadlineTimer <= 0) {
+        if (!this.deadlineActive) {
+          this.deadlineActive = true;
+          this.deadlineTimer += 5.0;
+          this.emitSound('fridge-open');
+        } else {
+          this.deadlineActive = false;
+          this.deadlineTimer += 16;
+        }
+      }
+    }
+    if (this.currentMap.mechanic === 'zoo-stampede-enrage' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.stampedeTimer -= dt;
+      if (this.stampedeTimer <= 0) {
+        if (!this.stampedeActive) {
+          this.stampedeActive = true;
+          this.stampedeTimer += 5.0;
+          this.emitSound('enrage');
+        } else {
+          this.stampedeActive = false;
+          this.stampedeTimer += 19;
+        }
+      }
+    }
+    if (this.currentMap.mechanic === 'arcade-multiball-combo' && this.launched && (this.enemies.length > 0 || this.spawners.length > 0)) {
+      this.multiballTimer -= dt;
+      if (this.multiballTimer <= 0) {
+        if (!this.multiballActive) {
+          this.multiballActive = true;
+          this.multiballTimer += 6.0;
+          this.emitSound('ui-wave');
+        } else {
+          this.multiballActive = false;
+          this.multiballTimer += 18;
+        }
+      }
+    }
     this.runSpawners(dt);
     this.updateEnemies(dt);
     this.fireTowers(dt);
@@ -1503,7 +1554,13 @@ export class Game {
           ? (e.slowT > 0 ? 0.80 : 1.30)
           : this.currentMap.mechanic === 'biolab-mutate-regen' && this.mutationActive
             ? (e.slowT > 0 ? 0.90 : 1.25)
-            : 1;
+            : this.currentMap.mechanic === 'office-deadline-rush' && this.deadlineActive
+              ? (e.slowT > 0 ? 0.85 : 1.28)
+              : this.currentMap.mechanic === 'zoo-stampede-enrage' && this.stampedeActive
+                ? (e.slowT > 0 ? 0.80 : 1.30)
+                : this.currentMap.mechanic === 'arcade-multiball-combo' && this.multiballActive
+                  ? 1.20
+                  : 1;
       const dragonBreathMult = (e.breathT ?? 0) > 0 ? 0.38 : ((e.dodgeT ?? 0) > 0 ? 1.35 : 1);
       const spd = e.def.speed * speedMult * enragedMult * rushMult * dragonBreathMult * (e.slowT > 0 ? e.slowF : 1);
       if (e.slowT > 0) {
@@ -1826,17 +1883,18 @@ export class Game {
       if (e.bossPhase === 1 && frac <= 0.33) this.triggerBossPhase(e, 2, 'PHASE 3');
     }
 
+    const enrageFrac = this.currentMap.mechanic === 'zoo-stampede-enrage' ? 0.50 : 0.40;
     if (
-      this.currentMap.mechanic === 'medieval-frenzy' &&
+      (this.currentMap.mechanic === 'medieval-frenzy' || this.currentMap.mechanic === 'zoo-stampede-enrage') &&
       (e.def.id === 'cruiser' || e.def.id === 'dreadnought') &&
       !e.dead &&
       e.hp > 0 &&
       !e.enraged &&
-      e.hp / e.maxHp <= 0.40
+      e.hp / e.maxHp <= enrageFrac
     ) {
       e.enraged = true;
       this.emitSound('enrage');
-      this.spawnPopup(e.x, e.y - 0.3, 'ENRAGE!', 0xff3344, 1.0, -0.9);
+      this.spawnPopup(e.x, e.y - 0.3, this.currentMap.mechanic === 'zoo-stampede-enrage' ? 'STAMPEDE!' : 'ENRAGE!', 0xff3344, 1.0, -0.9);
       this.spawnParticles(e.x, e.y, 10, 0xff3344, 2.8, 2.8);
     }
 
@@ -1846,13 +1904,20 @@ export class Game {
       if (owner >= 0 && owner < this.playerCount) this.stats.playerKills[owner]++;
       if (tower) tower.kills++;
       const bountyMult = this.mode === 'normal' ? DIFFICULTIES[this.difficulty].bountyMultiplier : 1;
-      const bounty = Math.round(e.def.bounty * bountyMult);
+      const officeBonus = this.currentMap.mechanic === 'office-deadline-rush' && tower?.boosted ? 1.25 : 1;
+      const arcadeBonus =
+        this.currentMap.mechanic === 'arcade-multiball-combo'
+          ? (this.multiballActive ? 1.50 : 1) * (tower?.boosted ? 1.25 : 1)
+          : 1;
+      const bounty = Math.round(e.def.bounty * bountyMult * officeBonus * arcadeBonus);
       this.awardBounty(bounty, owner);
       this.spawnPopup(e.x, e.y - 0.2, `+${bounty}`, 0xffe066);
       this.spawnParticles(e.x, e.y, 6, hex(e.def.color));
       this.emitSound('kill');
       if (
-        (this.currentMap.mechanic === 'lawn-split-burrow' || this.currentMap.mechanic === 'biolab-mutate-regen') &&
+        (this.currentMap.mechanic === 'lawn-split-burrow' ||
+          this.currentMap.mechanic === 'biolab-mutate-regen' ||
+          this.currentMap.mechanic === 'arcade-multiball-combo') &&
         e.def.id === 'cruiser' &&
         !e.isSplitChild
       ) {

@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const audio = new SoundEngine();
   audio.setTheme(game.currentMap.theme ?? 'space');
   const base = import.meta.env.BASE_URL;
-  const [militaryTex, navalTex, marsTex, medievalTex, kitchenTex, lawnTex, cyberTex, volcanoTex, biolabTex] = await Promise.all([
+  const [militaryTex, navalTex, marsTex, medievalTex, kitchenTex, lawnTex, cyberTex, volcanoTex, biolabTex, officeTex, zooTex, arcadeTex] = await Promise.all([
     Assets.load<Texture>(`${base}assets/us-dc-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/naval-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/mars-map.jpg`).catch(() => null),
@@ -54,6 +54,9 @@ async function main(): Promise<void> {
     Assets.load<Texture>(`${base}assets/cyber-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/volcano-map.jpg`).catch(() => null),
     Assets.load<Texture>(`${base}assets/biolab-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/office-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/zoo-map.jpg`).catch(() => null),
+    Assets.load<Texture>(`${base}assets/arcade-map.jpg`).catch(() => null),
   ]);
   const mapTextures: Partial<Record<MapTheme, Texture | null>> = {
     military: militaryTex,
@@ -65,6 +68,9 @@ async function main(): Promise<void> {
     cyber: cyberTex,
     volcano: volcanoTex,
     biolab: biolabTex,
+    office: officeTex,
+    zoo: zooTex,
+    arcade: arcadeTex,
   };
   const viewport = new Viewport();
   const stepper = new FixedStepper();

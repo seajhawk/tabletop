@@ -171,9 +171,9 @@ export class SoundEngine {
       this.synthesizeMars(ev);
     } else if (this.theme === 'medieval') {
       this.synthesizeMedieval(ev);
-    } else if (this.theme === 'kitchen') {
+    } else if (this.theme === 'kitchen' || this.theme === 'office') {
       this.synthesizeKitchen(ev);
-    } else if (this.theme === 'lawn' || this.theme === 'biolab') {
+    } else if (this.theme === 'lawn' || this.theme === 'biolab' || this.theme === 'zoo') {
       this.synthesizeLawn(ev);
     } else {
       this.synthesize(ev);

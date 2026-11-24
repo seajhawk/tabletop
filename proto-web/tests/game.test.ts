@@ -447,7 +447,7 @@ describe('weapons, shields, armor, flying, and boss mechanics', () => {
     expect(g2.currentMap.id).toBe('pacific-fleet');
     g2.setMap(7);
     expect(g2.currentMap.id).toBe('asteroid-belt');
-    g2.setMap(12); // wraps modulo 12 -> 0
+    g2.setMap(15); // wraps modulo 15 -> 0
     expect(g2.mapIndex).toBe(0);
     expect(g2.currentMap.id).toBe('orbital-crossing');
   });
@@ -647,9 +647,9 @@ describe('1-Player Solo Mode balance', () => {
 });
 
 describe('new theater maps & mechanics', () => {
-  it('loads all 12 maps and runs stress setup cleanly on the new theaters', () => {
+  it('loads all 15 maps and runs stress setup cleanly on the new theaters', () => {
     const d = loadData();
-    expect(d.maps.length).toBe(12);
+    expect(d.maps.length).toBe(15);
     expect(d.maps.map((m) => m.id)).toEqual([
       'orbital-crossing',
       'dc-defense',
@@ -663,6 +663,9 @@ describe('new theater maps & mechanics', () => {
       'neon-cybergrid',
       'volcanic-caldera',
       'biolab-outbreak',
+      'cubicle-chaos',
+      'safari-zoo',
+      'pinball-arcade',
     ]);
 
     const g = newGame(2);
@@ -675,6 +678,9 @@ describe('new theater maps & mechanics', () => {
       [9, 'neon-cybergrid'],
       [10, 'volcanic-caldera'],
       [11, 'biolab-outbreak'],
+      [12, 'cubicle-chaos'],
+      [13, 'safari-zoo'],
+      [14, 'pinball-arcade'],
     ] as const) {
       g.setMap(idx);
       expect(g.currentMap.id).toBe(expectedId);
@@ -2020,5 +2026,48 @@ describe('Ironhold Keep (medieval-frenzy) mechanics', () => {
     g.towers[0].cooldown = 0.01;
     g.step(1 / 60);
     expect(g.enemies.filter(e => !e.dead && e.isSplitChild).length).toBe(2);
+  });
+
+  it('Cubicle Chaos, Safari Zoo Breakout, and Retro Pinball Arcade mechanics work cleanly', () => {
+    // 1. Cubicle Chaos: Coffee Station (+JAVA) kills grant +25% bonus credits & 5 PM Deadline Crush speeds tasks
+    const gOffice = newGame(2);
+    gOffice.setMap(gOffice.data.maps.findIndex(m => m.id === 'cubicle-chaos'));
+    expect(gOffice.tryPlace(0, 'pulse', 11, 3).ok).toBe(true);
+    expect(gOffice.towers[0].boosted).toBe(true);
+    gOffice.launchWave();
+    gOffice.spawners = [];
+    const email = makeEnemy(gOffice, 9971, 'scout', 11.5, 4.0, { hp: 1, maxHp: 50 });
+    gOffice.enemies = [email];
+    const beforeBounty = gOffice.ledger.bounty;
+    gOffice.towers[0].cooldown = 0.01;
+    gOffice.step(1 / 60);
+    expect(gOffice.ledger.bounty - beforeBounty).toBe(Math.round(email.def.bounty * 1.25));
+
+    // 2. Safari Zoo Breakout: Charging Rhino enrages below 50% HP
+    const gZoo = newGame(2);
+    gZoo.setMap(gZoo.data.maps.findIndex(m => m.id === 'safari-zoo'));
+    expect(gZoo.tryPlace(0, 'pulse', 10, 3).ok).toBe(true);
+    gZoo.launchWave();
+    gZoo.spawners = [];
+    const rhino = makeEnemy(gZoo, 9972, 'cruiser', 10.5, 4.0, { hp: 201, maxHp: 400 });
+    gZoo.enemies = [rhino];
+    gZoo.towers[0].cooldown = 0.01;
+    gZoo.step(1 / 60);
+    expect(rhino.enraged).toBe(true);
+
+    // 3. Retro Pinball Arcade: Heavy Steelball splits on death and Multiball Frenzy grants +50% jackpot bounty
+    const gArc = newGame(2);
+    gArc.setMap(gArc.data.maps.findIndex(m => m.id === 'pinball-arcade'));
+    expect(gArc.tryPlace(0, 'pulse', 10, 6).ok).toBe(true);
+    gArc.launchWave();
+    gArc.spawners = [];
+    gArc.multiballActive = true;
+    const ball = makeEnemy(gArc, 9973, 'cruiser', 10.5, 7.0, { hp: 1, maxHp: 400 });
+    gArc.enemies = [ball];
+    const beforeArcBounty = gArc.ledger.bounty;
+    gArc.towers[0].cooldown = 0.01;
+    gArc.step(1 / 60);
+    expect(gArc.ledger.bounty - beforeArcBounty).toBe(Math.round(ball.def.bounty * 1.50));
+    expect(gArc.enemies.filter(e => !e.dead && e.isSplitChild).length).toBe(2);
   });
 });

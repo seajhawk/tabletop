@@ -10,7 +10,7 @@ const TURRET_KEYS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
 const ENEMY_KEYS = ['scout', 'swarmer', 'cruiser', 'frigate', 'phase', 'dreadnought'] as const;
 
 describe('buildTheaterTextures', () => {
-  it.each<TheaterSpriteTheme>(['naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab'])(
+  it.each<TheaterSpriteTheme>(['naval', 'mars', 'medieval', 'kitchen', 'lawn', 'cyber', 'volcano', 'biolab', 'office', 'zoo', 'arcade'])(
     'returns a valid TheaterTextureSet with Texture.EMPTY in headless Node for %s',
     (theme: TheaterTheme) => {
       expect(typeof document).toBe('undefined');

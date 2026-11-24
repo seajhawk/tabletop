@@ -617,6 +617,177 @@ const BIOLAB_THEME: TheaterTheme = {
   },
 };
 
+const OFFICE_THEME: TheaterTheme = {
+  id: 'office',
+  spaceBg: 0x14171f,
+  boardBg: 0x222733,
+  gridColor: 0xcbd5e1,
+  borderColor: 0x94a3b8,
+  panelBg: 0x1b202b,
+  slotBg: 0x272e3d,
+  routeDotColor: 0x94a3b8,
+  routePulseColor: 0xf59e0b,
+  spawnLabel: 'ELEVATOR',
+  objectiveLabel: 'BREAKROOM',
+  bossTitle: 'THE CEO',
+  victoryTitle: 'BREAKROOM SAVED',
+  defeatTitle: 'OVERTIME MANDATE',
+  helpText:
+    'Defend the Breakroom Espresso Bar from relentless office interruptions in Cubicle Chaos! ' +
+    'Place defenses on glowing Coffee Stations (+JAVA) for extra fire rate & range, ' +
+    'and brace for 5 PM Deadline Crushes that speed up tasks while Espresso-boosted units brew +25% bonus credits!',
+  obstacleLabel: 'Cubicle',
+  boostLabel: '+JAVA',
+  roleTags: {
+    pulse: 'STAPLE',
+    plasma: 'COFFEE',
+    stasis: 'MEET',
+    railgun: 'SHRED',
+    swarm: 'MEMO',
+  },
+  turrets: {
+    pulse: { shortName: 'Stapler', fullName: 'Auto-Stapler Turret', upgrades: ['Heavy Duty', 'Electric Stapler'], color: 0x38bdf8 },
+    plasma: { shortName: 'Espresso', fullName: 'Hot Espresso Lobber', upgrades: ['Double Shot', 'Scalding Roast'], color: 0xf59e0b },
+    stasis: { shortName: 'Meeting', fullName: 'Calendar Blocker', upgrades: ['Sync Call', 'All-Hands Hold'], color: 0x818cf8 },
+    railgun: { shortName: 'Shredder', fullName: 'Cross-Cut Shredder', upgrades: ['Bulk Feed', 'Laser Shredder'], color: 0xf43f5e },
+    swarm: { shortName: 'Paper Jet', fullName: 'Paper-Plane Launcher', upgrades: ['Origami Squad', 'Memo Barrage'], color: 0x34d399 },
+  },
+  enemies: {
+    scout: { name: 'Urgent Email', color: 0x38bdf8 },
+    swarmer: { name: 'Slack Ping', color: 0x22d3ee },
+    cruiser: { name: 'Printer Jam', color: 0x94a3b8 },
+    frigate: { name: 'Audit Binder', color: 0xa78bfa },
+    phase: { name: 'Pop-Up Invite', color: 0xfb7185 },
+    dreadnought: { name: 'The CEO', color: 0xef4444 },
+  },
+  waveNames: {
+    1: 'Monday Inbox',
+    2: 'Slack Flood',
+    3: 'Printer Outage',
+    4: 'Compliance Audit',
+    5: 'Surprise Standup',
+    6: 'Quarterly Review',
+    7: 'Reply-All Storm',
+    8: 'Scope Creep',
+    9: 'Friday 4:59 PM',
+    10: 'The CEO Visit',
+  },
+};
+
+const ZOO_THEME: TheaterTheme = {
+  id: 'zoo',
+  spaceBg: 0x101c13,
+  boardBg: 0x1f3321,
+  gridColor: 0xe7f5cf,
+  borderColor: 0x84cc16,
+  panelBg: 0x18261a,
+  slotBg: 0x243827,
+  routeDotColor: 0xfde68a,
+  routePulseColor: 0x4ade80,
+  spawnLabel: 'GATE',
+  objectiveLabel: 'VISITOR PLAZA',
+  bossTitle: 'SILVERBACK KING',
+  victoryTitle: 'ZOO SECURED',
+  defeatTitle: 'PLAZA STAMPEDE',
+  helpText:
+    'Contain the Safari Zoo Breakout before escaped animals reach the Visitor Plaza! ' +
+    'Build on Ranger Watchtowers (+VIEW) for boosted range, watch out for enraged Stampeding Rhinos (<50% HP) ' +
+    'and periodic Wild Stampede roars — use Tranq Darts & Net Launchers to calm the herd!',
+  obstacleLabel: 'Exhibit',
+  boostLabel: '+VIEW',
+  roleTags: {
+    pulse: 'DART',
+    plasma: 'SNACK',
+    stasis: 'NET',
+    railgun: 'LASSO',
+    swarm: 'DRONE',
+  },
+  turrets: {
+    pulse: { shortName: 'Tranq Dart', fullName: 'Tranquilizer Post', upgrades: ['Twin Darts', 'Sleep Volley'], color: 0x38bdf8 },
+    plasma: { shortName: 'Fruit Toss', fullName: 'Treats Catapult', upgrades: ['Melon Splash', 'Feast Basket'], color: 0xf97316 },
+    stasis: { shortName: 'Net Gun', fullName: 'Safari Net Launcher', upgrades: ['Wide Mesh', 'Calming Snare'], color: 0x4ade80 },
+    railgun: { shortName: 'Sound Horn', fullName: 'Ranger Sonic Horn', upgrades: ['Echo Blast', 'Herd Deterrent'], color: 0xfacc15 },
+    swarm: { shortName: 'Scout Owl', fullName: 'Ranger Drone Coop', upgrades: ['Trio Drones', 'Park Patrol'], color: 0xc084fc },
+  },
+  enemies: {
+    scout: { name: 'Cheetah', color: 0xfbbf24 },
+    swarmer: { name: 'Meerkat Pack', color: 0xd97706 },
+    cruiser: { name: 'Charging Rhino', color: 0x9ca3af },
+    frigate: { name: 'Giant Tortoise', color: 0x65a30d },
+    phase: { name: 'Scarlet Macaw', color: 0xef4444 },
+    dreadnought: { name: 'Silverback King', color: 0x374151 },
+  },
+  waveNames: {
+    1: 'Gate Left Open',
+    2: 'Meerkat Tunnel',
+    3: 'Rhino Charge',
+    4: 'Shell Parade',
+    5: 'Aviary Escape',
+    6: 'Savannah Sprint',
+    7: 'Feeding Frenzy',
+    8: 'Stampede Alley',
+    9: 'Full Menagerie',
+    10: 'Silverback King',
+  },
+};
+
+const ARCADE_THEME: TheaterTheme = {
+  id: 'arcade',
+  spaceBg: 0x0d081c,
+  boardBg: 0x160f30,
+  gridColor: 0xe879f9,
+  borderColor: 0xf472b6,
+  panelBg: 0x130c29,
+  slotBg: 0x201542,
+  routeDotColor: 0x38e8ff,
+  routePulseColor: 0xfacc15,
+  spawnLabel: 'PLUNGER',
+  objectiveLabel: 'JACKPOT GATE',
+  bossTitle: 'MEGA PINBALL',
+  victoryTitle: 'NEW HIGH SCORE!',
+  defeatTitle: 'GAME OVER · TILT',
+  helpText:
+    'Defend the Jackpot Gate on the Retro Pinball Arcade playfield! ' +
+    'Place turrets on golden Star Pads (2X) for huge +35% fire rate & bonus bounty credits, ' +
+    'chain kills during Multiball Frenzy for +50% jackpot payouts, and watch Heavy Pinballs split into mini-balls!',
+  obstacleLabel: 'Bumper',
+  boostLabel: '2X PAD',
+  roleTags: {
+    pulse: 'ZAP',
+    plasma: 'BUMP',
+    stasis: 'MAG',
+    railgun: 'FLIP',
+    swarm: 'BALL',
+  },
+  turrets: {
+    pulse: { shortName: 'Neon Zap', fullName: 'Neon Bumper Zap', upgrades: ['Combo Arc', 'Hyper-Volt'], color: 0x38e8ff },
+    plasma: { shortName: 'Pop Bumper', fullName: 'Pop-Bumper Blast', upgrades: ['Super Ring', 'Tilt Shock'], color: 0xf472b6 },
+    stasis: { shortName: 'Mag Lock', fullName: 'Magnet Ball-Lock', upgrades: ['Hold Field', 'Stasis Catch'], color: 0xa855f7 },
+    railgun: { shortName: 'Flipper', fullName: 'Power Flipper Rail', upgrades: ['Steel Shot', 'Skill-Shot Beam'], color: 0xfacc15 },
+    swarm: { shortName: 'Mini-Ball', fullName: 'Multiball Spinner', upgrades: ['Triple Spin', 'Jackpot Volley'], color: 0x4ade80 },
+  },
+  enemies: {
+    scout: { name: 'Silver Ball', color: 0xe2e8f0 },
+    swarmer: { name: 'Micro Orb', color: 0x38e8ff },
+    cruiser: { name: 'Heavy Steelball', color: 0xf472b6 },
+    frigate: { name: 'Shielded Bumper', color: 0xa855f7 },
+    phase: { name: 'Ramp Flyer', color: 0xfacc15 },
+    dreadnought: { name: 'Mega Pinball', color: 0xef4444 },
+  },
+  waveNames: {
+    1: 'Insert Coin',
+    2: 'Spinner Run',
+    3: 'Multiball Split',
+    4: 'Magnet Lock',
+    5: 'Sky Ramp Jump',
+    6: 'Combo x4',
+    7: 'Bonus Frenzy',
+    8: 'Wizard Mode',
+    9: 'Extra Ball Rush',
+    10: 'Mega Pinball',
+  },
+};
+
 export const THEMES: Record<ThemeId, TheaterTheme> = {
   space: SPACE_THEME,
   military: MILITARY_THEME,
@@ -628,6 +799,9 @@ export const THEMES: Record<ThemeId, TheaterTheme> = {
   cyber: CYBER_THEME,
   volcano: VOLCANO_THEME,
   biolab: BIOLAB_THEME,
+  office: OFFICE_THEME,
+  zoo: ZOO_THEME,
+  arcade: ARCADE_THEME,
 };
 
 export function getTheater(theme?: string): TheaterTheme {
@@ -650,6 +824,12 @@ export function getTheater(theme?: string): TheaterTheme {
       return VOLCANO_THEME;
     case 'biolab':
       return BIOLAB_THEME;
+    case 'office':
+      return OFFICE_THEME;
+    case 'zoo':
+      return ZOO_THEME;
+    case 'arcade':
+      return ARCADE_THEME;
     case 'space':
     default:
       return SPACE_THEME;

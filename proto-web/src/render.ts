@@ -288,7 +288,7 @@ export class Renderer {
   private toastLayer = new Container();
 
   private milTex: MilitaryTextureSet;
-  private theaterTex: Record<'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab', TheaterTextureSet>;
+  private theaterTex: Record<'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab' | 'office' | 'zoo' | 'arcade', TheaterTextureSet>;
   private craters: { sprite: Sprite; ttl: number; max: number }[] = [];
   private mineSprites: Sprite[] = [];
   private milTowers: { container: Container; base: Sprite; head: Sprite; badge: Graphics }[] = [];
@@ -377,6 +377,9 @@ export class Renderer {
       cyber: buildTheaterTextures('cyber'),
       volcano: buildTheaterTextures('volcano'),
       biolab: buildTheaterTextures('biolab'),
+      office: buildTheaterTextures('office'),
+      zoo: buildTheaterTextures('zoo'),
+      arcade: buildTheaterTextures('arcade'),
     };
     this.lastLives = game.lives;
     this.routePulseG.blendMode = 'add';
@@ -563,7 +566,10 @@ export class Renderer {
       themeId === 'lawn' ||
       themeId === 'cyber' ||
       themeId === 'volcano' ||
-      themeId === 'biolab'
+      themeId === 'biolab' ||
+      themeId === 'office' ||
+      themeId === 'zoo' ||
+      themeId === 'arcade'
     ) {
       return this.theaterTex[themeId];
     }
@@ -2537,7 +2543,10 @@ export class Renderer {
     const isKitchenRush = gm.currentMap.mechanic === 'kitchen-rush' && gm.rushActive;
     const isCyberEmp = gm.currentMap.mechanic === 'cyber-emp-chain' && gm.empActive;
     const isBioMutation = gm.currentMap.mechanic === 'biolab-mutate-regen' && gm.mutationActive;
-    if (!isMarsStorm && !isKitchenRush && !isCyberEmp && !isBioMutation) {
+    const isOfficeDeadline = gm.currentMap.mechanic === 'office-deadline-rush' && gm.deadlineActive;
+    const isZooStampede = gm.currentMap.mechanic === 'zoo-stampede-enrage' && gm.stampedeActive;
+    const isArcadeMultiball = gm.currentMap.mechanic === 'arcade-multiball-combo' && gm.multiballActive;
+    if (!isMarsStorm && !isKitchenRush && !isCyberEmp && !isBioMutation && !isOfficeDeadline && !isZooStampede && !isArcadeMultiball) {
       if (this.stormAlertG.visible) this.stormAlertG.visible = false;
       if (this.stormAlertText.visible) this.stormAlertText.visible = false;
       return;
@@ -2577,6 +2586,21 @@ export class Renderer {
       g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0xec4899, alpha: pulse });
       this.stormAlertText.text = 'MUTATION SURGE · +25% SPEED & 2x REGEN';
       this.stormAlertText.style.fill = 0x86efac;
+    } else if (isOfficeDeadline) {
+      const pulse = 0.05 + 0.04 * Math.sin(gm.time * 9);
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0xf59e0b, alpha: pulse });
+      this.stormAlertText.text = '5 PM DEADLINE CRUSH · +28% SPEED (+JAVA +25% CR)';
+      this.stormAlertText.style.fill = 0xfde68a;
+    } else if (isZooStampede) {
+      const pulse = 0.05 + 0.04 * Math.sin(gm.time * 7);
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0x84cc16, alpha: pulse });
+      this.stormAlertText.text = 'WILD STAMPEDE! · +30% SPEED (NET GUN CALMS)';
+      this.stormAlertText.style.fill = 0xd9f99d;
+    } else if (isArcadeMultiball) {
+      const pulse = 0.06 + 0.04 * Math.sin(gm.time * 12);
+      g.rect(0, 0, BOARD_W, BOARD_H).fill({ color: 0xf472b6, alpha: pulse });
+      this.stormAlertText.text = 'MULTIBALL FRENZY! · +50% BOUNTY JACKPOT';
+      this.stormAlertText.style.fill = 0xfef08a;
     } else {
       // Soft icy cyan-white translucent fridge-light trapezoid/mist radiating leftward from open fridge (exits)
       const exits = gm.currentMap.exits;

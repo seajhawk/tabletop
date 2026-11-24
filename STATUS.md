@@ -13,7 +13,11 @@ App automation updates require `destination: "thread"`.
 
 ## Current game
 - Selected PixiJS/TypeScript in `proto-web/`; canonical `shared-data/`; Godot historical.
-  12 maps / 10 themes, 7 layouts, fixed 60 Hz, independent multi-touch; 5 roles + Healer.
+  15 maps / 13 themes, 9 layouts (1P–4P), fixed 60 Hz, independent multi-touch; 5 roles + Healer.
+- Pass 26 (Nov 23, 10:55 PM): added **Cubicle Chaos** (Office: 5 PM Deadline Crush + `+JAVA` +25% cr),
+  **Safari Zoo Breakout** (Zoo: Wild Stampede + enraged Rhinos <50% HP), and **Retro Pinball Arcade**
+  (Pinball: Multiball Frenzy +50% jackpot + 2X Pads + splitting Heavy Steelballs) with bespoke
+  artwork & matched sprites; 236 unit tests + live browser placement/wave check PASS.
 - Pass 25 e6966cf: cyber/volcano/biolab sprites fix invisible towers; Share 25/50/100;
   `.agents/skills/new-map/SKILL.md`. Earlier coordinator reported 229 game tests/browser PASS.
 - Cyber EMP/chain; Volcano geysers/plateaus/Forge Drone; Bio regen/mutation/mitosis.

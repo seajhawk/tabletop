@@ -13,7 +13,7 @@ export interface TheaterTextureSet extends MilitaryTextureSet {
   healerTurrets?: [Texture, Texture, Texture];
 }
 
-export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab';
+export type TheaterTheme = 'naval' | 'mars' | 'medieval' | 'kitchen' | 'lawn' | 'cyber' | 'volcano' | 'biolab' | 'office' | 'zoo' | 'arcade';
 export type TheaterSpriteTheme = TheaterTheme;
 
 const TURRET_KEYS = ['pulse', 'plasma', 'stasis', 'railgun', 'swarm'] as const;
@@ -4857,6 +4857,621 @@ function paintBiolabCrater(): Texture {
 }
 
 // ============================================================================
+// OFFICE (CUBICLE CHAOS) PAINTERS
+// ============================================================================
+
+function paintOfficeBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const accent = key === 'pulse' ? '#38bdf8' : key === 'plasma' ? '#f59e0b' : key === 'stasis' ? '#818cf8' : key === 'railgun' ? '#f43f5e' : '#34d399';
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, 14, 14, 68, 68, 10);
+      ctx.fillStyle = '#334155';
+      ctx.fill();
+    });
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    // Office desk mat corners
+    ctx.fillStyle = '#1e293b';
+    roundedRectPath(ctx, 22, 22, 52, 52, 6);
+    ctx.fill();
+  });
+}
+
+function paintOfficeTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'pulse') {
+      // Auto-Stapler Turret
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 20, c - 14, 52 + tier * 3, 28, 7);
+        ctx.fillStyle = tier === 2 ? '#0284c7' : '#38bdf8';
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.8);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(c + 14, c - 7, 16 + tier * 2, 14);
+      strokeInk(ctx, 1.2);
+    } else if (key === 'plasma') {
+      // Hot Espresso Lobber: coffee carafe + steam ring
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.arc(c - 3, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = '#451a03';
+      ctx.beginPath();
+      ctx.arc(c - 3, c, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(c + 14, c, 7 + tier, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'stasis') {
+      // Calendar Blocker: clock face
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#eef2ff';
+        ctx.beginPath();
+        ctx.arc(c, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.strokeStyle = '#312e81';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(c, c);
+      ctx.lineTo(c + 12, c);
+      ctx.moveTo(c, c);
+      ctx.lineTo(c, c - 11);
+      ctx.stroke();
+    } else if (key === 'railgun') {
+      // Cross-Cut Shredder
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 18, c - 17, 46, 34, 5);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      ctx.fillStyle = '#fda4af';
+      ctx.fillRect(c + 6, c - 12, 26 + tier * 3, 24);
+      ctx.strokeStyle = '#881337';
+      ctx.lineWidth = 1.6;
+      for (let oy = -8; oy <= 8; oy += 4) {
+        ctx.beginPath();
+        ctx.moveTo(c + 6, c + oy);
+        ctx.lineTo(c + 32 + tier * 3, c + oy);
+        ctx.stroke();
+      }
+    } else {
+      // Paper-Plane Launcher
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(c + 28, c);
+        ctx.lineTo(c - 18, c - 20);
+        ctx.lineTo(c - 8, c);
+        ctx.lineTo(c - 18, c + 20);
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+    }
+  });
+}
+
+function paintOfficeEnemy(key: EnemyKey): Texture {
+  return paintCanvas(80, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'scout') {
+      // Urgent Email envelope
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 15, c - 11, 30, 22, 3);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(c - 15, c - 11);
+      ctx.lineTo(c, c + 2);
+      ctx.lineTo(c + 15, c - 11);
+      ctx.stroke();
+    } else if (key === 'swarmer') {
+      // Slack Ping notification badge
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(c, c, 10, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(c + 2, c, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'cruiser') {
+      // Printer Jam box
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 18, c - 16, 36, 32, 5);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fill();
+      });
+      strokeInk(ctx, 2);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(c - 10, c - 9, 22, 18);
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(c + 12, c - 9, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'frigate') {
+      // Audit Binder
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 15, c - 18, 30, 36, 4);
+        ctx.fillStyle = '#7c3aed';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#ddd6fe';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+    } else if (key === 'phase') {
+      // Pop-Up Invite window
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 18, c - 13, 36, 26, 4);
+        ctx.fillStyle = '#fb7185';
+        ctx.fill();
+      });
+      ctx.fillStyle = '#fff1f2';
+      ctx.fillRect(c - 15, c - 4, 30, 14);
+      strokeInk(ctx, 1.5);
+    } else {
+      // The CEO briefcase/executive
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, c - 24, c - 22, 48, 44, 8);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(c + 14, c);
+      ctx.lineTo(c - 4, c - 7);
+      ctx.lineTo(c - 4, c + 7);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+}
+
+function paintOfficeObstacle(variant: number): Texture {
+  return paintCanvas(72, (ctx) => {
+    roundedRectPath(ctx, 8, 8, 56, 56, 6);
+    ctx.fillStyle = variant % 2 === 0 ? 'rgba(51, 65, 85, 0.25)' : 'rgba(71, 85, 105, 0.25)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  });
+}
+
+function paintOfficeCrater(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = 'rgba(120, 53, 15, 0.28)';
+    ctx.beginPath();
+    ctx.arc(c, c, 15, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================================
+// ZOO (SAFARI ZOO BREAKOUT) PAINTERS
+// ============================================================================
+
+function paintZooBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const accent = key === 'pulse' ? '#38bdf8' : key === 'plasma' ? '#f97316' : key === 'stasis' ? '#4ade80' : key === 'railgun' ? '#facc15' : '#c084fc';
+    withGroundShadow(ctx, () => {
+      roundedRectPath(ctx, 14, 14, 68, 68, 12);
+      ctx.fillStyle = '#78512c';
+      ctx.fill();
+    });
+    strokeInk(ctx, 2);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(c, c, 24, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function paintZooTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'pulse') {
+      // Tranquilizer Dart Post
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#14532d';
+        ctx.beginPath();
+        ctx.arc(c - 4, c, 20, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+      for (const oy of tier >= 1 ? [-7, 7] : [0]) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(c + 2, c + oy - 3, 30 + tier * 3, 6);
+        strokeInk(ctx, 1.2);
+      }
+    } else if (key === 'plasma') {
+      // Fruit Toss Catapult
+      withGroundShadow(ctx, () => {
+        roundedRectPath(ctx, 18, c - 16, 44, 32, 8);
+        ctx.fillStyle = '#92400e';
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.8);
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(c + 14, c, 11 + tier * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.4);
+    } else if (key === 'stasis') {
+      // Safari Net Gun
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#166534';
+        ctx.beginPath();
+        ctx.arc(c, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.strokeStyle = '#dcfce7';
+      ctx.lineWidth = 1.6;
+      for (let i = -12; i <= 12; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(c + i, c - 14);
+        ctx.lineTo(c + i, c + 14);
+        ctx.moveTo(c - 14, c + i);
+        ctx.lineTo(c + 14, c + i);
+        ctx.stroke();
+      }
+    } else if (key === 'railgun') {
+      // Ranger Sonic Horn
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(c - 14, c - 8);
+        ctx.lineTo(c + 28 + tier * 3, c - 18);
+        ctx.lineTo(c + 28 + tier * 3, c + 18);
+        ctx.lineTo(c - 14, c + 8);
+        ctx.closePath();
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.8);
+    } else {
+      // Scout Owl Drone Coop
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#4c1d95';
+        ctx.beginPath();
+        ctx.arc(c, c, 21, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      for (const oy of [-8, 8]) {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(c + 8, c + oy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
+}
+
+function paintZooEnemy(key: EnemyKey): Texture {
+  return paintCanvas(80, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'scout') {
+      // Cheetah: golden-amber spotted runner
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.ellipse(c, c, 18, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.6);
+      ctx.fillStyle = '#1f2937';
+      for (const [ox, oy] of [[-6, -3], [2, 3], [8, -2]]) {
+        ctx.beginPath();
+        ctx.arc(c + ox, c + oy, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (key === 'swarmer') {
+      // Meerkat Pack
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.arc(c, c, 10, 0, Math.PI * 2);
+      ctx.fill();
+      strokeInk(ctx, 1.5);
+    } else if (key === 'cruiser') {
+      // Charging Rhino: heavy slate-gray body + ivory horn
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#6b7280';
+        ctx.beginPath();
+        ctx.ellipse(c - 2, c, 20, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      strokeInk(ctx, 2);
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      ctx.moveTo(c + 26, c);
+      ctx.lineTo(c + 14, c - 5);
+      ctx.lineTo(c + 14, c + 5);
+      ctx.closePath();
+      ctx.fill();
+      strokeInk(ctx, 1.3);
+    } else if (key === 'frigate') {
+      // Giant Tortoise: emerald patterned shell
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#4d7c0f';
+        ctx.beginPath();
+        ctx.arc(c, c, 17, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#bef264';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+    } else if (key === 'phase') {
+      // Scarlet Macaw: bright red/blue flying wings
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(c + 20, c);
+        ctx.lineTo(c - 6, c - 19);
+        ctx.lineTo(c - 2, c);
+        ctx.lineTo(c - 6, c + 19);
+        ctx.closePath();
+        ctx.fill();
+      });
+      strokeInk(ctx, 1.6);
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(c + 12, c, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Silverback King: broad charcoal shoulders + silver back
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.arc(c, c, 25, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#d1d5db';
+      ctx.beginPath();
+      ctx.ellipse(c - 4, c, 13, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
+function paintZooObstacle(variant: number): Texture {
+  return paintCanvas(72, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = variant % 2 === 0 ? 'rgba(34, 197, 94, 0.22)' : 'rgba(14, 165, 233, 0.20)';
+    ctx.beginPath();
+    ctx.arc(c, c, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(134, 239, 172, 0.28)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  });
+}
+
+function paintZooCrater(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.22)';
+    ctx.beginPath();
+    ctx.arc(c, c, 15, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================================
+// ARCADE (RETRO PINBALL ARCADE) PAINTERS
+// ============================================================================
+
+function paintArcadeBase(key: TurretKey): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    const accent = key === 'pulse' ? '#38e8ff' : key === 'plasma' ? '#f472b6' : key === 'stasis' ? '#a855f7' : key === 'railgun' ? '#facc15' : '#4ade80';
+    withGroundShadow(ctx, () => {
+      ctx.fillStyle = '#181036';
+      ctx.beginPath();
+      ctx.arc(c, c, 35, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(c, c, 26, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function paintArcadeTurret(key: TurretKey, tier: 0 | 1 | 2): Texture {
+  return paintCanvas(96, (ctx, size) => {
+    const c = size / 2;
+    if (key === 'pulse') {
+      // Neon Bumper Zap
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(c - 2, c, 20, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#e0faff';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.fillStyle = '#38e8ff';
+      ctx.fillRect(c + 6, c - 4, 24 + tier * 4, 8);
+    } else if (key === 'plasma') {
+      // Pop Bumper Blast
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#db2777';
+        ctx.beginPath();
+        ctx.arc(c, c, 23 + tier * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = '#fdf2f8';
+      ctx.beginPath();
+      ctx.arc(c, c, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (key === 'stasis') {
+      // Magnet Ball-Lock
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#581c87';
+        ctx.beginPath();
+        ctx.arc(c, c, 22, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.strokeStyle = '#38e8ff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(c, c, 12, -Math.PI * 0.7, Math.PI * 0.7);
+      ctx.stroke();
+    } else if (key === 'railgun') {
+      // Power Flipper Rail
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(c - 14, c - 11);
+        ctx.lineTo(c + 30 + tier * 3, c - 4);
+        ctx.lineTo(c + 30 + tier * 3, c + 4);
+        ctx.lineTo(c - 14, c + 11);
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+    } else {
+      // Multiball Spinner
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(c, c, 21, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      for (const a of [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3]) {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(c + Math.cos(a) * 11, c + Math.sin(a) * 11, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
+}
+
+function paintArcadeEnemy(key: EnemyKey): Texture {
+  return paintCanvas(80, (ctx, size) => {
+    const c = size / 2;
+    const drawChromeBall = (r: number, rim: string, core: string) => {
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(c, c, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.strokeStyle = rim;
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath();
+      ctx.arc(c - r * 0.32, c - r * 0.32, r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    if (key === 'scout') drawChromeBall(14, '#38e8ff', '#cbd5e1');
+    else if (key === 'swarmer') drawChromeBall(10, '#f472b6', '#38e8ff');
+    else if (key === 'cruiser') drawChromeBall(18, '#facc15', '#ec4899');
+    else if (key === 'frigate') drawChromeBall(17, '#c084fc', '#581c87');
+    else if (key === 'phase') {
+      // Ramp Flyer neon comet
+      withGroundShadow(ctx, () => {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(c + 22, c);
+        ctx.lineTo(c - 10, c - 15);
+        ctx.lineTo(c - 4, c);
+        ctx.lineTo(c - 10, c + 15);
+        ctx.closePath();
+        ctx.fill();
+      });
+      ctx.strokeStyle = '#f472b6';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      // Mega Pinball Boss
+      drawChromeBall(26, '#facc15', '#ef4444');
+    }
+  });
+}
+
+function paintArcadeObstacle(variant: number): Texture {
+  return paintCanvas(72, (ctx, size) => {
+    const c = size / 2;
+    ctx.fillStyle = variant % 2 === 0 ? 'rgba(244, 114, 182, 0.22)' : 'rgba(56, 232, 255, 0.22)';
+    ctx.beginPath();
+    ctx.arc(c, c, 23, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.32)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+function paintArcadeCrater(): Texture {
+  return paintCanvas(64, (ctx, size) => {
+    const c = size / 2;
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(c, c, 15, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+// ============================================================================
 // PUBLIC BUILDER
 // ============================================================================
 
@@ -4924,6 +5539,27 @@ const THEME_PAINTERS: Record<TheaterTheme, ThemePainters> = {
     enemy: paintBiolabEnemy,
     obstacle: paintBiolabObstacle,
     crater: paintBiolabCrater,
+  },
+  office: {
+    base: paintOfficeBase,
+    turret: paintOfficeTurret,
+    enemy: paintOfficeEnemy,
+    obstacle: paintOfficeObstacle,
+    crater: paintOfficeCrater,
+  },
+  zoo: {
+    base: paintZooBase,
+    turret: paintZooTurret,
+    enemy: paintZooEnemy,
+    obstacle: paintZooObstacle,
+    crater: paintZooCrater,
+  },
+  arcade: {
+    base: paintArcadeBase,
+    turret: paintArcadeTurret,
+    enemy: paintArcadeEnemy,
+    obstacle: paintArcadeObstacle,
+    crater: paintArcadeCrater,
   },
 };
 
