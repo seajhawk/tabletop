@@ -80,7 +80,12 @@ see its [reference README](proto-godot/README.md) and the
 - [Initial prototype contract](docs/PROTOTYPE-CONTRACT.md): scope of the original comparison.
 - [Model routing](docs/MODEL-ROUTING.md): provider research and quota-aware delegation.
 - [Current handoff](STATUS.md): verified state, active work, and next actions.
-- [Local performance sample](docs/PERFORMANCE.md): measured burst-load results and limits.
+- [Sustained-load samples](docs/PERFORMANCE-SUSTAINED.md): six measured scenarios, raw results, and limits.
+- [Theater samples](docs/PERFORMANCE-THEATER.md): four variable-workload one-map runs with coverage limits.
+- [Tier-two ability samples](docs/PERFORMANCE-TIER2.md): observed centipede splits and Medieval fire zones.
+- [Boss and Healer samples](docs/PERFORMANCE-BOSS-STRONG.md): normal-combat phase transitions and repair activity.
+- [Cybergrid, Volcano, and Bio-Lab samples](docs/PERFORMANCE-CYBER-VOLCANO-BIO.md): observed mechanic coverage and limits.
+- [Offline and update verification](docs/PWA-VERIFICATION.md): real-browser lifecycle and sibling-cache regression checks.
 - [Agent instructions](AGENTS.md): common policy for every coordinator.
 
 Claude, Gemini, and Copilot entry files point to the same policy. Claude handles

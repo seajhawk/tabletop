@@ -1,0 +1,590 @@
+{
+  "kind": "ga-sustained-browser-benchmark",
+  "version": 1,
+  "profile": "theater",
+  "towerTier": 2,
+  "comparability": "variable-workload theater profile with UPGRADED tier-2 towers: NOT comparable to canonical tier-0 theater or the fixed 150-Swarmer sustained baseline",
+  "valid": true,
+  "failures": [],
+  "warnings": [
+    "biolab-outbreak: TIER-2 towers (upgraded via game.upgradeTower before the run; initial aggregate HP 3300): separate from canonical tier-0 theater; ability coverage must be read from observed cues/fireZones/split children only"
+  ],
+  "timestamp": "2026-11-23T21:18:17.428Z",
+  "config": {
+    "url": "http://127.0.0.1:4187/",
+    "mapIds": [
+      "biolab-outbreak"
+    ],
+    "profile": "theater",
+    "towerTier": 2,
+    "bossHealer": false,
+    "bossPriority": "first",
+    "warmupMs": 1000,
+    "sampleMs": 30000,
+    "targetEnemies": 150,
+    "seed": 12345,
+    "timeoutMs": 45000,
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "deviceScaleFactor": 2,
+    "serviceWorkers": "block",
+    "fixtureLives": 1000000000,
+    "expectedTowers": 20,
+    "scoreKey": "galactic-defense:best-scores:v1"
+  },
+  "environment": {
+    "browserVersion": "158.0.8127.36",
+    "errors": [],
+    "muted": {
+      "before": false,
+      "after": true,
+      "toggled": true
+    },
+    "webgl": {
+      "vendor": "Google Inc. (NVIDIA)",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 (0x00002504) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "source": "pixi"
+    },
+    "rendererType": 1,
+    "build": {
+      "mainScriptUrl": "http://127.0.0.1:4187/assets/index-C5RHinrD.js",
+      "scriptUrls": [
+        "http://127.0.0.1:4187/assets/index-C5RHinrD.js"
+      ],
+      "base": "http://127.0.0.1:4187/",
+      "devServer": false,
+      "swUrl": "http://127.0.0.1:4187/ga-sw.js",
+      "swVersion": "8c184ae8f8f75a71",
+      "swVersionError": null
+    },
+    "timer": {
+      "resolutionMs": 0.09999990463256836,
+      "pairOverheadMs": 0.00021999999284744263
+    },
+    "layout": "2p-phone",
+    "playerCount": 2,
+    "difficulty": "medium",
+    "mapIds": [
+      "orbital-crossing",
+      "dc-defense",
+      "pacific-fleet",
+      "mars-outpost",
+      "ironhold-keep",
+      "kitchen-raid",
+      "backyard-lawn",
+      "asteroid-belt",
+      "nebula-rift",
+      "neon-cybergrid",
+      "volcanic-caldera",
+      "biolab-outbreak"
+    ],
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "dpr": 2,
+    "visibility": "visible",
+    "canvas": {
+      "width": 824,
+      "height": 1830,
+      "clientWidth": 412,
+      "clientHeight": 915
+    },
+    "hardwareConcurrency": 16,
+    "deviceMemoryGiB": 32
+  },
+  "build": {
+    "mainScriptUrl": "http://127.0.0.1:4187/assets/index-C5RHinrD.js",
+    "scriptUrls": [
+      "http://127.0.0.1:4187/assets/index-C5RHinrD.js"
+    ],
+    "base": "http://127.0.0.1:4187/",
+    "devServer": false,
+    "swUrl": "http://127.0.0.1:4187/ga-sw.js",
+    "swVersion": "8c184ae8f8f75a71",
+    "swVersionError": null
+  },
+  "disclosures": [
+    "Debug API dependency: uses window.__ga and the TypeScript-private game.spawnEnemy; not a public contract.",
+    "Population is replenished to a minimum floor after every step; natural extras and real tower damage vary the workload.",
+    "CPU timings use performance.now() (see environment.timer for resolution and per-call overhead); zero-duration values are below timer resolution.",
+    "Core step, refill and renderer.update CPU are timed separately; GPU time, composition and most Pixi draw work are NOT measured.",
+    "Math.random is seeded in the fresh context only; frame/step timing remains non-deterministic.",
+    "Fresh context: service workers blocked, non-loopback requests aborted, sound muted via existing hooks when possible.",
+    "Not a hardware multi-touch, thermal, GPU-time, DPI or target-device benchmark. No pass/fail FPS threshold is applied.",
+    "THEATER profile: variable workload (mixed canonical non-boss enemies, natural splits/overflow up to 3x target, real tower damage); NOT comparable to the fixed sustained baseline.",
+    "Theater population is a floor (replenished before/after each step), not an exact count; no boss is covered; towers are never repaired, so environmental tower loss is reported, not hidden.",
+    "Sound-cue counts are game.emitSound CALL counts per window (emission only, not damage proof); effect maxima are observed after each step.",
+    "Per-step theater observation (type counts, transients, towers) runs outside the timed core/refill/update segments but still consumes wall-clock time.",
+    "Maps whose real mechanic is cyber-emp-chain, volcano-lava-geyser or biolab-mutate-regen add scenario.mechanics (observed state/evidence per window plus sampleCoverage/missing; warmup-only never counts). Nothing is forced; Cyber wraps game.damageEnemy INSIDE the timed core step (overhead included in coreStepCpu); missing coverage is a finding, not invalid timing.",
+    "TIER-2 requested: the harness requires 40 upgrades through game.upgradeTower, funded by exact canonical game.grant calls before measurement. Check each scenario towerUpgrade.ok, wallet/ledger reconciliation, and HP audit for actual setup outcomes; failures remain unmeasured.",
+    "TIER-2 results are a separate labelled fixture, NOT comparable to canonical tier-0 theater; the tier choice does not prove ability coverage: only observed cues, fireZones and split children count as evidence."
+  ],
+  "scenarios": [
+    {
+      "id": "biolab-outbreak",
+      "profile": "theater",
+      "towerTier": 2,
+      "measured": true,
+      "problems": [],
+      "warnings": [
+        "TIER-2 towers (upgraded via game.upgradeTower before the run; initial aggregate HP 3300): separate from canonical tier-0 theater; ability coverage must be read from observed cues/fireZones/split children only"
+      ],
+      "scenarioLabel": "theater + tier-2 towers (NOT canonical tier-0 theater)",
+      "bossHealerRequested": false,
+      "visibilityStart": "visible",
+      "stressEnemyId": "swarmer",
+      "canonicalInitialEnemies": 150,
+      "targetEnemies": 150,
+      "fixtureLives": 1000000000,
+      "seed": 12345,
+      "mapName": "Bio-Lab Outbreak",
+      "setup": {
+        "towers": 20,
+        "enemies": 150
+      },
+      "expectedTowers": 20,
+      "towersAtStart": 20,
+      "towerUpgrade": {
+        "requestedTier": 2,
+        "canonicalFixture": {
+          "setup": {
+            "towers": 20,
+            "enemies": 150
+          },
+          "towers": 20,
+          "enemies": 150
+        },
+        "attemptedUpgrades": 40,
+        "succeededUpgrades": 40,
+        "canUpgradeCalls": 40,
+        "grantCalls": 40,
+        "upgradeCalls": 40,
+        "totalCost": 4280,
+        "totalGranted": 4280,
+        "before": {
+          "tierCounts": {
+            "0": 20
+          },
+          "hp": 2000,
+          "maxHp": 2000,
+          "badTowers": 0
+        },
+        "after": {
+          "tierCounts": {
+            "2": 20
+          },
+          "hp": 3300,
+          "maxHp": 3300,
+          "badTowers": 0
+        },
+        "wallet": {
+          "before": [
+            200,
+            200
+          ],
+          "after": [
+            200,
+            200
+          ]
+        },
+        "ledger": {
+          "before": {
+            "granted": 1452,
+            "spent": 1452
+          },
+          "after": {
+            "granted": 5732,
+            "spent": 5732
+          },
+          "grantedDelta": 4280,
+          "spentDelta": 4280
+        },
+        "ok": true,
+        "note": "costs granted exactly via game.grant then spent by game.upgradeTower; no stat, tier or credit written directly; the harness does not repair towers afterwards"
+      },
+      "phase": "sample",
+      "wallMs": 30002.200000047684,
+      "simSeconds": 29.999999999999517,
+      "simToWallRatio": 0.9999266720424448,
+      "steps": {
+        "warmup": 61,
+        "sample": 1800,
+        "blocked": 0,
+        "errors": 0
+      },
+      "raf": {
+        "callbacks": 1800,
+        "intervals": {
+          "count": 1799,
+          "totalMs": 29984.800000000003,
+          "meanMs": 16.667481934408006,
+          "medianMs": 16.69999999999891,
+          "p95Ms": 16.80000000000291,
+          "p99Ms": 17,
+          "maxMs": 17.299999999999272
+        }
+      },
+      "coreStepCpu": {
+        "count": 1800,
+        "totalMs": 316.20000171661377,
+        "meanMs": 0.17566666762034097,
+        "medianMs": 0.10000014305114746,
+        "p95Ms": 0.40000009536743164,
+        "p99Ms": 1.1000001430511475,
+        "maxMs": 4.099999904632568
+      },
+      "refillCpu": {
+        "count": 1800,
+        "totalMs": 11.199999570846558,
+        "meanMs": 0.006222221983803643,
+        "medianMs": 0,
+        "p95Ms": 0.09999990463256836,
+        "p99Ms": 0.10000014305114746,
+        "maxMs": 0.2999999523162842
+      },
+      "rendererUpdateCpu": {
+        "count": 1800,
+        "totalMs": 2578.8000013828278,
+        "meanMs": 1.4326666674349042,
+        "medianMs": 1.2999999523162842,
+        "p95Ms": 3.1999998092651367,
+        "p99Ms": 4.3999998569488525,
+        "maxMs": 7.400000095367432
+      },
+      "population": {
+        "target": 150,
+        "initialReplacements": 150,
+        "warmupReplacements": 0,
+        "sampleReplacements": 460,
+        "preStepReplacements": 0,
+        "overTargetSteps": 207,
+        "preStepMin": 150,
+        "preStepMax": 160,
+        "postCombatMin": 130,
+        "postCombatMax": 160,
+        "postRefillMin": 150,
+        "postRefillMax": 160,
+        "endEnemies": 150,
+        "floor": 150,
+        "overflowCap": 450,
+        "overflowMax": 160,
+        "overflowSteps": 207,
+        "naturalExtraMax": 10,
+        "fixtureHalted": false,
+        "endTypeCounts": {
+          "cruiser": 70,
+          "frigate": 32,
+          "scout": 19,
+          "phase": 15,
+          "swarmer": 14
+        }
+      },
+      "activeMax": {
+        "projectiles": 8,
+        "mines": 0
+      },
+      "poolCapacity": {
+        "projectiles": 8,
+        "mines": 0
+      },
+      "visibilityEvents": [],
+      "towersAtEnd": 20,
+      "endState": {
+        "paused": false,
+        "over": null,
+        "lives": 1000000000,
+        "mode": "stress"
+      },
+      "muted": true,
+      "visibilityEnd": "visible",
+      "scores": {
+        "before": null,
+        "after": null,
+        "readable": true,
+        "unchanged": true
+      },
+      "violations": {
+        "count": 0,
+        "first": []
+      },
+      "comparability": "variable-workload with UPGRADED tier-2 towers: NOT comparable to canonical tier-0 theater or the fixed 150-Swarmer sustained baseline",
+      "composition": {
+        "theaterEnemyIds": [
+          "scout",
+          "swarmer",
+          "cruiser",
+          "frigate",
+          "phase"
+        ],
+        "spawnPorts": 3,
+        "bossesIncluded": false,
+        "canonicalInitial": {
+          "swarmer": 150
+        },
+        "initialMixed": {
+          "types": {
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "ports": [
+            50,
+            50,
+            50
+          ]
+        },
+        "warmupReplacements": {
+          "types": {},
+          "ports": [
+            0,
+            0,
+            0
+          ]
+        },
+        "sampleReplacements": {
+          "types": {
+            "scout": 92,
+            "swarmer": 92,
+            "cruiser": 92,
+            "frigate": 92,
+            "phase": 92
+          },
+          "ports": [
+            154,
+            153,
+            153
+          ]
+        },
+        "nonCanonicalSpawns": 0,
+        "invalidSpawns": 0
+      },
+      "effects": {
+        "warmup": {
+          "steps": 61,
+          "typeMin": {
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "typeMax": {
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "splitChildMax": 0,
+          "meteorsMax": 0,
+          "knightsMax": 0,
+          "roombasMax": 0,
+          "fireZonesMax": 0,
+          "geyserZonesMax": 0,
+          "towerZonesMax": 0,
+          "meteorPool": 0,
+          "knightPool": 0,
+          "fireZonePool": 0,
+          "towerMin": 20,
+          "towerMax": 20,
+          "towerHpMin": 3300,
+          "towerHpMax": 3300,
+          "towerOperationalMin": 20,
+          "towerOperationalMax": 20,
+          "towerOperationalEnd": 20,
+          "towerHpEnd": 3300,
+          "towerHpUnavailableSteps": 0,
+          "cues": {
+            "shot-overcharge": 12
+          },
+          "cueCalls": 12
+        },
+        "sample": {
+          "steps": 1800,
+          "typeMin": {
+            "scout": 11,
+            "swarmer": 7,
+            "cruiser": 30,
+            "frigate": 25,
+            "phase": 12
+          },
+          "typeMax": {
+            "scout": 35,
+            "swarmer": 30,
+            "cruiser": 80,
+            "frigate": 53,
+            "phase": 39
+          },
+          "splitChildMax": 37,
+          "meteorsMax": 0,
+          "knightsMax": 0,
+          "roombasMax": 0,
+          "fireZonesMax": 0,
+          "geyserZonesMax": 0,
+          "towerZonesMax": 0,
+          "meteorPool": 0,
+          "knightPool": 0,
+          "fireZonePool": 0,
+          "towerMin": 20,
+          "towerMax": 20,
+          "towerHpMin": 3300,
+          "towerHpMax": 3300,
+          "towerOperationalMin": 20,
+          "towerOperationalMax": 20,
+          "towerOperationalEnd": 20,
+          "towerHpEnd": 3300,
+          "towerHpUnavailableSteps": 0,
+          "cues": {
+            "shot-overcharge": 320,
+            "kill": 614,
+            "shot-plasma": 72,
+            "impact-plasma": 72,
+            "shot-stasis": 111,
+            "shot-rail": 59,
+            "shot-swarm": 9,
+            "impact-missile": 35,
+            "centipede-split": 77,
+            "enrage": 1
+          },
+          "cueCalls": 1370
+        },
+        "cueNote": "emitSound CALL counts (emission only; not proof of damage or an audible sound)"
+      },
+      "towers": {
+        "tier": 2,
+        "initial": 20,
+        "end": 20,
+        "sampleMin": 20,
+        "sampleMax": 20,
+        "warmupMin": 20,
+        "warmupMax": 20,
+        "sampleHpMin": 3300,
+        "sampleHpMax": 3300,
+        "environmentalLossAllowed": true,
+        "placed": {
+          "end": 20
+        },
+        "operational": {
+          "end": 20,
+          "warmup": {
+            "min": 20,
+            "max": 20,
+            "end": 20
+          },
+          "sample": {
+            "min": 20,
+            "max": 20,
+            "end": 20
+          }
+        },
+        "hp": {
+          "end": 3300,
+          "warmup": {
+            "min": 3300,
+            "max": 3300,
+            "end": 3300
+          },
+          "sample": {
+            "min": 3300,
+            "max": 3300,
+            "end": 3300
+          }
+        },
+        "hpUnavailableSteps": 0,
+        "note": "towers are never repaired; operational excludes hp <= 0; null = unavailable (missing/non-finite hp), never reported as 0"
+      },
+      "mechanics": {
+        "kind": "biolab-mutate-regen",
+        "scope": "observed only on the actual currentMap.mechanic; mechanic observers do not force abilities or mutate actors",
+        "warmup": {
+          "steps": 61,
+          "stateValidSteps": 61,
+          "stateInvalidSteps": 0,
+          "activeSteps": 0,
+          "activeEntries": 0,
+          "netRegenHp": 3.3059999999997163,
+          "netRegenSteps": 43,
+          "netRegenEnemiesDistinct": 3,
+          "netRegenDistinctCapped": false,
+          "eligibleEnemySteps": 91,
+          "slowOrBurnSuppressedEnemySteps": 0,
+          "eligibilityUnavailableEnemySteps": 0,
+          "unobservedEnemies": 0
+        },
+        "sample": {
+          "steps": 1800,
+          "stateValidSteps": 1800,
+          "stateInvalidSteps": 0,
+          "activeSteps": 330,
+          "activeEntries": 1,
+          "netRegenHp": 753.0005999999673,
+          "netRegenSteps": 1773,
+          "netRegenEnemiesDistinct": 120,
+          "netRegenDistinctCapped": false,
+          "eligibleEnemySteps": 15662,
+          "slowOrBurnSuppressedEnemySteps": 88656,
+          "eligibilityUnavailableEnemySteps": 0,
+          "unobservedEnemies": 0
+        },
+        "warmupCoverage": {
+          "window": "warmup",
+          "missing": [
+            "mutation active state (mutationActive true with finite mutationTimer)",
+            "natural split (centipede-split cue plus active isSplitChild enemy in the same window)"
+          ],
+          "mutationActiveObserved": false,
+          "mutationActiveEntries": 0,
+          "splitCues": 0,
+          "splitChildMax": 0,
+          "splitChildObserved": false,
+          "netRegenObserved": true,
+          "netRegenHp": 3.3059999999997163,
+          "complete": false
+        },
+        "sampleCoverage": {
+          "window": "sample",
+          "missing": [],
+          "mutationActiveObserved": true,
+          "mutationActiveEntries": 1,
+          "splitCues": 77,
+          "splitChildMax": 37,
+          "splitChildObserved": true,
+          "netRegenObserved": true,
+          "netRegenHp": 753.0005999999673,
+          "complete": true
+        },
+        "coverage": {
+          "window": "sample",
+          "missing": [],
+          "mutationActiveObserved": true,
+          "mutationActiveEntries": 1,
+          "splitCues": 77,
+          "splitChildMax": 37,
+          "splitChildObserved": true,
+          "netRegenObserved": true,
+          "netRegenHp": 753.0005999999673,
+          "complete": true
+        },
+        "missing": [],
+        "warnings": [],
+        "notes": [
+          "regen evidence = positive NET per-enemy HP change across one original step (finite unique id + same object; refills, new ids, dead/removed enemies excluded); damage masks regen, so it is not gross regen and not slow-suppression proof. eligibleEnemySteps / slowOrBurnSuppressedEnemySteps are informational and never count as coverage.",
+          "Per-step snapshots and state reads run outside the timed segments but still consume wall-clock time."
+        ]
+      },
+      "valid": true
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "blockedRequests": [],
+  "elapsedMs": 31503
+}

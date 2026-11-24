@@ -1,5 +1,9 @@
 # Local performance sample
 
+This is the earlier burst-only sample. See the [sustained-load results](PERFORMANCE-SUSTAINED.md)
+for six later measured scenarios, and the [benchmark guide](BENCHMARKING.md) for other
+dated workloads, raw evidence, and reproduction instructions.
+
 Measured **2026-11-20, 03:58 AM Pacific** against the production preview at
 `http://127.0.0.1:4173/`. Simulation kept pace with wall time in all three samples.
 Median animation-frame intervals were **17.6 ms**, with p95 **18.2–18.3 ms**;

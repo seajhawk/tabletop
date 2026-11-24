@@ -127,3 +127,14 @@ pathfinding, input, layout, audio, themes, sprites, and theater mechanics. Local
 results do not certify real four-finger input, touch latency, 16-inch legibility,
 Windows DPI scaling, or sustained thermal performance. Native packaging and managed
 kiosk deployment remain follow-up work.
+
+The [browser benchmark guide](../docs/BENCHMARKING.md) describes a separate local
+harness that replenishes the canonical stress fixture to maintain 150 enemies.
+See the [measured results](../docs/PERFORMANCE-SUSTAINED.md) for desktop and phone
+viewport samples on the same workstation; these do not establish physical-phone performance.
+The opt-in theater profile (mixed enemies, real tower damage) has separate
+[variable-workload results](../docs/PERFORMANCE-THEATER.md) that are not comparable to that baseline.
+The [tier-two samples](../docs/PERFORMANCE-TIER2.md) separately exercise Lawn splits and Medieval fire zones.
+Later samples cover [boss phases and Healer repair](../docs/PERFORMANCE-BOSS-STRONG.md)
+and [Cybergrid, Volcano, and Bio-Lab mechanics](../docs/PERFORMANCE-CYBER-VOLCANO-BIO.md).
+The [PWA verification guide](../docs/PWA-VERIFICATION.md) records offline/update checks and cache-isolation fixes.

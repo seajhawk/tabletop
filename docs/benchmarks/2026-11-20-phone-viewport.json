@@ -1,0 +1,450 @@
+{
+  "kind": "ga-sustained-browser-benchmark",
+  "version": 1,
+  "valid": true,
+  "failures": [],
+  "warnings": [],
+  "timestamp": "2026-11-20T21:59:42.471Z",
+  "config": {
+    "url": "http://127.0.0.1:4173/",
+    "mapIds": [
+      "mars-outpost",
+      "kitchen-raid",
+      "backyard-lawn"
+    ],
+    "warmupMs": 1000,
+    "sampleMs": 4000,
+    "targetEnemies": 150,
+    "seed": 12345,
+    "timeoutMs": 45000,
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "deviceScaleFactor": 2,
+    "serviceWorkers": "block",
+    "fixtureLives": 1000000000,
+    "expectedTowers": 20,
+    "scoreKey": "galactic-defense:best-scores:v1"
+  },
+  "environment": {
+    "browserVersion": "158.0.8127.36",
+    "errors": [],
+    "muted": {
+      "before": false,
+      "after": true,
+      "toggled": true
+    },
+    "webgl": {
+      "vendor": "Google Inc. (NVIDIA)",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 (0x00002504) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "source": "pixi"
+    },
+    "rendererType": 1,
+    "build": {
+      "mainScriptUrl": "http://127.0.0.1:4173/assets/index-CIQ8e-gj.js",
+      "scriptUrls": [
+        "http://127.0.0.1:4173/assets/index-CIQ8e-gj.js"
+      ],
+      "base": "http://127.0.0.1:4173/",
+      "devServer": false,
+      "swUrl": "http://127.0.0.1:4173/ga-sw.js",
+      "swVersion": "01ff4d32926e0668",
+      "swVersionError": null
+    },
+    "timer": {
+      "resolutionMs": 0.09999990463256836,
+      "pairOverheadMs": 0.0002150000035762787
+    },
+    "layout": "2p-phone",
+    "playerCount": 2,
+    "difficulty": "medium",
+    "mapIds": [
+      "orbital-crossing",
+      "dc-defense",
+      "pacific-fleet",
+      "mars-outpost",
+      "ironhold-keep",
+      "kitchen-raid",
+      "backyard-lawn",
+      "asteroid-belt",
+      "nebula-rift"
+    ],
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "dpr": 2,
+    "visibility": "visible",
+    "canvas": {
+      "width": 824,
+      "height": 1830,
+      "clientWidth": 412,
+      "clientHeight": 915
+    },
+    "hardwareConcurrency": 16,
+    "deviceMemoryGiB": 32
+  },
+  "build": {
+    "mainScriptUrl": "http://127.0.0.1:4173/assets/index-CIQ8e-gj.js",
+    "scriptUrls": [
+      "http://127.0.0.1:4173/assets/index-CIQ8e-gj.js"
+    ],
+    "base": "http://127.0.0.1:4173/",
+    "devServer": false,
+    "swUrl": "http://127.0.0.1:4173/ga-sw.js",
+    "swVersion": "01ff4d32926e0668",
+    "swVersionError": null
+  },
+  "disclosures": [
+    "Debug API dependency: uses window.__ga and the TypeScript-private game.spawnEnemy; not a public contract.",
+    "Load is held constant by replenishing to the exact target population after every step; enemy HP/motion/damage are not frozen.",
+    "CPU timings use performance.now() (see environment.timer for resolution and per-call overhead); zero-duration values are below timer resolution.",
+    "Core step, refill and renderer.update CPU are timed separately; GPU time, composition and most Pixi draw work are NOT measured.",
+    "Math.random is seeded in the fresh context only; frame/step timing remains non-deterministic.",
+    "Fresh context: service workers blocked, non-loopback requests aborted, sound muted via existing hooks when possible.",
+    "Not a hardware multi-touch, thermal, GPU-time, DPI or target-device benchmark. No pass/fail FPS threshold is applied."
+  ],
+  "scenarios": [
+    {
+      "id": "mars-outpost",
+      "measured": true,
+      "problems": [],
+      "visibilityStart": "visible",
+      "stressEnemyId": "swarmer",
+      "canonicalInitialEnemies": 150,
+      "targetEnemies": 150,
+      "fixtureLives": 1000000000,
+      "seed": 12345,
+      "mapName": "Mars Outpost",
+      "setup": {
+        "towers": 20,
+        "enemies": 150
+      },
+      "expectedTowers": 20,
+      "towersAtStart": 20,
+      "phase": "sample",
+      "wallMs": 4014.2000000476837,
+      "simSeconds": 4.016666666666653,
+      "simToWallRatio": 1.000614485232161,
+      "steps": {
+        "warmup": 63,
+        "sample": 241,
+        "blocked": 0,
+        "errors": 0
+      },
+      "raf": {
+        "callbacks": 240,
+        "intervals": {
+          "count": 239,
+          "totalMs": 4000.1,
+          "meanMs": 16.73682008368201,
+          "medianMs": 16.699999999999818,
+          "p95Ms": 16.800000000000182,
+          "p99Ms": 17.100000000000136,
+          "maxMs": 33.20000000000027
+        }
+      },
+      "coreStepCpu": {
+        "count": 241,
+        "totalMs": 65.80000054836273,
+        "meanMs": 0.27302904791851756,
+        "medianMs": 0.10000002384185791,
+        "p95Ms": 0.6999999284744263,
+        "p99Ms": 3,
+        "maxMs": 5.200000047683716
+      },
+      "refillCpu": {
+        "count": 241,
+        "totalMs": 2.1999999284744263,
+        "meanMs": 0.009128630408607577,
+        "medianMs": 0,
+        "p95Ms": 0.10000002384185791,
+        "p99Ms": 0.19999992847442627,
+        "maxMs": 0.2999999523162842
+      },
+      "rendererUpdateCpu": {
+        "count": 240,
+        "totalMs": 275.499999165535,
+        "meanMs": 1.147916663189729,
+        "medianMs": 0.8999999761581421,
+        "p95Ms": 2.6999999284744263,
+        "p99Ms": 4.200000047683716,
+        "maxMs": 5.399999976158142
+      },
+      "population": {
+        "target": 150,
+        "initialReplacements": 0,
+        "warmupReplacements": 1,
+        "sampleReplacements": 155,
+        "preStepReplacements": 0,
+        "overTargetSteps": 0,
+        "preStepMin": 150,
+        "preStepMax": 150,
+        "postCombatMin": 79,
+        "postCombatMax": 150,
+        "postRefillMin": 150,
+        "postRefillMax": 150,
+        "endEnemies": 150
+      },
+      "activeMax": {
+        "projectiles": 3,
+        "mines": 0
+      },
+      "poolCapacity": {
+        "projectiles": 3,
+        "mines": 0
+      },
+      "visibilityEvents": [],
+      "towersAtEnd": 20,
+      "endState": {
+        "paused": false,
+        "over": null,
+        "lives": 1000000000,
+        "mode": "stress"
+      },
+      "muted": true,
+      "visibilityEnd": "visible",
+      "scores": {
+        "before": null,
+        "after": null,
+        "readable": true,
+        "unchanged": true
+      },
+      "violations": {
+        "count": 0,
+        "first": []
+      },
+      "valid": true
+    },
+    {
+      "id": "kitchen-raid",
+      "measured": true,
+      "problems": [],
+      "visibilityStart": "visible",
+      "stressEnemyId": "swarmer",
+      "canonicalInitialEnemies": 150,
+      "targetEnemies": 150,
+      "fixtureLives": 1000000000,
+      "seed": 12345,
+      "mapName": "Midnight Kitchen",
+      "setup": {
+        "towers": 20,
+        "enemies": 150
+      },
+      "expectedTowers": 20,
+      "towersAtStart": 20,
+      "phase": "sample",
+      "wallMs": 4005.8000000715256,
+      "simSeconds": 3.9999999999999862,
+      "simToWallRatio": 0.998552099437956,
+      "steps": {
+        "warmup": 61,
+        "sample": 240,
+        "blocked": 0,
+        "errors": 0
+      },
+      "raf": {
+        "callbacks": 240,
+        "intervals": {
+          "count": 239,
+          "totalMs": 3983.6000000000004,
+          "meanMs": 16.667782426778246,
+          "medianMs": 16.69999999999891,
+          "p95Ms": 16.80000000000109,
+          "p99Ms": 16.900000000000546,
+          "maxMs": 17
+        }
+      },
+      "coreStepCpu": {
+        "count": 240,
+        "totalMs": 83.99999988079071,
+        "meanMs": 0.34999999950329463,
+        "medianMs": 0.20000004768371582,
+        "p95Ms": 0.8999999761581421,
+        "p99Ms": 2.5,
+        "maxMs": 3.200000047683716
+      },
+      "refillCpu": {
+        "count": 240,
+        "totalMs": 4.600000023841858,
+        "meanMs": 0.019166666766007742,
+        "medianMs": 0,
+        "p95Ms": 0.10000002384185791,
+        "p99Ms": 0.20000004768371582,
+        "maxMs": 0.7000000476837158
+      },
+      "rendererUpdateCpu": {
+        "count": 240,
+        "totalMs": 603.3000001907349,
+        "meanMs": 2.5137500007947287,
+        "medianMs": 2.399999976158142,
+        "p95Ms": 4.799999952316284,
+        "p99Ms": 6.200000047683716,
+        "maxMs": 6.799999952316284
+      },
+      "population": {
+        "target": 150,
+        "initialReplacements": 0,
+        "warmupReplacements": 2,
+        "sampleReplacements": 425,
+        "preStepReplacements": 0,
+        "overTargetSteps": 0,
+        "preStepMin": 150,
+        "preStepMax": 150,
+        "postCombatMin": 75,
+        "postCombatMax": 150,
+        "postRefillMin": 150,
+        "postRefillMax": 150,
+        "endEnemies": 150
+      },
+      "activeMax": {
+        "projectiles": 1,
+        "mines": 0
+      },
+      "poolCapacity": {
+        "projectiles": 3,
+        "mines": 0
+      },
+      "visibilityEvents": [],
+      "towersAtEnd": 20,
+      "endState": {
+        "paused": false,
+        "over": null,
+        "lives": 1000000000,
+        "mode": "stress"
+      },
+      "muted": true,
+      "visibilityEnd": "visible",
+      "scores": {
+        "before": null,
+        "after": null,
+        "readable": true,
+        "unchanged": true
+      },
+      "violations": {
+        "count": 0,
+        "first": []
+      },
+      "valid": true
+    },
+    {
+      "id": "backyard-lawn",
+      "measured": true,
+      "problems": [],
+      "visibilityStart": "visible",
+      "stressEnemyId": "swarmer",
+      "canonicalInitialEnemies": 150,
+      "targetEnemies": 150,
+      "fixtureLives": 1000000000,
+      "seed": 12345,
+      "mapName": "Backyard Lawn",
+      "setup": {
+        "towers": 20,
+        "enemies": 150
+      },
+      "expectedTowers": 20,
+      "towersAtStart": 20,
+      "phase": "sample",
+      "wallMs": 4004.1999999284744,
+      "simSeconds": 3.9999999999999862,
+      "simToWallRatio": 0.9989511013614297,
+      "steps": {
+        "warmup": 60,
+        "sample": 240,
+        "blocked": 0,
+        "errors": 0
+      },
+      "raf": {
+        "callbacks": 240,
+        "intervals": {
+          "count": 239,
+          "totalMs": 3983.3999999999996,
+          "meanMs": 16.666945606694558,
+          "medianMs": 16.69999999999891,
+          "p95Ms": 16.80000000000109,
+          "p99Ms": 16.899999999999636,
+          "maxMs": 17
+        }
+      },
+      "coreStepCpu": {
+        "count": 240,
+        "totalMs": 75.60000014305115,
+        "meanMs": 0.31500000059604644,
+        "medianMs": 0.20000004768371582,
+        "p95Ms": 0.7999999523162842,
+        "p99Ms": 1.2000000476837158,
+        "maxMs": 3
+      },
+      "refillCpu": {
+        "count": 240,
+        "totalMs": 2.200000286102295,
+        "meanMs": 0.009166667858759562,
+        "medianMs": 0,
+        "p95Ms": 0.10000002384185791,
+        "p99Ms": 0.10000002384185791,
+        "maxMs": 0.5
+      },
+      "rendererUpdateCpu": {
+        "count": 240,
+        "totalMs": 319.59999990463257,
+        "meanMs": 1.3316666662693024,
+        "medianMs": 1.2000000476837158,
+        "p95Ms": 3,
+        "p99Ms": 3.5999999046325684,
+        "maxMs": 3.899999976158142
+      },
+      "population": {
+        "target": 150,
+        "initialReplacements": 0,
+        "warmupReplacements": 1,
+        "sampleReplacements": 157,
+        "preStepReplacements": 0,
+        "overTargetSteps": 0,
+        "preStepMin": 150,
+        "preStepMax": 150,
+        "postCombatMin": 78,
+        "postCombatMax": 150,
+        "postRefillMin": 150,
+        "postRefillMax": 150,
+        "endEnemies": 150
+      },
+      "activeMax": {
+        "projectiles": 2,
+        "mines": 0
+      },
+      "poolCapacity": {
+        "projectiles": 3,
+        "mines": 0
+      },
+      "visibilityEvents": [],
+      "towersAtEnd": 20,
+      "endState": {
+        "paused": false,
+        "over": null,
+        "lives": 1000000000,
+        "mode": "stress"
+      },
+      "muted": true,
+      "visibilityEnd": "visible",
+      "scores": {
+        "before": null,
+        "after": null,
+        "readable": true,
+        "unchanged": true
+      },
+      "violations": {
+        "count": 0,
+        "first": []
+      },
+      "valid": true
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "blockedRequests": [],
+  "elapsedMs": 15576
+}

@@ -1,0 +1,700 @@
+{
+  "kind": "ga-sustained-browser-benchmark",
+  "version": 1,
+  "profile": "theater",
+  "towerTier": 2,
+  "comparability": "SEPARATE boss+Healer theater workload (tier-2 towers + 2 Healer stations + live dreadnought boss): NOT comparable to tier-2 theater, canonical tier-0 theater or the fixed 150-Swarmer sustained baseline",
+  "valid": true,
+  "failures": [],
+  "warnings": [
+    "ironhold-keep: TIER-2 towers (upgraded via game.upgradeTower before the run; initial aggregate HP 3300): separate from canonical tier-0 theater; ability coverage must be read from observed cues/fireZones/split children only",
+    "ironhold-keep: operational towers (hp > 0) dropped during the run (min 17 of 22, end 17); disabled towers stay placed; the harness does not repair or revive them (real Healers may)",
+    "ironhold-keep: COVERAGE MISSING: no boss phase was observed in the SAMPLE window of this boss+Healer run (fixture presence and warmup-only evidence are not sampled coverage)",
+    "ironhold-keep: BOSS+HEALER fixture: 2 extra Healer stations (22 towers) and a live canonical dreadnought boss; separate workload, not comparable to any other profile"
+  ],
+  "timestamp": "2026-11-22T19:31:04.567Z",
+  "config": {
+    "url": "http://127.0.0.1:4187/",
+    "mapIds": [
+      "ironhold-keep"
+    ],
+    "profile": "theater",
+    "towerTier": 2,
+    "bossHealer": true,
+    "warmupMs": 1000,
+    "sampleMs": 30000,
+    "targetEnemies": 150,
+    "seed": 12345,
+    "timeoutMs": 45000,
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "deviceScaleFactor": 2,
+    "serviceWorkers": "block",
+    "fixtureLives": 1000000000,
+    "expectedTowers": 20,
+    "scoreKey": "galactic-defense:best-scores:v1"
+  },
+  "environment": {
+    "browserVersion": "158.0.8127.36",
+    "errors": [],
+    "muted": {
+      "before": false,
+      "after": true,
+      "toggled": true
+    },
+    "webgl": {
+      "vendor": "Google Inc. (NVIDIA)",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 (0x00002504) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "source": "pixi"
+    },
+    "rendererType": 1,
+    "build": {
+      "mainScriptUrl": "http://127.0.0.1:4187/assets/index-MbsZoOzE.js",
+      "scriptUrls": [
+        "http://127.0.0.1:4187/assets/index-MbsZoOzE.js"
+      ],
+      "base": "http://127.0.0.1:4187/",
+      "devServer": false,
+      "swUrl": "http://127.0.0.1:4187/ga-sw.js",
+      "swVersion": "545e346be989af66",
+      "swVersionError": null
+    },
+    "timer": {
+      "resolutionMs": 0.09999990463256836,
+      "pairOverheadMs": 0.0002299999952316284
+    },
+    "layout": "2p-phone",
+    "playerCount": 2,
+    "difficulty": "medium",
+    "mapIds": [
+      "orbital-crossing",
+      "dc-defense",
+      "pacific-fleet",
+      "mars-outpost",
+      "ironhold-keep",
+      "kitchen-raid",
+      "backyard-lawn",
+      "asteroid-belt",
+      "nebula-rift"
+    ],
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "dpr": 2,
+    "visibility": "visible",
+    "canvas": {
+      "width": 824,
+      "height": 1830,
+      "clientWidth": 412,
+      "clientHeight": 915
+    },
+    "hardwareConcurrency": 16,
+    "deviceMemoryGiB": 32
+  },
+  "build": {
+    "mainScriptUrl": "http://127.0.0.1:4187/assets/index-MbsZoOzE.js",
+    "scriptUrls": [
+      "http://127.0.0.1:4187/assets/index-MbsZoOzE.js"
+    ],
+    "base": "http://127.0.0.1:4187/",
+    "devServer": false,
+    "swUrl": "http://127.0.0.1:4187/ga-sw.js",
+    "swVersion": "545e346be989af66",
+    "swVersionError": null
+  },
+  "disclosures": [
+    "Debug API dependency: uses window.__ga and the TypeScript-private game.spawnEnemy; not a public contract.",
+    "Population is replenished to a minimum floor after every step; natural extras and real tower damage vary the workload.",
+    "CPU timings use performance.now() (see environment.timer for resolution and per-call overhead); zero-duration values are below timer resolution.",
+    "Core step, refill and renderer.update CPU are timed separately; GPU time, composition and most Pixi draw work are NOT measured.",
+    "Math.random is seeded in the fresh context only; frame/step timing remains non-deterministic.",
+    "Fresh context: service workers blocked, non-loopback requests aborted, sound muted via existing hooks when possible.",
+    "Not a hardware multi-touch, thermal, GPU-time, DPI or target-device benchmark. No pass/fail FPS threshold is applied.",
+    "THEATER profile: variable workload (mixed canonical non-boss enemies, natural splits/overflow up to 3x target, real tower damage); NOT comparable to the fixed sustained baseline.",
+    "Theater population is a floor (replenished before/after each step), not an exact count; one canonical boss is kept live and counts within it; the harness never repairs or freezes towers (real Healer units can repair/revive them), so net tower loss is reported, not hidden.",
+    "Sound-cue counts are game.emitSound CALL counts per window (emission only, not damage proof); effect maxima are observed after each step.",
+    "Per-step theater observation (type counts, transients, towers) runs outside the timed core/refill/update segments but still consumes wall-clock time.",
+    "TIER-2 requested: the harness requires 40 upgrades through game.upgradeTower, funded by exact canonical game.grant calls before measurement. Check each scenario towerUpgrade.ok, wallet/ledger reconciliation, and HP audit for actual setup outcomes; failures remain unmeasured.",
+    "TIER-2 results are a separate labelled fixture, NOT comparable to canonical tier-0 theater; the tier choice does not prove ability coverage: only observed cues, fireZones and split children count as evidence.",
+    "BOSS+HEALER requested: a SEPARATE workload. After the tier-2 upgrades, 2 base-tier Healer stations (one per player, 22 towers) are added via game.grant + game.tryPlace only; the extra Healers are a declared fixture difference. Check scenario.bossHealerFixture.ok and its wallet/ledger reconciliation; failures remain unmeasured.",
+    "BOSS+HEALER enemies: the usual five canonical types plus one unmodified canonical dreadnought, re-spawned only when none is live, counted within the population floor; boss HP/phases/damage/death and tower HP are never forced by the harness, and it never repairs or freezes towers (real Healer units can repair/revive them). Exactly one live canonical boss is audited at step entry and after refill.",
+    "BOSS+HEALER evidence is observed only: scenario.bossHealer.sampleCoverage (alias coverage) and warmupCoverage report whether a boss phase and positive NET tower HP recovery on a step with an actual active healer occurred (net per real step; same-step damage can mask healing, so it is not total healing). Warmup-only evidence is not sampled coverage; missing coverage is not success.",
+    "BOSS+HEALER per-step observation (tower hp snapshot before/after, enemy/knight scans) runs outside the timed core step but consumes wall-clock time."
+  ],
+  "scenarios": [
+    {
+      "id": "ironhold-keep",
+      "profile": "theater",
+      "towerTier": 2,
+      "measured": true,
+      "problems": [],
+      "warnings": [
+        "TIER-2 towers (upgraded via game.upgradeTower before the run; initial aggregate HP 3300): separate from canonical tier-0 theater; ability coverage must be read from observed cues/fireZones/split children only",
+        "operational towers (hp > 0) dropped during the run (min 17 of 22, end 17); disabled towers stay placed; the harness does not repair or revive them (real Healers may)",
+        "COVERAGE MISSING: no boss phase was observed in the SAMPLE window of this boss+Healer run (fixture presence and warmup-only evidence are not sampled coverage)",
+        "BOSS+HEALER fixture: 2 extra Healer stations (22 towers) and a live canonical dreadnought boss; separate workload, not comparable to any other profile"
+      ],
+      "scenarioLabel": "theater + tier-2 towers + 2 Healer stations + canonical dreadnought boss (SEPARATE boss+Healer workload; NOT comparable to tier-2 theater, tier-0 theater or sustained)",
+      "bossHealerRequested": true,
+      "visibilityStart": "visible",
+      "stressEnemyId": "swarmer",
+      "canonicalInitialEnemies": 150,
+      "targetEnemies": 150,
+      "fixtureLives": 1000000000,
+      "seed": 12345,
+      "mapName": "Ironhold Keep",
+      "setup": {
+        "towers": 20,
+        "enemies": 150
+      },
+      "expectedTowers": 20,
+      "towersAtStart": 20,
+      "towerUpgrade": {
+        "requestedTier": 2,
+        "canonicalFixture": {
+          "setup": {
+            "towers": 20,
+            "enemies": 150
+          },
+          "towers": 20,
+          "enemies": 150
+        },
+        "attemptedUpgrades": 40,
+        "succeededUpgrades": 40,
+        "canUpgradeCalls": 40,
+        "grantCalls": 40,
+        "upgradeCalls": 40,
+        "totalCost": 4280,
+        "totalGranted": 4280,
+        "before": {
+          "tierCounts": {
+            "0": 20
+          },
+          "hp": 2000,
+          "maxHp": 2000,
+          "badTowers": 0
+        },
+        "after": {
+          "tierCounts": {
+            "2": 20
+          },
+          "hp": 3300,
+          "maxHp": 3300,
+          "badTowers": 0
+        },
+        "wallet": {
+          "before": [
+            195,
+            195
+          ],
+          "after": [
+            195,
+            195
+          ]
+        },
+        "ledger": {
+          "before": {
+            "granted": 1452,
+            "spent": 1452
+          },
+          "after": {
+            "granted": 5732,
+            "spent": 5732
+          },
+          "grantedDelta": 4280,
+          "spentDelta": 4280
+        },
+        "ok": true,
+        "note": "costs granted exactly via game.grant then spent by game.upgradeTower; no stat, tier or credit written directly; the harness does not repair towers afterwards"
+      },
+      "bossHealerFixture": {
+        "healerTurretId": "healer",
+        "cost": 125,
+        "expectedHealers": 2,
+        "mechanic": "medieval-frenzy",
+        "searchRadius": 4,
+        "placements": [
+          {
+            "owner": 0,
+            "x": 4,
+            "y": 2,
+            "towerId": 171,
+            "cost": 125,
+            "distSq": 1,
+            "hp": 100,
+            "maxHp": 100
+          },
+          {
+            "owner": 1,
+            "x": 8,
+            "y": 2,
+            "towerId": 172,
+            "cost": 125,
+            "distSq": 1,
+            "hp": 100,
+            "maxHp": 100
+          }
+        ],
+        "grantCalls": 2,
+        "tryPlaceCalls": 2,
+        "checkCalls": 2,
+        "totalGranted": 250,
+        "totalCost": 250,
+        "towersBefore": 20,
+        "towersAfter": 22,
+        "wallet": {
+          "before": [
+            195,
+            195
+          ],
+          "after": [
+            195,
+            195
+          ]
+        },
+        "ledger": {
+          "before": {
+            "granted": 5732,
+            "spent": 5732
+          },
+          "after": {
+            "granted": 5982,
+            "spent": 5982
+          },
+          "grantedDelta": 250,
+          "spentDelta": 250
+        },
+        "ok": true,
+        "declaredFixtureDifference": "the 2 extra Healer stations make 22 towers (20 canonical tier-2 + 2 base-tier Healers); not the canonical 20-tower fixture",
+        "note": "placed only through game.grant(cost) + game.tryPlace; game.check is read-only; no path, HP, stat or credit written directly"
+      },
+      "phase": "sample",
+      "wallMs": 30002.399999976158,
+      "simSeconds": 30.016666666666183,
+      "simToWallRatio": 1.0004755175149334,
+      "steps": {
+        "warmup": 61,
+        "sample": 1801,
+        "blocked": 0,
+        "errors": 0
+      },
+      "raf": {
+        "callbacks": 1800,
+        "intervals": {
+          "count": 1799,
+          "totalMs": 29984.7,
+          "meanMs": 16.667426347971094,
+          "medianMs": 16.699999999999818,
+          "p95Ms": 16.800000000000182,
+          "p99Ms": 16.899999999999636,
+          "maxMs": 17.100000000002183
+        }
+      },
+      "coreStepCpu": {
+        "count": 1801,
+        "totalMs": 528.5999997854233,
+        "meanMs": 0.2935036089869091,
+        "medianMs": 0.20000004768371582,
+        "p95Ms": 0.7999999523162842,
+        "p99Ms": 1.3000000715255737,
+        "maxMs": 4.5
+      },
+      "refillCpu": {
+        "count": 1801,
+        "totalMs": 25.000000834465027,
+        "meanMs": 0.013881177587154373,
+        "medianMs": 0,
+        "p95Ms": 0.10000002384185791,
+        "p99Ms": 0.19999980926513672,
+        "maxMs": 0.5
+      },
+      "rendererUpdateCpu": {
+        "count": 1800,
+        "totalMs": 3160.7999991178513,
+        "meanMs": 1.7559999995099174,
+        "medianMs": 1.3000000715255737,
+        "p95Ms": 4.599999904632568,
+        "p99Ms": 6.199999928474426,
+        "maxMs": 9.600000023841858
+      },
+      "population": {
+        "target": 150,
+        "initialReplacements": 150,
+        "warmupReplacements": 1,
+        "sampleReplacements": 520,
+        "preStepReplacements": 0,
+        "overTargetSteps": 0,
+        "preStepMin": 150,
+        "preStepMax": 150,
+        "postCombatMin": 131,
+        "postCombatMax": 150,
+        "postRefillMin": 150,
+        "postRefillMax": 150,
+        "endEnemies": 150,
+        "floor": 150,
+        "overflowCap": 450,
+        "overflowMax": 150,
+        "overflowSteps": 0,
+        "naturalExtraMax": 0,
+        "fixtureHalted": false,
+        "endTypeCounts": {
+          "dreadnought": 1,
+          "cruiser": 52,
+          "frigate": 35,
+          "phase": 36,
+          "scout": 17,
+          "swarmer": 9
+        }
+      },
+      "activeMax": {
+        "projectiles": 2,
+        "mines": 0
+      },
+      "poolCapacity": {
+        "projectiles": 2,
+        "mines": 0
+      },
+      "visibilityEvents": [],
+      "towersAtEnd": 22,
+      "endState": {
+        "paused": false,
+        "over": null,
+        "lives": 999999948,
+        "mode": "stress"
+      },
+      "muted": true,
+      "visibilityEnd": "visible",
+      "scores": {
+        "before": null,
+        "after": null,
+        "readable": true,
+        "unchanged": true
+      },
+      "violations": {
+        "count": 0,
+        "first": []
+      },
+      "comparability": "variable-workload with UPGRADED tier-2 towers: NOT comparable to canonical tier-0 theater or the fixed 150-Swarmer sustained baseline",
+      "composition": {
+        "theaterEnemyIds": [
+          "scout",
+          "swarmer",
+          "cruiser",
+          "frigate",
+          "phase"
+        ],
+        "spawnPorts": 3,
+        "bossesIncluded": true,
+        "canonicalInitial": {
+          "swarmer": 150
+        },
+        "initialMixed": {
+          "types": {
+            "dreadnought": 1,
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 29
+          },
+          "ports": [
+            50,
+            50,
+            50
+          ]
+        },
+        "warmupReplacements": {
+          "types": {
+            "phase": 1
+          },
+          "ports": [
+            1,
+            0,
+            0
+          ]
+        },
+        "sampleReplacements": {
+          "types": {
+            "scout": 104,
+            "swarmer": 104,
+            "cruiser": 104,
+            "frigate": 104,
+            "phase": 104
+          },
+          "ports": [
+            173,
+            174,
+            173
+          ]
+        },
+        "nonCanonicalSpawns": 0,
+        "invalidSpawns": 0
+      },
+      "effects": {
+        "warmup": {
+          "steps": 61,
+          "typeMin": {
+            "dreadnought": 1,
+            "scout": 30,
+            "swarmer": 29,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 29
+          },
+          "typeMax": {
+            "dreadnought": 1,
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "splitChildMax": 0,
+          "meteorsMax": 0,
+          "knightsMax": 20,
+          "roombasMax": 0,
+          "fireZonesMax": 0,
+          "meteorPool": 0,
+          "knightPool": 20,
+          "fireZonePool": 0,
+          "towerMin": 22,
+          "towerMax": 22,
+          "towerHpMin": 3500,
+          "towerHpMax": 3500,
+          "towerOperationalMin": 22,
+          "towerOperationalMax": 22,
+          "towerOperationalEnd": 22,
+          "towerHpEnd": 3500,
+          "towerHpUnavailableSteps": 0,
+          "cues": {
+            "knight-charge": 4,
+            "shot-overcharge": 11,
+            "shot-plasma": 2,
+            "kill": 1
+          },
+          "cueCalls": 18
+        },
+        "sample": {
+          "steps": 1801,
+          "typeMin": {
+            "dreadnought": 1,
+            "scout": 8,
+            "swarmer": 4,
+            "cruiser": 30,
+            "frigate": 27,
+            "phase": 30
+          },
+          "typeMax": {
+            "dreadnought": 1,
+            "scout": 34,
+            "swarmer": 29,
+            "cruiser": 54,
+            "frigate": 47,
+            "phase": 46
+          },
+          "splitChildMax": 0,
+          "meteorsMax": 0,
+          "knightsMax": 40,
+          "roombasMax": 0,
+          "fireZonesMax": 7,
+          "meteorPool": 0,
+          "knightPool": 42,
+          "fireZonePool": 7,
+          "towerMin": 22,
+          "towerMax": 22,
+          "towerHpMin": 2307.7999999999997,
+          "towerHpMax": 3500,
+          "towerOperationalMin": 17,
+          "towerOperationalMax": 22,
+          "towerOperationalEnd": 17,
+          "towerHpEnd": 2318.0666666666666,
+          "towerHpUnavailableSteps": 0,
+          "cues": {
+            "dragon-breath": 129,
+            "shot-overcharge": 95,
+            "kill": 494,
+            "impact-plasma": 18,
+            "shot-plasma": 16,
+            "shot-rail": 75,
+            "shot-stasis": 25,
+            "knight-clash": 622,
+            "enrage": 87,
+            "knight-charge": 13,
+            "leak": 26
+          },
+          "cueCalls": 1600
+        },
+        "cueNote": "emitSound CALL counts (emission only; not proof of damage or an audible sound)"
+      },
+      "towers": {
+        "tier": 2,
+        "initial": 22,
+        "end": 22,
+        "sampleMin": 22,
+        "sampleMax": 22,
+        "warmupMin": 22,
+        "warmupMax": 22,
+        "sampleHpMin": 2307.7999999999997,
+        "sampleHpMax": 3500,
+        "environmentalLossAllowed": true,
+        "placed": {
+          "end": 22
+        },
+        "operational": {
+          "end": 17,
+          "warmup": {
+            "min": 22,
+            "max": 22,
+            "end": 22
+          },
+          "sample": {
+            "min": 17,
+            "max": 22,
+            "end": 17
+          }
+        },
+        "hp": {
+          "end": 2318.0666666666666,
+          "warmup": {
+            "min": 3500,
+            "max": 3500,
+            "end": 3500
+          },
+          "sample": {
+            "min": 2307.7999999999997,
+            "max": 3500,
+            "end": 2318.0666666666666
+          }
+        },
+        "hpUnavailableSteps": 0,
+        "note": "the harness never repairs or freezes towers (real Healer units may repair/revive them); operational excludes hp <= 0; null = unavailable (missing/non-finite hp), never reported as 0",
+        "healerStations": 2
+      },
+      "bossHealer": {
+        "label": "SEPARATE boss+Healer workload (22 towers: 20 tier-2 + 2 base-tier Healer stations; one canonical dreadnought boss always live): NOT comparable to tier-2 theater, tier-0 theater or sustained",
+        "bossEnemyId": "dreadnought",
+        "bossSpawnsByHarness": 1,
+        "populationNote": "the boss counts within the floor and the overflow cap; natural escorts/splits are kept",
+        "recoveryNote": "netRecoveryHp = sum of positive per-tower hp change (matched by tower id) across the original step only, observed outside the timed segments and excluding refill; damage in the same step masks healing, so this is NET recovery, not total healing; healerAttributedRecoveryHp counts only steps with an actual active healer unit; active healers alone are not healing proof",
+        "singleCanonicalBoss": true,
+        "bossAuditViolations": 0,
+        "bossAuditNote": "exactly one live canonical dreadnought (finite unique id, integer bossPhase 0..2, no other boss def) is required at step entry and after refill; zero right after combat is allowed (natural death/leak) and counted as postCombatNoBossSteps",
+        "warmup": {
+          "steps": 61,
+          "bossPresentMin": 1,
+          "bossPresentMax": 1,
+          "stepsWithoutBoss": 0,
+          "uniqueBossesObserved": 1,
+          "bossPhaseMax": 0,
+          "entryBossViolations": 0,
+          "afterRefillBossViolations": 0,
+          "postCombatNoBossSteps": 0,
+          "healersActiveMax": 0,
+          "healerOwnersMax": 0,
+          "healerTargetsMax": 0,
+          "duplicateOwnerSteps": 0,
+          "duplicateTargetSteps": 0,
+          "netRecoveryHp": 0,
+          "netRecoverySteps": 0,
+          "affectedTowersMax": 0,
+          "affectedTowersDistinct": 0,
+          "hpStepsUnobserved": 0,
+          "healerGainHp": 0,
+          "healerGainSteps": 0,
+          "gainWithoutHealerHp": 0,
+          "gainWithoutHealerSteps": 0
+        },
+        "sample": {
+          "steps": 1801,
+          "bossPresentMin": 1,
+          "bossPresentMax": 1,
+          "stepsWithoutBoss": 0,
+          "uniqueBossesObserved": 1,
+          "bossPhaseMax": 0,
+          "entryBossViolations": 0,
+          "afterRefillBossViolations": 0,
+          "postCombatNoBossSteps": 0,
+          "healersActiveMax": 2,
+          "healerOwnersMax": 2,
+          "healerTargetsMax": 2,
+          "duplicateOwnerSteps": 0,
+          "duplicateTargetSteps": 0,
+          "netRecoveryHp": 21.900000000000027,
+          "netRecoverySteps": 72,
+          "affectedTowersMax": 2,
+          "affectedTowersDistinct": 2,
+          "hpStepsUnobserved": 0,
+          "healerGainHp": 21.900000000000027,
+          "healerGainSteps": 72,
+          "gainWithoutHealerHp": 0,
+          "gainWithoutHealerSteps": 0
+        },
+        "bossPhaseCues": {
+          "warmup": 0,
+          "sample": 0
+        },
+        "warmupCoverage": {
+          "window": "warmup",
+          "bossPhaseObserved": false,
+          "maxBossPhase": 0,
+          "bossPhaseCues": 0,
+          "healerRepairObserved": false,
+          "healerAttributedRecoveryHp": 0,
+          "netRecoveryHp": 0,
+          "gainWithoutHealerHp": 0,
+          "activeHealerUnitsObserved": false,
+          "missing": [
+            "boss phase",
+            "healer repair (net tower HP recovery)"
+          ],
+          "note": "presence of the boss or Healer stations is not coverage: a boss phase (bossPhase >= 1 or boss-phase cue) and positive per-tower net HP recovery on a step with an actual active healer unit must be observed in THIS window; HP gain with no active healer is not healer coverage",
+          "complete": false
+        },
+        "sampleCoverage": {
+          "window": "sample",
+          "bossPhaseObserved": false,
+          "maxBossPhase": 0,
+          "bossPhaseCues": 0,
+          "healerRepairObserved": true,
+          "healerAttributedRecoveryHp": 21.900000000000027,
+          "netRecoveryHp": 21.900000000000027,
+          "gainWithoutHealerHp": 0,
+          "activeHealerUnitsObserved": true,
+          "missing": [
+            "boss phase"
+          ],
+          "note": "presence of the boss or Healer stations is not coverage: a boss phase (bossPhase >= 1 or boss-phase cue) and positive per-tower net HP recovery on a step with an actual active healer unit must be observed in THIS window; HP gain with no active healer is not healer coverage",
+          "complete": false
+        },
+        "coverage": {
+          "window": "sample",
+          "bossPhaseObserved": false,
+          "maxBossPhase": 0,
+          "bossPhaseCues": 0,
+          "healerRepairObserved": true,
+          "healerAttributedRecoveryHp": 21.900000000000027,
+          "netRecoveryHp": 21.900000000000027,
+          "gainWithoutHealerHp": 0,
+          "activeHealerUnitsObserved": true,
+          "missing": [
+            "boss phase"
+          ],
+          "note": "presence of the boss or Healer stations is not coverage: a boss phase (bossPhase >= 1 or boss-phase cue) and positive per-tower net HP recovery on a step with an actual active healer unit must be observed in THIS window; HP gain with no active healer is not healer coverage",
+          "complete": false
+        },
+        "coverageNote": "coverage is an alias of sampleCoverage (the sample window); warmupCoverage is reported separately and never counts as sampled coverage"
+      },
+      "valid": true
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "blockedRequests": [],
+  "elapsedMs": 31511
+}

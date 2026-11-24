@@ -1,0 +1,431 @@
+{
+  "kind": "ga-sustained-browser-benchmark",
+  "version": 1,
+  "profile": "theater",
+  "comparability": "variable-workload theater profile: NOT comparable to the fixed 150-Swarmer sustained baseline",
+  "valid": true,
+  "failures": [],
+  "warnings": [],
+  "timestamp": "2026-11-21T03:16:08.384Z",
+  "config": {
+    "url": "http://127.0.0.1:4173/",
+    "mapIds": [
+      "backyard-lawn"
+    ],
+    "profile": "theater",
+    "warmupMs": 1000,
+    "sampleMs": 25000,
+    "targetEnemies": 150,
+    "seed": 12345,
+    "timeoutMs": 45000,
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "deviceScaleFactor": 2,
+    "serviceWorkers": "block",
+    "fixtureLives": 1000000000,
+    "expectedTowers": 20,
+    "scoreKey": "galactic-defense:best-scores:v1"
+  },
+  "environment": {
+    "browserVersion": "158.0.8127.36",
+    "errors": [],
+    "muted": {
+      "before": false,
+      "after": true,
+      "toggled": true
+    },
+    "webgl": {
+      "vendor": "Google Inc. (NVIDIA)",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 (0x00002504) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "source": "pixi"
+    },
+    "rendererType": 1,
+    "build": {
+      "mainScriptUrl": "http://127.0.0.1:4173/assets/index-DnyzsWPt.js",
+      "scriptUrls": [
+        "http://127.0.0.1:4173/assets/index-DnyzsWPt.js"
+      ],
+      "base": "http://127.0.0.1:4173/",
+      "devServer": false,
+      "swUrl": "http://127.0.0.1:4173/ga-sw.js",
+      "swVersion": "7ac8de128e70edd8",
+      "swVersionError": null
+    },
+    "timer": {
+      "resolutionMs": 0.09999990463256836,
+      "pairOverheadMs": 0.000225
+    },
+    "layout": "2p-phone",
+    "playerCount": 2,
+    "difficulty": "medium",
+    "mapIds": [
+      "orbital-crossing",
+      "dc-defense",
+      "pacific-fleet",
+      "mars-outpost",
+      "ironhold-keep",
+      "kitchen-raid",
+      "backyard-lawn",
+      "asteroid-belt",
+      "nebula-rift"
+    ],
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 915
+    },
+    "dpr": 2,
+    "visibility": "visible",
+    "canvas": {
+      "width": 824,
+      "height": 1830,
+      "clientWidth": 412,
+      "clientHeight": 915
+    },
+    "hardwareConcurrency": 16,
+    "deviceMemoryGiB": 32
+  },
+  "build": {
+    "mainScriptUrl": "http://127.0.0.1:4173/assets/index-DnyzsWPt.js",
+    "scriptUrls": [
+      "http://127.0.0.1:4173/assets/index-DnyzsWPt.js"
+    ],
+    "base": "http://127.0.0.1:4173/",
+    "devServer": false,
+    "swUrl": "http://127.0.0.1:4173/ga-sw.js",
+    "swVersion": "7ac8de128e70edd8",
+    "swVersionError": null
+  },
+  "disclosures": [
+    "Debug API dependency: uses window.__ga and the TypeScript-private game.spawnEnemy; not a public contract.",
+    "Population is replenished to a minimum floor after every step; natural extras and real tower damage vary the workload.",
+    "CPU timings use performance.now() (see environment.timer for resolution and per-call overhead); zero-duration values are below timer resolution.",
+    "Core step, refill and renderer.update CPU are timed separately; GPU time, composition and most Pixi draw work are NOT measured.",
+    "Math.random is seeded in the fresh context only; frame/step timing remains non-deterministic.",
+    "Fresh context: service workers blocked, non-loopback requests aborted, sound muted via existing hooks when possible.",
+    "Not a hardware multi-touch, thermal, GPU-time, DPI or target-device benchmark. No pass/fail FPS threshold is applied.",
+    "THEATER profile: variable workload (mixed canonical non-boss enemies, natural splits/overflow up to 3x target, real tower damage); NOT comparable to the fixed sustained baseline.",
+    "Theater population is a floor (replenished before/after each step), not an exact count; no boss is covered; towers are never repaired, so environmental tower loss is reported, not hidden.",
+    "Sound-cue counts are game.emitSound CALL counts per window (emission only, not damage proof); effect maxima are observed after each step.",
+    "Per-step theater observation (type counts, transients, towers) runs outside the timed core/refill/update segments but still consumes wall-clock time."
+  ],
+  "scenarios": [
+    {
+      "id": "backyard-lawn",
+      "profile": "theater",
+      "measured": true,
+      "problems": [],
+      "warnings": [],
+      "visibilityStart": "visible",
+      "stressEnemyId": "swarmer",
+      "canonicalInitialEnemies": 150,
+      "targetEnemies": 150,
+      "fixtureLives": 1000000000,
+      "seed": 12345,
+      "mapName": "Backyard Lawn",
+      "setup": {
+        "towers": 20,
+        "enemies": 150
+      },
+      "expectedTowers": 20,
+      "towersAtStart": 20,
+      "phase": "sample",
+      "wallMs": 25001.799999952316,
+      "simSeconds": 24.9999999999998,
+      "simToWallRatio": 0.9999280051855259,
+      "steps": {
+        "warmup": 61,
+        "sample": 1500,
+        "blocked": 0,
+        "errors": 0
+      },
+      "raf": {
+        "callbacks": 1500,
+        "intervals": {
+          "count": 1499,
+          "totalMs": 24984.5,
+          "meanMs": 16.667444963308874,
+          "medianMs": 16.699999999999818,
+          "p95Ms": 16.799999999999272,
+          "p99Ms": 16.899999999997817,
+          "maxMs": 17.600000000000364
+        }
+      },
+      "coreStepCpu": {
+        "count": 1500,
+        "totalMs": 295.6000003814697,
+        "meanMs": 0.19706666692097982,
+        "medianMs": 0.19999992847442627,
+        "p95Ms": 0.5,
+        "p99Ms": 0.8000000715255737,
+        "maxMs": 3.9000000953674316
+      },
+      "refillCpu": {
+        "count": 1500,
+        "totalMs": 9.299999833106995,
+        "meanMs": 0.006199999888737997,
+        "medianMs": 0,
+        "p95Ms": 0.09999990463256836,
+        "p99Ms": 0.10000002384185791,
+        "maxMs": 0.2999999523162842
+      },
+      "rendererUpdateCpu": {
+        "count": 1500,
+        "totalMs": 3234.099999189377,
+        "meanMs": 2.156066666126251,
+        "medianMs": 1.899999976158142,
+        "p95Ms": 4.699999928474426,
+        "p99Ms": 5.699999928474426,
+        "maxMs": 6.700000047683716
+      },
+      "population": {
+        "target": 150,
+        "initialReplacements": 150,
+        "warmupReplacements": 0,
+        "sampleReplacements": 196,
+        "preStepReplacements": 0,
+        "overTargetSteps": 0,
+        "preStepMin": 150,
+        "preStepMax": 150,
+        "postCombatMin": 138,
+        "postCombatMax": 150,
+        "postRefillMin": 150,
+        "postRefillMax": 150,
+        "endEnemies": 150,
+        "floor": 150,
+        "overflowCap": 450,
+        "overflowMax": 150,
+        "overflowSteps": 0,
+        "naturalExtraMax": 0,
+        "fixtureHalted": false,
+        "endTypeCounts": {
+          "cruiser": 69,
+          "frigate": 41,
+          "phase": 16,
+          "scout": 15,
+          "swarmer": 9
+        }
+      },
+      "activeMax": {
+        "projectiles": 14,
+        "mines": 0
+      },
+      "poolCapacity": {
+        "projectiles": 14,
+        "mines": 0
+      },
+      "visibilityEvents": [],
+      "towersAtEnd": 20,
+      "endState": {
+        "paused": false,
+        "over": null,
+        "lives": 999999956,
+        "mode": "stress"
+      },
+      "muted": true,
+      "visibilityEnd": "visible",
+      "scores": {
+        "before": null,
+        "after": null,
+        "readable": true,
+        "unchanged": true
+      },
+      "violations": {
+        "count": 0,
+        "first": []
+      },
+      "comparability": "variable-workload: NOT comparable to the fixed 150-Swarmer sustained baseline",
+      "composition": {
+        "theaterEnemyIds": [
+          "scout",
+          "swarmer",
+          "cruiser",
+          "frigate",
+          "phase"
+        ],
+        "spawnPorts": 3,
+        "bossesIncluded": false,
+        "canonicalInitial": {
+          "swarmer": 150
+        },
+        "initialMixed": {
+          "types": {
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "ports": [
+            50,
+            50,
+            50
+          ]
+        },
+        "warmupReplacements": {
+          "types": {},
+          "ports": [
+            0,
+            0,
+            0
+          ]
+        },
+        "sampleReplacements": {
+          "types": {
+            "scout": 40,
+            "swarmer": 39,
+            "cruiser": 39,
+            "frigate": 39,
+            "phase": 39
+          },
+          "ports": [
+            66,
+            65,
+            65
+          ]
+        },
+        "nonCanonicalSpawns": 0,
+        "invalidSpawns": 0
+      },
+      "effects": {
+        "warmup": {
+          "steps": 61,
+          "typeMin": {
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "typeMax": {
+            "scout": 30,
+            "swarmer": 30,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 30
+          },
+          "splitChildMax": 0,
+          "meteorsMax": 0,
+          "knightsMax": 0,
+          "roombasMax": 0,
+          "fireZonesMax": 0,
+          "meteorPool": 0,
+          "knightPool": 0,
+          "fireZonePool": 0,
+          "towerMin": 20,
+          "towerMax": 20,
+          "towerHpMin": 2000,
+          "towerHpMax": 2000,
+          "towerOperationalMin": 20,
+          "towerOperationalMax": 20,
+          "towerOperationalEnd": 20,
+          "towerHpEnd": 2000,
+          "towerHpUnavailableSteps": 0,
+          "cues": {
+            "shot-pulse": 8
+          },
+          "cueCalls": 8
+        },
+        "sample": {
+          "steps": 1500,
+          "typeMin": {
+            "scout": 13,
+            "swarmer": 6,
+            "cruiser": 30,
+            "frigate": 30,
+            "phase": 14
+          },
+          "typeMax": {
+            "scout": 36,
+            "swarmer": 30,
+            "cruiser": 69,
+            "frigate": 53,
+            "phase": 40
+          },
+          "splitChildMax": 0,
+          "meteorsMax": 0,
+          "knightsMax": 0,
+          "roombasMax": 0,
+          "fireZonesMax": 0,
+          "meteorPool": 0,
+          "knightPool": 0,
+          "fireZonePool": 0,
+          "towerMin": 20,
+          "towerMax": 20,
+          "towerHpMin": 2000,
+          "towerHpMax": 2000,
+          "towerOperationalMin": 20,
+          "towerOperationalMax": 20,
+          "towerOperationalEnd": 20,
+          "towerHpEnd": 2000,
+          "towerHpUnavailableSteps": 0,
+          "cues": {
+            "shot-pulse": 220,
+            "shot-plasma": 66,
+            "impact-plasma": 65,
+            "kill": 174,
+            "shot-rail": 40,
+            "shot-stasis": 56,
+            "shot-swarm": 62,
+            "impact-missile": 122,
+            "mole-flush": 22,
+            "leak": 22
+          },
+          "cueCalls": 849
+        },
+        "cueNote": "emitSound CALL counts (emission only; not proof of damage or an audible sound)"
+      },
+      "towers": {
+        "initial": 20,
+        "end": 20,
+        "sampleMin": 20,
+        "sampleMax": 20,
+        "warmupMin": 20,
+        "warmupMax": 20,
+        "sampleHpMin": 2000,
+        "sampleHpMax": 2000,
+        "environmentalLossAllowed": true,
+        "placed": {
+          "end": 20
+        },
+        "operational": {
+          "end": 20,
+          "warmup": {
+            "min": 20,
+            "max": 20,
+            "end": 20
+          },
+          "sample": {
+            "min": 20,
+            "max": 20,
+            "end": 20
+          }
+        },
+        "hp": {
+          "end": 2000,
+          "warmup": {
+            "min": 2000,
+            "max": 2000,
+            "end": 2000
+          },
+          "sample": {
+            "min": 2000,
+            "max": 2000,
+            "end": 2000
+          }
+        },
+        "hpUnavailableSteps": 0,
+        "note": "towers are never repaired; operational excludes hp <= 0; null = unavailable (missing/non-finite hp), never reported as 0"
+      },
+      "valid": true
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "blockedRequests": [],
+  "elapsedMs": 26449
+}
