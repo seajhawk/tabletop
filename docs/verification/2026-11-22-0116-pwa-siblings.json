@@ -1,0 +1,173 @@
+{
+  "timestamp": "2026-11-22T09:16:04.739Z",
+  "ok": true,
+  "mode": "siblings",
+  "base": null,
+  "origin": "http://127.0.0.1:4187",
+  "synthetic": "A/B are synthetic fixtures (same app + meta marker + distinct probe asset), not released versions",
+  "checks": [
+    {
+      "name": "fixture metadata has both sibling bases",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "tabletop A: registered with scope /tabletop/, ga-sw.js activated, same worker controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/tabletop/",
+        "active": {
+          "url": "http://127.0.0.1:4187/tabletop/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/tabletop/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "tabletop A: cache complete (shell, manifest, main JS, 23 files)",
+      "pass": true,
+      "detail": {
+        "cache": "ga-scope-app:%2Ftabletop%2F:defc18581e8d9771"
+      }
+    },
+    {
+      "name": "TTDefense A: registered with scope /TTDefense/, ga-sw.js activated, same worker controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/TTDefense/",
+        "active": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "TTDefense A: cache complete (shell, manifest, main JS, 23 files)",
+      "pass": true,
+      "detail": {
+        "cache": "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+      }
+    },
+    {
+      "name": "tabletop cache survived TTDefense activation",
+      "pass": true,
+      "detail": {
+        "pick": "ga-scope-app:%2Ftabletop%2F:defc18581e8d9771",
+        "names": [
+          "ga-scope-app:%2Ftabletop%2F:defc18581e8d9771",
+          "ga-smoke-unrelated-ga-smoke-985im4zun28",
+          "ga-app-0123456789abcdef",
+          "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+        ]
+      }
+    },
+    {
+      "name": "every pre-existing cache name survived",
+      "pass": true,
+      "detail": {
+        "before": [
+          "ga-scope-app:%2Ftabletop%2F:defc18581e8d9771",
+          "ga-smoke-unrelated-ga-smoke-985im4zun28",
+          "ga-app-0123456789abcdef"
+        ],
+        "after": [
+          "ga-scope-app:%2Ftabletop%2F:defc18581e8d9771",
+          "ga-smoke-unrelated-ga-smoke-985im4zun28",
+          "ga-app-0123456789abcdef",
+          "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+        ]
+      }
+    },
+    {
+      "name": "unrelated and legacy-shaped caches untouched",
+      "pass": true,
+      "detail": [
+        "ga-smoke-unrelated-ga-smoke-985im4zun28",
+        "ga-app-0123456789abcdef"
+      ]
+    },
+    {
+      "name": "both apps have own distinct cache",
+      "pass": true,
+      "detail": {
+        "tabletop": "ga-scope-app:%2Ftabletop%2F:defc18581e8d9771",
+        "ttdefense": "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+      }
+    },
+    {
+      "name": "root scope never registered in this context",
+      "pass": true,
+      "detail": [
+        "http://127.0.0.1:4187/tabletop/",
+        "http://127.0.0.1:4187/TTDefense/"
+      ]
+    },
+    {
+      "name": "tabletop offline reopen: navigation from service worker",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "tabletop offline reopen: game boots with marker A",
+      "pass": true,
+      "detail": {
+        "marker": "A",
+        "controlled": true
+      }
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "build": {
+    "origin": "http://127.0.0.1:4187",
+    "synthetic": "A/B differ by a synthetic meta marker and per-revision probe asset; they are NOT released app versions",
+    "buildDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-smoke-20261122091510-ef56c88b",
+    "tabletopA": "defc18581e8d9771",
+    "ttdefenseA": "44f5ea3b0476b1ed"
+  },
+  "pageErrors": [],
+  "network": {
+    "expectedOffline": [],
+    "unexpected": [],
+    "evidence": [
+      {
+        "page": "tabletop",
+        "phase": "online",
+        "path": "/tabletop/",
+        "status": 200,
+        "fromServiceWorker": false
+      },
+      {
+        "page": "ttdefense",
+        "phase": "online",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": false
+      },
+      {
+        "page": "tabletop-reopen",
+        "phase": "offline",
+        "path": "/tabletop/",
+        "status": 200,
+        "fromServiceWorker": true
+      }
+    ]
+  },
+  "console": {
+    "online": 0,
+    "offline": 0,
+    "samples": []
+  },
+  "durationMs": 1271,
+  "claims": "Chromium browser automation only (not proven headless): no native/OS install, no touch hardware, no real release",
+  "browserVersion": "158.0.8127.36"
+}

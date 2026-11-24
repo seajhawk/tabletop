@@ -1,0 +1,375 @@
+{
+  "timestamp": "2026-11-22T09:15:39.774Z",
+  "ok": true,
+  "mode": "multitab",
+  "base": "/TTDefense/",
+  "origin": "http://127.0.0.1:4187",
+  "synthetic": "A/B are synthetic fixtures (same app + meta marker + distinct probe asset), not released versions",
+  "checks": [
+    {
+      "name": "fixture metadata has A and B for base",
+      "pass": true,
+      "detail": {
+        "A": "44f5ea3b0476b1ed",
+        "B": "c48a0460bb75edc5"
+      }
+    },
+    {
+      "name": "fixtures carry distinct per-revision probe assets (A has A probe, B has B probe)",
+      "pass": true,
+      "detail": {
+        "A": "/TTDefense/assets/pwa-smoke-A.txt",
+        "B": "/TTDefense/assets/pwa-smoke-B.txt"
+      }
+    },
+    {
+      "name": "tab1 A: registered with scope /TTDefense/, ga-sw.js activated, same worker controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/TTDefense/",
+        "active": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "tab1 A: cache complete (shell, manifest, main JS, 23 files)",
+      "pass": true,
+      "detail": {
+        "cache": "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+      }
+    },
+    {
+      "name": "tab2 A: registered with scope /TTDefense/, ga-sw.js activated, same worker controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/TTDefense/",
+        "active": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "tab2 A: cache complete (shell, manifest, main JS, 23 files)",
+      "pass": true,
+      "detail": {
+        "cache": "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+      }
+    },
+    {
+      "name": "both tabs carry synthetic marker A",
+      "pass": true,
+      "detail": {
+        "tab1": "A",
+        "tab2": "A"
+      }
+    },
+    {
+      "name": "tab 1 planning progress created with game.tryPlace",
+      "pass": true,
+      "detail": {
+        "x": 3,
+        "y": 2,
+        "id": "pulse",
+        "towers": 1
+      }
+    },
+    {
+      "name": "tab 2 stays fresh (0 towers, no token)",
+      "pass": true,
+      "detail": {
+        "towers": 0,
+        "token": null
+      }
+    },
+    {
+      "name": "tab 2 first update installed B waiting; tab 2 not reloaded",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "tab 1 captured the actual waiting B worker",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "tab 2: exactly one reload, marker B, new document",
+      "pass": true,
+      "detail": {
+        "reloads": 1,
+        "marker": "B",
+        "token": null
+      }
+    },
+    {
+      "name": "tab 1: controller and active worker are the saved B worker, activated with none waiting",
+      "pass": true,
+      "detail": {
+        "controllerChanged": true,
+        "activeChanged": true,
+        "expectedB": true,
+        "controllerState": "activated",
+        "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+        "waiting": null
+      }
+    },
+    {
+      "name": "tab 1: did not reload, marker still A, same token",
+      "pass": true,
+      "detail": {
+        "reloads": 0,
+        "marker": "A",
+        "token": "sentinel-hv6msgskhmd"
+      }
+    },
+    {
+      "name": "tab 1: tower/ledger/wallet state unchanged",
+      "pass": true,
+      "detail": {
+        "towers": 1,
+        "spent": 38
+      }
+    },
+    {
+      "name": "tab 1: PwaController offers ready and is blocked by progress",
+      "pass": true,
+      "detail": {
+        "s": "ready",
+        "m": "Finish or reset the match before updating."
+      }
+    },
+    {
+      "name": "A cache still complete",
+      "pass": true,
+      "detail": {
+        "pick": "ga-scope-app:%2FTTDefense%2F:44f5ea3b0476b1ed"
+      }
+    },
+    {
+      "name": "B cache complete",
+      "pass": true,
+      "detail": {
+        "pick": "ga-scope-app:%2FTTDefense%2F:c48a0460bb75edc5"
+      }
+    },
+    {
+      "name": "A cache holds A probe; B cache lacks it and holds B probe",
+      "pass": true,
+      "detail": {
+        "a": [
+          "/TTDefense/assets/pwa-smoke-A.txt"
+        ],
+        "b": [
+          "/TTDefense/assets/pwa-smoke-B.txt"
+        ]
+      }
+    },
+    {
+      "name": "B-selected HTTP server cannot serve the A-only probe",
+      "pass": true,
+      "detail": 404
+    },
+    {
+      "name": "tab 1 update blocked: message, still ready, no reload, marker A, same token",
+      "pass": true,
+      "detail": {
+        "m": "Finish or reset the match before updating.",
+        "s": "ready",
+        "reloads": 0
+      }
+    },
+    {
+      "name": "tab 1 update blocked: controller unchanged, progress intact",
+      "pass": true,
+      "detail": {
+        "controllerChanged": false,
+        "activeChanged": false,
+        "expectedB": true,
+        "controllerState": "activated",
+        "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+        "waiting": null
+      }
+    },
+    {
+      "name": "tab 1 has zero navigations; tab 2 has exactly one",
+      "pass": true,
+      "detail": {
+        "tab1": 0,
+        "tab2": 1
+      }
+    },
+    {
+      "name": "offline: A-only probe served with exact A bytes via the new worker",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "fromServiceWorker": true,
+        "bytesMatch": true
+      }
+    },
+    {
+      "name": "offline: B probe served with exact B bytes from the B cache",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "fromServiceWorker": true
+      }
+    },
+    {
+      "name": "tab 1 reset leaves fresh planning in the same A document with update ready",
+      "pass": true,
+      "detail": {
+        "hasGa": true,
+        "registered": true,
+        "controlled": true,
+        "updateState": "ready",
+        "message": "Finish or reset the match before updating.",
+        "marker": "A",
+        "canvas": true,
+        "token": "sentinel-hv6msgskhmd",
+        "towers": 0,
+        "spent": 0,
+        "credits": [
+          185,
+          185
+        ]
+      }
+    },
+    {
+      "name": "tab 1 reset itself caused no navigation",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "tab 1 explicit update navigation served offline by the worker",
+      "pass": true,
+      "detail": {
+        "fromServiceWorker": true,
+        "status": 200
+      }
+    },
+    {
+      "name": "tab 1: update caused exactly one reload, marker B, new document",
+      "pass": true,
+      "detail": {
+        "reloads": 1,
+        "marker": "B",
+        "token": null
+      }
+    },
+    {
+      "name": "tab 1: B ga-sw.js activated and controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/TTDefense/",
+        "active": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "explicit update navigated tab 1 once; tab 2 did not reload again",
+      "pass": true,
+      "detail": {
+        "tab1": 1,
+        "tab2": 1
+      }
+    },
+    {
+      "name": "tab 2 still runs B after tab 1 updates",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "localStorage sentinel survived update",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "best-score key unchanged by smoke",
+      "pass": true,
+      "detail": {
+        "before": null,
+        "after": null
+      }
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "build": {
+    "origin": "http://127.0.0.1:4187",
+    "synthetic": "A/B differ by a synthetic meta marker and per-revision probe asset; they are NOT released app versions",
+    "buildDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-smoke-20261122091510-ef56c88b",
+    "A": {
+      "version": "44f5ea3b0476b1ed",
+      "files": 23,
+      "probe": "/TTDefense/assets/pwa-smoke-A.txt"
+    },
+    "B": {
+      "version": "c48a0460bb75edc5",
+      "files": 23,
+      "probe": "/TTDefense/assets/pwa-smoke-B.txt"
+    }
+  },
+  "pageErrors": [],
+  "network": {
+    "expectedOffline": [],
+    "unexpected": [],
+    "evidence": [
+      {
+        "page": "tab1",
+        "phase": "online",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": false
+      },
+      {
+        "page": "tab2",
+        "phase": "online",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": true
+      },
+      {
+        "page": "tab2",
+        "phase": "online",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": true
+      },
+      {
+        "page": "tab1",
+        "phase": "offline",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": true
+      }
+    ]
+  },
+  "console": {
+    "online": 0,
+    "offline": 0,
+    "samples": []
+  },
+  "durationMs": 6194,
+  "claims": "Chromium browser automation only (not proven headless): no native/OS install, no touch hardware, no real release",
+  "browserVersion": "158.0.8127.36"
+}

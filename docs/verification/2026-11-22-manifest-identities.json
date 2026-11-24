@@ -1,0 +1,120 @@
+{
+  "timestamp": "2026-11-22T14:19:50.529Z",
+  "browser": "158.0.8127.36",
+  "checks": [
+    {
+      "base": "/",
+      "manifestUrl": "http://127.0.0.1:4187/manifest.webmanifest",
+      "manifestErrors": [],
+      "appId": "http://127.0.0.1:4187/",
+      "recommendedId": "/",
+      "ok": true
+    },
+    {
+      "base": "/tabletop/",
+      "manifestUrl": "http://127.0.0.1:4187/tabletop/manifest.webmanifest",
+      "manifestErrors": [],
+      "appId": "http://127.0.0.1:4187/tabletop/",
+      "recommendedId": "/tabletop/",
+      "ok": true
+    },
+    {
+      "base": "/TTDefense/",
+      "manifestUrl": "http://127.0.0.1:4187/TTDefense/manifest.webmanifest",
+      "manifestErrors": [],
+      "appId": "http://127.0.0.1:4187/TTDefense/",
+      "recommendedId": "/TTDefense/",
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "fixture": {
+    "origin": "http://127.0.0.1:4187",
+    "buildDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-smoke-20261122141923-9e38f037",
+    "startedAt": 1795357177612,
+    "expiresAt": 1795357777612,
+    "selected": {
+      "/": "A",
+      "/tabletop/": "A",
+      "/TTDefense/": "A"
+    },
+    "installTestName": "TTDefense Test a0fe655e22",
+    "synthetic": "A/B differ by a synthetic meta marker and per-revision probe asset; they are NOT released app versions",
+    "bases": {
+      "/": {
+        "A": {
+          "version": "59e46408321453ae",
+          "precacheCount": 23,
+          "cachePrefix": "ga-scope-app:%2F:",
+          "cacheName": "ga-scope-app:%2F:59e46408321453ae",
+          "shellUrl": "/index.html",
+          "manifestUrl": "/manifest.webmanifest",
+          "mainJsUrl": "/assets/index-DUBrQIGw.js",
+          "probeUrl": "/assets/pwa-smoke-A.txt",
+          "probeBody": "ga-pwa-smoke probe for revision A (1205f5917202)\n"
+        },
+        "B": {
+          "version": "2bab177d850fd502",
+          "precacheCount": 23,
+          "cachePrefix": "ga-scope-app:%2F:",
+          "cacheName": "ga-scope-app:%2F:2bab177d850fd502",
+          "shellUrl": "/index.html",
+          "manifestUrl": "/manifest.webmanifest",
+          "mainJsUrl": "/assets/index-DUBrQIGw.js",
+          "probeUrl": "/assets/pwa-smoke-B.txt",
+          "probeBody": "ga-pwa-smoke probe for revision B (1953e216bea1)\n"
+        }
+      },
+      "/tabletop/": {
+        "A": {
+          "version": "92b1f64272e21300",
+          "precacheCount": 23,
+          "cachePrefix": "ga-scope-app:%2Ftabletop%2F:",
+          "cacheName": "ga-scope-app:%2Ftabletop%2F:92b1f64272e21300",
+          "shellUrl": "/tabletop/index.html",
+          "manifestUrl": "/tabletop/manifest.webmanifest",
+          "mainJsUrl": "/tabletop/assets/index-C-KwoWZ2.js",
+          "probeUrl": "/tabletop/assets/pwa-smoke-A.txt",
+          "probeBody": "ga-pwa-smoke probe for revision A (bef961159a9a)\n"
+        },
+        "B": {
+          "version": "b53076506fb045f0",
+          "precacheCount": 23,
+          "cachePrefix": "ga-scope-app:%2Ftabletop%2F:",
+          "cacheName": "ga-scope-app:%2Ftabletop%2F:b53076506fb045f0",
+          "shellUrl": "/tabletop/index.html",
+          "manifestUrl": "/tabletop/manifest.webmanifest",
+          "mainJsUrl": "/tabletop/assets/index-C-KwoWZ2.js",
+          "probeUrl": "/tabletop/assets/pwa-smoke-B.txt",
+          "probeBody": "ga-pwa-smoke probe for revision B (42a9ade61b92)\n"
+        }
+      },
+      "/TTDefense/": {
+        "A": {
+          "version": "81b0ad6428704ee9",
+          "precacheCount": 23,
+          "cachePrefix": "ga-scope-app:%2FTTDefense%2F:",
+          "cacheName": "ga-scope-app:%2FTTDefense%2F:81b0ad6428704ee9",
+          "shellUrl": "/TTDefense/index.html",
+          "manifestUrl": "/TTDefense/manifest.webmanifest",
+          "mainJsUrl": "/TTDefense/assets/index-Cy21kzdy.js",
+          "probeUrl": "/TTDefense/assets/pwa-smoke-A.txt",
+          "probeBody": "ga-pwa-smoke probe for revision A (46b20d6a1e58)\n"
+        },
+        "B": {
+          "version": "d25a6def10cd50f9",
+          "precacheCount": 23,
+          "cachePrefix": "ga-scope-app:%2FTTDefense%2F:",
+          "cacheName": "ga-scope-app:%2FTTDefense%2F:d25a6def10cd50f9",
+          "shellUrl": "/TTDefense/index.html",
+          "manifestUrl": "/TTDefense/manifest.webmanifest",
+          "mainJsUrl": "/TTDefense/assets/index-Cy21kzdy.js",
+          "probeUrl": "/TTDefense/assets/pwa-smoke-B.txt",
+          "probeBody": "ga-pwa-smoke probe for revision B (e9fd5f89f719)\n"
+        }
+      }
+    }
+  },
+  "contextClosed": true,
+  "ok": true
+}

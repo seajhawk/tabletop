@@ -5,7 +5,12 @@ const GA_VERSION = '__GA_VERSION__';
 const GA_BASE = '__GA_BASE__';
 const GA_PRECACHE = __GA_PRECACHE__;
 
-const CACHE_PREFIX = 'ga-app-';
+// Caches are namespaced by deployment base so sibling apps on one origin (/, /tabletop/, /TTDefense/)
+// never prune each other. ':' is escaped inside the encoded base, making the terminator unambiguous.
+// The new family also survives legacy workers' broad 'ga-app-' pruning. Old caches are read-only
+// fallback for exact current-scope URLs, never deleted or modified here.
+const LEGACY_CACHE = /^ga-app-[0-9a-f]{16}$/;
+const CACHE_PREFIX = 'ga-scope-app:' + encodeURIComponent(GA_BASE) + ':';
 const CACHE_NAME = CACHE_PREFIX + GA_VERSION;
 const SHELL = GA_BASE + 'index.html';
 const BASE_NO_SLASH = GA_BASE.length > 1 ? GA_BASE.slice(0, -1) : GA_BASE;
@@ -18,12 +23,17 @@ function usable(res) {
 self.addEventListener('install', event => {
   // Fetch everything first, then write in one go: a failed install leaves no partial cache and
   // the previous version keeps serving. No skipWaiting here: the page must ask for activation.
+  // Each body is fully drained before the next fetch starts: holding many unread response streams
+  // open stalls the browser's per-origin connections and the install never finishes.
   event.waitUntil((async () => {
     const fetched = [];
     for (const url of GA_PRECACHE) {
       const res = await fetch(new Request(url, { cache: 'reload' }));
       if (!usable(res)) throw new Error('Precache failed: ' + url + ' (' + res.status + ')');
-      fetched.push([url, res]);
+      // Keep native response metadata (including URL/encoding) instead of rebuilding a decoded response.
+      const staged = res.clone();
+      await res.arrayBuffer();
+      fetched.push([url, staged]);
     }
     const cache = await caches.open(CACHE_NAME);
     try {
@@ -57,8 +67,14 @@ async function matchOwnCaches(pathname) {
   const current = await caches.open(CACHE_NAME);
   const hit = await current.match(pathname);
   if (hit) return hit;
-  const names = (await caches.keys()).filter(n => n.startsWith(CACHE_PREFIX) && n !== CACHE_NAME);
-  for (const n of names) {
+  const all = await caches.keys();
+  // Same-scope older versions first, then legacy ownerless caches. Lookup is by exact pathname, so a
+  // legacy cache can only answer for URLs this scope owns (sibling paths carry a different prefix).
+  const ordered = [
+    ...all.filter(n => n.startsWith(CACHE_PREFIX) && n !== CACHE_NAME),
+    ...all.filter(n => LEGACY_CACHE.test(n)),
+  ];
+  for (const n of ordered) {
     const old = await (await caches.open(n)).match(pathname);
     if (old) return old;
   }

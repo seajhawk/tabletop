@@ -1,0 +1,810 @@
+{
+ "schema": 1,
+ "tool": "pwa-desktop-smoke",
+ "status": "PASS",
+ "startedAt": "2026-11-22T14:25:01.024Z",
+ "durationMs": 8550,
+ "args": {
+  "browserExe": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "origin": "http://127.0.0.1:4187",
+  "base": "/TTDefense/",
+  "baseKey": "TTDefense"
+ },
+ "source": {
+  "head": "b728a7987ac7837d8e2a41fe9f0303d3377457f8",
+  "dirtyEntries": 21
+ },
+ "browser": {
+  "exe": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "version": "Chrome/158.0.8127.36",
+  "product": "Chrome/158.0.8127.36",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36",
+  "launches": [
+   {
+    "label": "install",
+    "pid": 67396,
+    "spawnedAt": "2026-11-22T14:25:01.964Z",
+    "transport": "local child-process pipe",
+    "automationFlags": [
+     "--remote-debugging-pipe"
+    ],
+    "debugPort": 59391,
+    "product": "Chrome/158.0.8127.36",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36"
+   },
+   {
+    "label": "cold-offline",
+    "pid": 69792,
+    "spawnedAt": "2026-11-22T14:25:05.719Z",
+    "transport": "local child-process pipe",
+    "automationFlags": [
+     "--remote-debugging-pipe"
+    ],
+    "debugPort": 54690,
+    "product": "Chrome/158.0.8127.36",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36"
+   }
+  ],
+  "protocolVersion": "1.3",
+  "versionMatchesExpected158": true
+ },
+ "profileDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-desktop-20261122142501-9e65b244\\profile",
+ "resultFile": "D:\\git\\tabletop\\ga\\.tasks\\pwa-desktop-20261122142501-9e65b244\\result.json",
+ "fixture": {
+  "origin": "http://127.0.0.1:4187",
+  "buildDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-smoke-20261122142441-fb79d97b",
+  "base": "/TTDefense/",
+  "version": "A",
+  "fixtureVersion": "69f470f19350800d",
+  "cacheName": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+  "precacheCount": 23,
+  "shellUrl": "/TTDefense/index.html",
+  "manifestUrl": "/TTDefense/manifest.webmanifest",
+  "mainJsUrl": "/TTDefense/assets/index-BpkyQDTx.js",
+  "probeUrl": "/TTDefense/assets/pwa-smoke-A.txt",
+  "synthetic": "A/B differ by a synthetic meta marker and per-revision probe asset; they are NOT released app versions"
+ },
+ "protocol": {
+  "source": "http://127.0.0.1:59391/json/protocol",
+  "version": {
+   "major": "1",
+   "minor": "3"
+  },
+  "commands": {
+   "getOsAppState": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     }
+    ],
+    "returns": [
+     {
+      "name": "badgeCount",
+      "type": "integer"
+     },
+     {
+      "name": "fileHandlers",
+      "type": "array"
+     }
+    ]
+   },
+   "install": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     },
+     {
+      "name": "installUrlOrBundleUrl",
+      "type": "string",
+      "optional": true
+     }
+    ],
+    "returns": []
+   },
+   "uninstall": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     }
+    ],
+    "returns": []
+   },
+   "launch": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     },
+     {
+      "name": "url",
+      "type": "string",
+      "optional": true
+     }
+    ],
+    "returns": [
+     {
+      "name": "targetId",
+      "type": "Target.TargetID"
+     }
+    ]
+   },
+   "launchFilesInApp": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     },
+     {
+      "name": "files",
+      "type": "array",
+      "optional": false
+     }
+    ],
+    "returns": [
+     {
+      "name": "targetIds",
+      "type": "array"
+     }
+    ]
+   },
+   "openCurrentPageInApp": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     }
+    ],
+    "returns": []
+   },
+   "changeAppUserSettings": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     },
+     {
+      "name": "linkCapturing",
+      "type": "boolean",
+      "optional": true
+     },
+     {
+      "name": "displayMode",
+      "type": "DisplayMode",
+      "optional": true
+     }
+    ],
+    "returns": []
+   }
+  },
+  "types": {
+   "FileHandlerAccept": {
+    "type": "object"
+   },
+   "FileHandler": {
+    "type": "object"
+   },
+   "DisplayMode": {
+    "type": "string",
+    "enum": [
+     "standalone",
+     "browser"
+    ]
+   }
+  },
+  "official": "https://chromedevtools.github.io/devtools-protocol/tot/PWA/"
+ },
+ "manifest": {
+  "url": "http://127.0.0.1:4187/TTDefense/manifest.webmanifest",
+  "errors": [],
+  "parsed": {
+   "name": "TTDefense Test 5f0c761411",
+   "short_name": "TTDefense Test 5f0c761411",
+   "start_url": "./",
+   "scope": "./",
+   "display": "standalone",
+   "icons": 3
+  },
+  "getAppId": {
+   "appId": "http://127.0.0.1:4187/TTDefense/",
+   "recommendedId": "/TTDefense/"
+  }
+ },
+ "installability": [],
+ "install": {
+  "manifestId": "http://127.0.0.1:4187/TTDefense/",
+  "manifestIdSource": "Page.getAppId.appId (runtime)",
+  "expectedId": "http://127.0.0.1:4187/TTDefense/",
+  "computedId": "http://127.0.0.1:4187/TTDefense/",
+  "reportedId": "http://127.0.0.1:4187/TTDefense/",
+  "recommendedId": "/TTDefense/",
+  "recommendedResolved": "http://127.0.0.1:4187/TTDefense/",
+  "mismatch": false,
+  "osAppState": {
+   "badgeCount": 0,
+   "fileHandlers": []
+  },
+  "displayModeSet": "standalone",
+  "afterUninstall": {
+   "ok": true,
+   "rawError": "PWA.getOsAppState: -32602 Unknown web-app manifest id http://127.0.0.1:4187/TTDefense/",
+   "cdp": {
+    "code": -32602,
+    "message": "Unknown web-app manifest id http://127.0.0.1:4187/TTDefense/"
+   }
+  }
+ },
+ "window": {
+  "app1": {
+   "windowId": 1090477925,
+   "bounds": {
+    "left": 953,
+    "top": -1080,
+    "width": 974,
+    "height": 547,
+    "windowState": "normal"
+   }
+  },
+  "app2": {
+   "windowId": 1090477990,
+   "bounds": {
+    "left": 953,
+    "top": -1080,
+    "width": 974,
+    "height": 547,
+    "windowState": "normal"
+   }
+  }
+ },
+ "app": {
+  "firstTargets": {
+   "sid": "393547EC72971961F4ACD224CB609B88",
+   "pageTargetId": "66EA99BBEF7D44D424C007A712E43C01",
+   "tabTargetId": "4BBB9A9552C05F5FD4113E1431CF79AF",
+   "tabSid": "3FB89B5B5D87DF923743563D960D9108",
+   "targetType": "tab",
+   "childWasWaiting": false
+  },
+  "manifestInAppWindow": {
+   "url": "http://127.0.0.1:4187/TTDefense/manifest.webmanifest",
+   "errors": []
+  },
+  "first": {
+   "targetId": "4BBB9A9552C05F5FD4113E1431CF79AF",
+   "href": "http://127.0.0.1:4187/TTDefense/",
+   "standalone": true,
+   "sentinel": "ga-pwa-desktop-cae457f554e4",
+   "reg": {
+    "scope": "http://127.0.0.1:4187/TTDefense/",
+    "activeUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+    "activeState": "activated",
+    "waiting": false,
+    "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js"
+   }
+  }
+ },
+ "coldOffline": {
+  "autoAttach": true,
+  "targets": {
+   "sid": "A9D56C868A7787A63C37751BC9B5D6AD",
+   "pageTargetId": "43F80C936C110935CD73D2DCB9A9012E",
+   "tabTargetId": "33D251B3229ADD150ADF1B716B1475CE",
+   "tabSid": "79D392535A67399B0B53F5CDC6837854",
+   "targetType": "tab",
+   "childWasWaiting": false
+  },
+  "navEvidence": {
+   "kind": "Network.responseReceived fromServiceWorker=true",
+   "entry": {
+    "browser": "cold-offline",
+    "sessionId": "A9D56C868A7787A63C37751BC9B5D6AD",
+    "session": "auto:page",
+    "url": "http://127.0.0.1:4187/TTDefense/",
+    "status": 200,
+    "fromServiceWorker": true,
+    "fromDiskCache": true,
+    "serviceWorkerResponseSource": "cache-storage",
+    "cacheStorageCacheName": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+    "protocol": "http/1.1"
+   }
+  },
+  "second": {
+   "targetId": "33D251B3229ADD150ADF1B716B1475CE",
+   "href": "http://127.0.0.1:4187/TTDefense/",
+   "standalone": true,
+   "perfNav": {
+    "workerStart": 6.100000023841858,
+    "type": "navigate",
+    "deliveryType": "cache-storage",
+    "responseStart": 613.5,
+    "transferSize": 0
+   },
+   "sentinel": "ga-pwa-desktop-cae457f554e4",
+   "reg": {
+    "scope": "http://127.0.0.1:4187/TTDefense/",
+    "activeUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+    "activeState": "activated",
+    "waiting": false,
+    "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js"
+   }
+  }
+ },
+ "checks": [
+  {
+   "name": "fixture meta is the expected local pwa-smoke fixture (origin matches, buildDir inside REPO/.tasks/pwa-smoke-*)",
+   "ok": true,
+   "detail": {
+    "origin": "http://127.0.0.1:4187",
+    "buildDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-smoke-20261122142441-fb79d97b"
+   }
+  },
+  {
+   "name": "fixture has a unique desktop test app name",
+   "ok": true,
+   "detail": "TTDefense Test 5f0c761411"
+  },
+  {
+   "name": "fixture base selected as version A",
+   "ok": true,
+   "detail": {
+    "/": "A",
+    "/tabletop/": "A",
+    "/TTDefense/": "A"
+   }
+  },
+  {
+   "name": "PWA.install present in this browser's protocol",
+   "ok": true,
+   "detail": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     },
+     {
+      "name": "installUrlOrBundleUrl",
+      "type": "string",
+      "optional": true
+     }
+    ],
+    "returns": []
+   }
+  },
+  {
+   "name": "PWA.launch present in this browser's protocol",
+   "ok": true,
+   "detail": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     },
+     {
+      "name": "url",
+      "type": "string",
+      "optional": true
+     }
+    ],
+    "returns": [
+     {
+      "name": "targetId",
+      "type": "Target.TargetID"
+     }
+    ]
+   }
+  },
+  {
+   "name": "PWA.uninstall present in this browser's protocol",
+   "ok": true,
+   "detail": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     }
+    ],
+    "returns": []
+   }
+  },
+  {
+   "name": "PWA.getOsAppState present in this browser's protocol",
+   "ok": true,
+   "detail": {
+    "experimental": false,
+    "params": [
+     {
+      "name": "manifestId",
+      "type": "string",
+      "optional": false
+     }
+    ],
+    "returns": [
+     {
+      "name": "badgeCount",
+      "type": "integer"
+     },
+     {
+      "name": "fileHandlers",
+      "type": "array"
+     }
+    ]
+   }
+  },
+  {
+   "name": "install tab: __ga game/pwa + canvas, worker activated for scope, full precache present",
+   "ok": true,
+   "detail": {
+    "href": "http://127.0.0.1:4187/TTDefense/",
+    "hasGa": true,
+    "canvas": true,
+    "controlled": true,
+    "reg": {
+     "scope": "http://127.0.0.1:4187/TTDefense/",
+     "activeUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+     "activeState": "activated",
+     "waiting": false,
+     "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js"
+    },
+    "cache": {
+     "pick": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+     "count": 23,
+     "hasShell": true,
+     "hasManifest": true,
+     "mainJsBytes": null,
+     "probeBodyMatches": false
+    }
+   }
+  },
+  {
+   "name": "Page.getAppManifest returned the fixture manifest with no manifest errors",
+   "ok": true,
+   "detail": {
+    "url": "http://127.0.0.1:4187/TTDefense/manifest.webmanifest",
+    "errors": [],
+    "parsed": {
+     "name": "TTDefense Test 5f0c761411",
+     "short_name": "TTDefense Test 5f0c761411",
+     "start_url": "./",
+     "scope": "./",
+     "display": "standalone",
+     "icons": 3
+    }
+   }
+  },
+  {
+   "name": "Page.getInstallabilityErrors reports no errors",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "name": "Page.getAppId.appId equals origin+base (identity is this app, not the origin root)",
+   "ok": true,
+   "detail": {
+    "appId": "http://127.0.0.1:4187/TTDefense/",
+    "expectedId": "http://127.0.0.1:4187/TTDefense/"
+   }
+  },
+  {
+   "name": "Page.getAppId.recommendedId (when reported) resolves to origin+base",
+   "ok": true,
+   "detail": {
+    "recommendedId": "/TTDefense/",
+    "recommendedResolved": "http://127.0.0.1:4187/TTDefense/",
+    "expectedId": "http://127.0.0.1:4187/TTDefense/"
+   }
+  },
+  {
+   "name": "PWA.install accepted and PWA.getOsAppState succeeds for the same manifestId",
+   "ok": true,
+   "detail": {
+    "badgeCount": 0,
+    "fileHandlers": []
+   }
+  },
+  {
+   "name": "PWA.changeAppUserSettings displayMode=standalone accepted",
+   "ok": true
+  },
+  {
+   "name": "PWA.launch returned a targetId",
+   "ok": true,
+   "detail": {
+    "targetId": "4BBB9A9552C05F5FD4113E1431CF79AF"
+   }
+  },
+  {
+   "name": "app window URL is exactly the expected start URL",
+   "ok": true,
+   "detail": "http://127.0.0.1:4187/TTDefense/"
+  },
+  {
+   "name": "app window matchMedia(display-mode: standalone) is true",
+   "ok": true,
+   "detail": {
+    "standalone": true,
+    "displayModes": [
+     "standalone"
+    ],
+    "chrome": {
+     "menubar": true,
+     "toolbar": true,
+     "locationbar": true
+    }
+   }
+  },
+  {
+   "name": "app window: game booted (__ga.game/pwa + canvas), worker activated, full cache",
+   "ok": true,
+   "detail": {
+    "href": "http://127.0.0.1:4187/TTDefense/",
+    "hasGa": true,
+    "canvas": true,
+    "controlled": true,
+    "reg": {
+     "scope": "http://127.0.0.1:4187/TTDefense/",
+     "activeUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+     "activeState": "activated",
+     "waiting": false,
+     "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js"
+    },
+    "cache": {
+     "pick": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+     "count": 23,
+     "hasShell": true,
+     "hasManifest": true,
+     "mainJsBytes": null,
+     "probeBodyMatches": false
+    }
+   }
+  },
+  {
+   "name": "fixture accepted POST shutdown (explicitly authorized)",
+   "ok": true,
+   "detail": 200
+  },
+  {
+   "name": "origin HTTP is unreachable from Node (fixture gone)",
+   "ok": true
+  },
+  {
+   "name": "first owned browser closed via Browser.close and its process exited",
+   "ok": true,
+   "detail": {
+    "label": "install",
+    "pid": 67396,
+    "cleanClose": true,
+    "forcedKill": false,
+    "exited": true,
+    "exitCode": 0
+   }
+  },
+  {
+   "name": "second launch has a distinct PID and fresh debug endpoint",
+   "ok": true,
+   "detail": {
+    "pid1": 67396,
+    "pid2": 69792,
+    "port2": 54690
+   }
+  },
+  {
+   "name": "two distinct owned browser PIDs",
+   "ok": true
+  },
+  {
+   "name": "install persisted: PWA.getOsAppState succeeds after browser restart (server still down)",
+   "ok": true,
+   "detail": {
+    "badgeCount": 0,
+    "fileHandlers": []
+   }
+  },
+  {
+   "name": "origin still unreachable before offline launch",
+   "ok": true
+  },
+  {
+   "name": "PWA.launch (no server) returned a targetId",
+   "ok": true,
+   "detail": {
+    "targetId": "33D251B3229ADD150ADF1B716B1475CE"
+   }
+  },
+  {
+   "name": "cold offline: URL exactly matches expected start URL",
+   "ok": true,
+   "detail": "http://127.0.0.1:4187/TTDefense/"
+  },
+  {
+   "name": "cold offline: matchMedia(display-mode: standalone) is true",
+   "ok": true,
+   "detail": {
+    "standalone": true,
+    "displayModes": [
+     "standalone"
+    ],
+    "chrome": {
+     "menubar": true,
+     "toolbar": true,
+     "locationbar": true
+    }
+   }
+  },
+  {
+   "name": "cold offline: game booted, worker activated, full cache (probe asset + main JS bodies actually cached)",
+   "ok": true,
+   "detail": {
+    "href": "http://127.0.0.1:4187/TTDefense/",
+    "hasGa": true,
+    "canvas": true,
+    "controlled": true,
+    "reg": {
+     "scope": "http://127.0.0.1:4187/TTDefense/",
+     "activeUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+     "activeState": "activated",
+     "waiting": false,
+     "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js"
+    },
+    "cache": {
+     "pick": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+     "count": 23,
+     "hasShell": true,
+     "hasManifest": true,
+     "mainJsBytes": 677412,
+     "probeBodyMatches": true
+    }
+   }
+  },
+  {
+   "name": "cold offline: page controlled by the activated worker",
+   "ok": true,
+   "detail": {
+    "scope": "http://127.0.0.1:4187/TTDefense/",
+    "activeUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+    "activeState": "activated",
+    "waiting": false,
+    "controllerUrl": "http://127.0.0.1:4187/TTDefense/ga-sw.js"
+   }
+  },
+  {
+   "name": "cold offline: storage sentinel restored from the persistent profile",
+   "ok": true,
+   "detail": {
+    "expected": "ga-pwa-desktop-cae457f554e4",
+    "got": "ga-pwa-desktop-cae457f554e4"
+   }
+  },
+  {
+   "name": "origin HTTP still unreachable after offline launch",
+   "ok": true
+  },
+  {
+   "name": "cold offline navigation response came fromServiceWorker (Network.responseReceived)",
+   "ok": true,
+   "detail": {
+    "browser": "cold-offline",
+    "sessionId": "A9D56C868A7787A63C37751BC9B5D6AD",
+    "session": "auto:page",
+    "url": "http://127.0.0.1:4187/TTDefense/",
+    "status": 200,
+    "fromServiceWorker": true,
+    "fromDiskCache": true,
+    "serviceWorkerResponseSource": "cache-storage",
+    "cacheStorageCacheName": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+    "protocol": "http/1.1"
+   }
+  },
+  {
+   "name": "page exceptions during the run: none (console/log/network errors are recorded in pageIssues, not failed on)",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "name": "after PWA.uninstall, PWA.getOsAppState reports the exact owned manifest ID is unknown",
+   "ok": true,
+   "detail": {
+    "ok": true,
+    "rawError": "PWA.getOsAppState: -32602 Unknown web-app manifest id http://127.0.0.1:4187/TTDefense/",
+    "cdp": {
+     "code": -32602,
+     "message": "Unknown web-app manifest id http://127.0.0.1:4187/TTDefense/"
+    }
+   }
+  },
+  {
+   "name": "second owned browser closed via Browser.close and its process exited",
+   "ok": true,
+   "detail": {
+    "label": "cold-offline",
+    "pid": 69792,
+    "cleanClose": true,
+    "forcedKill": false,
+    "exited": true,
+    "exitCode": 0
+   }
+  }
+ ],
+ "errors": [],
+ "pageIssues": [],
+ "navEvidence": [
+  {
+   "browser": "install",
+   "sessionId": "D58A6345C017BF234D2522510D59EC1E",
+   "session": "install-tab",
+   "url": "http://127.0.0.1:4187/TTDefense/",
+   "status": 200,
+   "fromServiceWorker": false,
+   "fromDiskCache": false,
+   "protocol": "http/1.1"
+  },
+  {
+   "browser": "cold-offline",
+   "sessionId": "A9D56C868A7787A63C37751BC9B5D6AD",
+   "session": "auto:page",
+   "url": "http://127.0.0.1:4187/TTDefense/",
+   "status": 200,
+   "fromServiceWorker": true,
+   "fromDiskCache": true,
+   "serviceWorkerResponseSource": "cache-storage",
+   "cacheStorageCacheName": "ga-scope-app:%2FTTDefense%2F:69f470f19350800d",
+   "protocol": "http/1.1"
+  }
+ ],
+ "cleanup": {
+  "uninstall": {
+   "ok": true,
+   "note": "uninstalled in main flow"
+  },
+  "browsers": [
+   {
+    "label": "install",
+    "pid": 67396,
+    "cleanClose": true,
+    "forcedKill": false,
+    "exited": true,
+    "exitCode": 0
+   },
+   {
+    "label": "cold-offline",
+    "pid": 69792,
+    "cleanClose": true,
+    "forcedKill": false,
+    "exited": true,
+    "exitCode": 0
+   }
+  ],
+  "allBrowsersExited": true,
+  "fixtureShutdownByThisRun": true,
+  "profileKept": "D:\\git\\tabletop\\ga\\.tasks\\pwa-desktop-20261122142501-9e65b244\\profile"
+ },
+ "limitations": [
+  "Real Windows Chrome PWA install writes OS shortcuts (Start menu/desktop) for the isolated profile; uninstall is expected to remove them. If cleanup.uninstall is not ok, remove the shortcut manually.",
+  "No real hardware touch, DPI, thermal, or public-CDN update behaviour is covered; fixture A is a synthetic local build served from loopback.",
+  "PWA.* CDP methods are experimental; an unsupported method yields BLOCKED, not PASS.",
+  "PWA commands use Chrome's inherited local debugging pipe. The loopback port only supplies protocol metadata. No normal-profile settings or user install dialog are exercised.",
+  "Network.responseReceived fromServiceWorker evidence depends on browser-level auto-attach pausing the launched app before navigation; navEvidence.kind says what was actually observed."
+ ],
+ "installTestName": "TTDefense Test 5f0c761411"
+}

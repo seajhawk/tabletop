@@ -68,7 +68,22 @@ describe('service worker build', () => {
 
 // ---- worker behaviour under a fake ServiceWorkerGlobalScope ----
 const ORIGIN = 'https://ga.example';
-function boot(urls, version, { responses = {}, clients = 1, preCaches = {} } = {}) {
+const scoped = (base, version) => 'ga-scope-app:' + encodeURIComponent(base) + ':' + version;
+// Network response with an unread body stream; `tracker` counts bodies not yet consumed.
+function netResponse(init, tracker) {
+  const res = {
+    ok: true, status: 200, statusText: 'OK', type: 'basic', headers: { 'content-type': 'text/plain' }, ...init,
+    clone() { return netResponse(init); },
+    async arrayBuffer() {
+      if (init.bodyError) throw new Error('body read failed');
+      if (tracker && !res.drained) { res.drained = true; tracker.outstanding--; }
+      return new TextEncoder().encode(res.body ?? '').buffer;
+    },
+  };
+  if (tracker) tracker.outstanding++;
+  return res;
+}
+function boot(urls, version, { responses = {}, clients = 1, preCaches = {}, base = '/' } = {}) {
   const store = new Map(Object.entries(preCaches).map(([n, files]) => [n, new Map(Object.entries(files))]));
   const caches = {
     async open(name) {
@@ -79,7 +94,7 @@ function boot(urls, version, { responses = {}, clients = 1, preCaches = {} } = {
     async keys() { return [...store.keys()]; },
     async delete(n) { return store.delete(n); },
   };
-  const state = { skipWaiting: 0, claimed: 0 };
+  const state = { skipWaiting: 0, claimed: 0, outstanding: 0, outstandingAtFetch: [] };
   const fetched = [];
   const handlers = {};
   const self = {
@@ -91,10 +106,11 @@ function boot(urls, version, { responses = {}, clients = 1, preCaches = {} } = {
   const fetchFn = async req => {
     fetched.push(req.url ?? req);
     const key = String(req.url ?? req);
-    return responses[key] ?? { ok: true, status: 200, type: 'basic', body: 'net:' + key };
+    state.outstandingAtFetch.push(state.outstanding); // bodies still unread when this fetch began
+    return netResponse({ url: new URL(key, ORIGIN).href, ...(responses[key] ?? { body: 'net:' + key }) }, state);
   };
   class Request { constructor(url) { this.url = url; } }
-  const code = renderWorker(templateBody, version, urls);
+  const code = renderWorker(templateBody, version, urls, base);
   new Function('self', 'caches', 'fetch', 'Request', code)(self, caches, fetchFn, Request);
   const run = async (type, extra = {}) => {
     const out = { waits: [], response: undefined, responded: false };
@@ -117,18 +133,94 @@ describe('service worker runtime', () => {
     await loadTemplate();
     const sw = boot(URLS, 'v1');
     await sw.run('install');
-    expect([...sw.store.keys()]).toEqual(['ga-app-v1']);
-    expect([...sw.store.get('ga-app-v1').keys()].sort()).toEqual([...URLS].sort());
+    expect([...sw.store.keys()]).toEqual(['ga-scope-app:%2F:v1']);
+    expect([...sw.store.get('ga-scope-app:%2F:v1').keys()].sort()).toEqual([...URLS].sort());
     expect(sw.state.skipWaiting).toBe(0);
+  });
+
+  it('uses a literal, distinct cache prefix per deployment base', async () => {
+    await loadTemplate();
+    const names = [];
+    for (const base of ['/', '/tabletop/', '/TTDefense/']) {
+      const sw = boot([base + 'index.html'], 'v1', { base });
+      await sw.run('install');
+      names.push(...sw.store.keys());
+    }
+    expect(names).toEqual(['ga-scope-app:%2F:v1', 'ga-scope-app:%2Ftabletop%2F:v1', 'ga-scope-app:%2FTTDefense%2F:v1']);
+  });
+
+  it('new cache names survive the cleanup predicate used by legacy workers', async () => {
+    await loadTemplate();
+    const sw = boot(URLS, 'v1');
+    await sw.run('install');
+    const candidates = [...sw.store.keys()].filter(n => n.startsWith('ga-app-'));
+    expect(candidates).toEqual([]);
+    expect(sw.store.has('ga-scope-app:%2F:v1')).toBe(true);
+  });
+
+  it.each([['/', '/-preview/'], ['/one/', '/one/-preview/']])('activation at %s preserves the distinct %s cache', async (base, sibling) => {
+    await loadTemplate();
+    const other = scoped(sibling, 'v1');
+    const sw = boot([base + 'index.html'], 'v2', { base, preCaches: { [other]: { [sibling + 'index.html']: { ok: true, body: 'keep' } } } });
+    await sw.run('install');
+    await sw.run('activate');
+    expect(sw.store.get(other).get(sibling + 'index.html').body).toBe('keep');
+  });
+
+  it('real generated worker versions yield scoped cache names', async () => {
+    await loadTemplate();
+    const dir = await makeDist({
+      'index.html': '<script type="module" src="/tabletop/assets/index-abc.js"></script><link rel="manifest" href="./manifest.webmanifest">',
+    });
+    const { version } = await generateWorker(dir, TEMPLATE_PATH, '/tabletop/');
+    expect(version).toMatch(/^[0-9a-f]{16}$/);
+    const urls = (await collectPrecache(dir, '/tabletop/')).map(e => e.url);
+    const sw = boot(urls, version, { base: '/tabletop/' });
+    await sw.run('install');
+    expect([...sw.store.keys()]).toEqual([scoped('/tabletop/', version)]);
   });
 
   it('failed install rejects, writes nothing, and keeps the old cache', async () => {
     await loadTemplate();
     const old = { '/index.html': { ok: true, body: 'old shell' } };
-    const sw = boot(URLS, 'v2', { preCaches: { 'ga-app-v1': old }, responses: { '/assets/app-1.js': { ok: false, status: 404, type: 'basic' } } });
+    const sw = boot(URLS, 'v2', { preCaches: { 'ga-scope-app:%2F:v1': old }, responses: { '/assets/app-1.js': { ok: false, status: 404, type: 'basic' } } });
     await expect(sw.run('install')).rejects.toThrow(/Precache failed/);
-    expect([...sw.store.keys()]).toEqual(['ga-app-v1']);
-    expect(sw.store.get('ga-app-v1').get('/index.html').body).toBe('old shell');
+    expect([...sw.store.keys()]).toEqual(['ga-scope-app:%2F:v1']);
+    expect(sw.store.get('ga-scope-app:%2F:v1').get('/index.html').body).toBe('old shell');
+  });
+
+  it('drains each download body before starting the next fetch', async () => {
+    await loadTemplate();
+    const sw = boot(URLS, 'v1');
+    await sw.run('install');
+    expect(sw.fetched.length).toBe(URLS.length);
+    expect(sw.state.outstandingAtFetch).toEqual(URLS.map(() => 0));
+    expect(sw.state.outstanding).toBe(0);
+  });
+
+  it('caches the downloaded bytes with status, statusText and headers preserved', async () => {
+    await loadTemplate();
+    const headers = { 'content-type': 'application/javascript', etag: 'abc' };
+    const sw = boot(URLS, 'v1', { responses: { '/assets/app-1.js': { body: 'console.log(1)', status: 200, statusText: 'Fine', headers } } });
+    await sw.run('install');
+    const cached = sw.store.get('ga-scope-app:%2F:v1').get('/assets/app-1.js');
+    expect(cached.body).toBe('console.log(1)');
+    expect(cached.status).toBe(200);
+    expect(cached.statusText).toBe('Fine');
+    expect(cached.headers).toBe(headers);
+    expect(cached.type).toBe('basic');
+    expect(cached.url).toBe(ORIGIN + '/assets/app-1.js');
+    expect(sw.store.get('ga-scope-app:%2F:v1').get('/index.html').body).toBe('net:/index.html');
+  });
+
+  it('a failed body read aborts install, writes nothing, and keeps the old cache', async () => {
+    await loadTemplate();
+    const old = { '/index.html': { ok: true, body: 'old shell' } };
+    const sw = boot(URLS, 'v2', { preCaches: { 'ga-scope-app:%2F:v1': old }, responses: { '/assets/app-1.js': { body: 'x', bodyError: true } } });
+    await expect(sw.run('install')).rejects.toThrow(/body read failed/);
+    expect([...sw.store.keys()]).toEqual(['ga-scope-app:%2F:v1']);
+    expect(sw.store.get('ga-scope-app:%2F:v1').get('/index.html').body).toBe('old shell');
+    expect(sw.fetched).toEqual(['/index.html', '/assets/app-1.js']); // stopped; manifest never fetched
   });
 
   it('only an explicit message activates a waiting worker', async () => {
@@ -143,14 +235,34 @@ describe('service worker runtime', () => {
 
   it('activation claims, prunes old own caches only when alone, never touches other caches', async () => {
     await loadTemplate();
-    const pre = { 'ga-app-v1': {}, 'other-app-cache': {}, 'ga-app-v2': {} };
+    const pre = { 'ga-scope-app:%2F:v1': {}, 'other-app-cache': {}, 'ga-scope-app:%2F:v2': {} };
     const alone = boot(URLS, 'v2', { preCaches: pre, clients: 1 });
     await alone.run('activate');
     expect(alone.state.claimed).toBe(1);
-    expect([...alone.store.keys()].sort()).toEqual(['ga-app-v2', 'other-app-cache']);
+    expect([...alone.store.keys()].sort()).toEqual(['ga-scope-app:%2F:v2', 'other-app-cache']);
     const shared = boot(URLS, 'v2', { preCaches: { ...pre }, clients: 2 });
     await shared.run('activate');
-    expect([...shared.store.keys()].sort()).toEqual(['ga-app-v1', 'ga-app-v2', 'other-app-cache']);
+    expect([...shared.store.keys()].sort()).toEqual(['ga-scope-app:%2F:v1', 'ga-scope-app:%2F:v2', 'other-app-cache']);
+  });
+
+  it('activation never prunes sibling-scope or legacy caches, even when alone', async () => {
+    await loadTemplate();
+    const legacy = 'ga-app-0123456789abcdef';
+    const pre = {
+      [scoped('/tabletop/', 'a1')]: { '/tabletop/index.html': { ok: true, body: 'closed sibling' } },
+      [scoped('/', 'r1')]: {},
+      [scoped('/TTDefense/', 'old')]: {},
+      [scoped('/TTDefense/', 'new')]: {},
+      [legacy]: {},
+      'ga-app-v1': {},
+      'other-app-cache': {},
+    };
+    const sw = boot(['/TTDefense/index.html'], 'new', { base: '/TTDefense/', preCaches: pre, clients: 1 });
+    await sw.run('activate');
+    expect([...sw.store.keys()].sort()).toEqual([
+      'ga-app-v1', legacy, scoped('/', 'r1'), scoped('/TTDefense/', 'new'), scoped('/tabletop/', 'a1'), 'other-app-cache',
+    ].sort());
+    expect(sw.store.get(scoped('/tabletop/', 'a1')).get('/tabletop/index.html').body).toBe('closed sibling');
   });
 
   it('serves the cached shell for root navigation and leaves unrelated traffic alone', async () => {
@@ -170,12 +282,51 @@ describe('service worker runtime', () => {
 
   it('old tabs still resolve their hashed assets from older app caches; unknown assets go to network', async () => {
     await loadTemplate();
-    const sw = boot(URLS, 'v2', { preCaches: { 'ga-app-v1': { '/assets/old-9.js': { ok: true, body: 'old js' } } } });
+    const sw = boot(URLS, 'v2', { preCaches: { 'ga-scope-app:%2F:v1': { '/assets/old-9.js': { ok: true, body: 'old js' } } } });
     await sw.run('install');
     expect((await sw.run('fetch', get('/assets/old-9.js'))).response.body).toBe('old js');
     sw.fetched.length = 0;
     expect((await sw.run('fetch', get('/assets/never-seen.js'))).response.body).toBe('net:' + ORIGIN + '/assets/never-seen.js');
     expect(sw.fetched.length).toBe(1);
+  });
+
+  it('old tabs read current-scope hashed assets from legacy caches without mutating them; siblings are not returned', async () => {
+    await loadTemplate();
+    const legacy = 'ga-app-0123456789abcdef';
+    const legacyFiles = {
+      '/tabletop/assets/old-9.js': { ok: true, body: 'tabletop js' },
+      '/TTDefense/assets/old-9.js': { ok: true, body: 'ttdefense js' },
+    };
+    const sw = boot(['/tabletop/index.html'], 'v2', {
+      base: '/tabletop/',
+      preCaches: { [legacy]: legacyFiles, [scoped('/TTDefense/', 'x')]: { '/TTDefense/assets/only-sib.js': { ok: true, body: 'sib' } } },
+      clients: 1,
+    });
+    await sw.run('install');
+    await sw.run('activate'); // alone, yet legacy must survive
+    expect(sw.store.has(legacy)).toBe(true);
+    expect([...sw.store.get(legacy).keys()].sort()).toEqual(Object.keys(legacyFiles).sort());
+    expect((await sw.run('fetch', get('/tabletop/assets/old-9.js'))).response.body).toBe('tabletop js');
+    // Same filename only cached under another scope: network, not the sibling's body.
+    sw.fetched.length = 0;
+    expect((await sw.run('fetch', get('/tabletop/assets/only-sib.js'))).response.body).toBe('net:' + ORIGIN + '/tabletop/assets/only-sib.js');
+    expect(sw.fetched.length).toBe(1);
+    // Sibling-path requests are not intercepted at all.
+    expect((await sw.run('fetch', get('/TTDefense/assets/old-9.js'))).responded).toBe(false);
+  });
+
+  it('prefers current cache, then same-scope older, then legacy', async () => {
+    await loadTemplate();
+    const legacy = 'ga-app-0123456789abcdef';
+    const f = body => ({ '/assets/a.js': { ok: true, body } });
+    const sw = boot(URLS, 'v3', { preCaches: { [legacy]: f('legacy'), 'ga-scope-app:%2F:v2': f('older') }, clients: 1 });
+    await sw.run('install');
+    sw.store.get('ga-scope-app:%2F:v3').set('/assets/a.js', { ok: true, body: 'current' });
+    expect((await sw.run('fetch', get('/assets/a.js'))).response.body).toBe('current');
+    sw.store.get('ga-scope-app:%2F:v3').delete('/assets/a.js');
+    expect((await sw.run('fetch', get('/assets/a.js'))).response.body).toBe('older');
+    sw.store.delete('ga-scope-app:%2F:v2');
+    expect((await sw.run('fetch', get('/assets/a.js'))).response.body).toBe('legacy');
   });
 
   it('supports subpath deployments like /TTDefense/ cleanly', async () => {
@@ -207,7 +358,7 @@ describe('service worker runtime', () => {
       clients: { claim: async () => {}, matchAll: async () => [{}] },
     };
     class Request { constructor(url) { this.url = url; } }
-    const fetchFn = async req => ({ ok: true, status: 200, type: 'basic', body: 'net:' + String(req.url ?? req) });
+    const fetchFn = async req => netResponse({ body: 'net:' + String(req.url ?? req) });
     new Function('self', 'caches', 'fetch', 'Request', renderWorker(templateBody, 'sub1', subUrls, '/TTDefense/'))(self, caches, fetchFn, Request);
     const run = async (type, extra = {}) => {
       const out = { waits: [], response: undefined, responded: false };

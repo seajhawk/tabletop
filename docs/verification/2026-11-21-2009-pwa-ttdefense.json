@@ -1,0 +1,279 @@
+{
+  "timestamp": "2026-11-22T04:09:41.172Z",
+  "ok": true,
+  "mode": "lifecycle",
+  "base": "/TTDefense/",
+  "origin": "http://127.0.0.1:4187",
+  "synthetic": "A/B are synthetic fixtures (same app + meta marker), not released versions",
+  "checks": [
+    {
+      "name": "fixture metadata has A and B for base",
+      "pass": true,
+      "detail": {
+        "A": "21f6afadf1450e67",
+        "B": "c095fa8892e60d25"
+      }
+    },
+    {
+      "name": "A: registered with scope /TTDefense/, ga-sw.js activated, same worker controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/TTDefense/",
+        "active": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "A: cache complete (shell, manifest, main JS, 22 files)",
+      "pass": true,
+      "detail": {
+        "cache": "ga-scope-app:%2FTTDefense%2F:21f6afadf1450e67"
+      }
+    },
+    {
+      "name": "A: document carries synthetic marker A",
+      "pass": true,
+      "detail": "A"
+    },
+    {
+      "name": "A: worker version A cache exists",
+      "pass": true,
+      "detail": {
+        "pick": "ga-scope-app:%2FTTDefense%2F:21f6afadf1450e67",
+        "expected": "ga-scope-app:%2FTTDefense%2F:21f6afadf1450e67"
+      }
+    },
+    {
+      "name": "A offline: navigation answered by service worker",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "A offline: game boots offline with marker A",
+      "pass": true,
+      "detail": {
+        "marker": "A",
+        "controlled": true
+      }
+    },
+    {
+      "name": "A offline: cached assets fetchable offline",
+      "pass": true,
+      "detail": [
+        200,
+        200
+      ]
+    },
+    {
+      "name": "planning progress created with game.tryPlace (no stress/gameover)",
+      "pass": true,
+      "detail": {
+        "x": 3,
+        "y": 2,
+        "id": "pulse",
+        "towers": 1
+      }
+    },
+    {
+      "name": "B installed in waiting state (cache complete) while A still serves",
+      "pass": true,
+      "detail": {
+        "pick": "ga-scope-app:%2FTTDefense%2F:c095fa8892e60d25"
+      }
+    },
+    {
+      "name": "A cache still present before activation",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "second update blocked by progress (message, still ready)",
+      "pass": true,
+      "detail": {
+        "m": "Finish or reset the match before updating.",
+        "s": "ready"
+      }
+    },
+    {
+      "name": "blocked update: no reload, marker A, same token",
+      "pass": true,
+      "detail": {
+        "loads": 2,
+        "token": "sentinel-5cy7vo1abww"
+      }
+    },
+    {
+      "name": "blocked update: B still waiting (installed), A active+controller unchanged by identity",
+      "pass": true,
+      "detail": {
+        "waitingState": "installed",
+        "activeState": "activated",
+        "sameController": true,
+        "sameActive": true
+      }
+    },
+    {
+      "name": "blocked update: game progress unchanged",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "game reset leaves fresh planning (0 towers)",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "B: ga-sw.js activated and controls page",
+      "pass": true,
+      "detail": {
+        "scope": "http://127.0.0.1:4187/TTDefense/",
+        "active": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        },
+        "waiting": null,
+        "controller": {
+          "url": "http://127.0.0.1:4187/TTDefense/ga-sw.js",
+          "state": "activated"
+        }
+      }
+    },
+    {
+      "name": "update caused exactly one reload",
+      "pass": true,
+      "detail": 1
+    },
+    {
+      "name": "B: marker B, game booted, new document (token gone)",
+      "pass": true,
+      "detail": {
+        "marker": "B",
+        "token": null
+      }
+    },
+    {
+      "name": "B: cache named for version B complete",
+      "pass": true,
+      "detail": {
+        "pick": "ga-scope-app:%2FTTDefense%2F:c095fa8892e60d25",
+        "expected": "ga-scope-app:%2FTTDefense%2F:c095fa8892e60d25"
+      }
+    },
+    {
+      "name": "B offline: navigation answered by service worker",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "B offline: game boots offline with marker B",
+      "pass": true,
+      "detail": {
+        "marker": "B",
+        "controlled": true
+      }
+    },
+    {
+      "name": "B offline: cached assets fetchable offline",
+      "pass": true,
+      "detail": [
+        200,
+        200
+      ]
+    },
+    {
+      "name": "localStorage sentinel survived update",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "best-score key unchanged by smoke",
+      "pass": true,
+      "detail": {
+        "before": null,
+        "after": null
+      }
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "build": {
+    "origin": "http://127.0.0.1:4187",
+    "synthetic": "A/B differ only by a synthetic <meta name=\"ga-pwa-smoke\"> marker; they are NOT released app versions",
+    "buildDir": "D:\\git\\tabletop\\ga\\.tasks\\pwa-smoke-20261122040912-94b48493",
+    "A": {
+      "version": "21f6afadf1450e67",
+      "files": 22
+    },
+    "B": {
+      "version": "c095fa8892e60d25",
+      "files": 22
+    },
+    "cachesAfterUpdate": [
+      "ga-scope-app:%2FTTDefense%2F:c095fa8892e60d25"
+    ]
+  },
+  "pageErrors": [],
+  "network": {
+    "expectedOffline": [],
+    "unexpected": [],
+    "evidence": [
+      {
+        "page": "app",
+        "phase": "online",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": false
+      },
+      {
+        "page": "app",
+        "phase": "offline",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": true
+      },
+      {
+        "page": "app",
+        "phase": "offline",
+        "path": "/TTDefense/manifest.webmanifest",
+        "status": 200,
+        "fromServiceWorker": true
+      },
+      {
+        "page": "app",
+        "phase": "online",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": true
+      },
+      {
+        "page": "app",
+        "phase": "offline",
+        "path": "/TTDefense/",
+        "status": 200,
+        "fromServiceWorker": true
+      },
+      {
+        "page": "app",
+        "phase": "offline",
+        "path": "/TTDefense/manifest.webmanifest",
+        "status": 200,
+        "fromServiceWorker": true
+      }
+    ]
+  },
+  "console": {
+    "online": 0,
+    "offline": 0,
+    "samples": []
+  },
+  "durationMs": 4625,
+  "claims": "Chromium browser automation only (not proven headless): no native/OS install, no touch hardware, no real release",
+  "browserVersion": "158.0.8127.36"
+}
